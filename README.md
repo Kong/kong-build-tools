@@ -25,10 +25,12 @@ kong-community-edition-0.0.0.xenial.all.deb
 
 Environment variables:
 
-You can find all available environment variables at the top of the `Makefile`. The most common ones
-are the following:
+You can find all available environment variables at the top of the [Makefile](https://github.com/Kong/kong-build-tools/blob/master/Makefile).
+The most common ones are the following:
 
-- KONG_SOURCE_LOCATION=/src/projects/custom-kong-location
-- KONG_PACKAGE_NAME=custom-kong-name
-- KONG_VERSION=v1.0.0
-- RESTY_IMAGE_TAG=trusty|xenial|xenial
+```
+KONG_SOURCE_LOCATION=/src/projects/custom-kong-location
+KONG_PACKAGE_NAME=custom-kong-name
+KONG_VERSION=v1.0.0
+RESTY_IMAGE_TAG=trusty|xenial|xenial
+```
