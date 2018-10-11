@@ -10,9 +10,12 @@ elif [ "$RESTY_IMAGE_TAG" == "xenial" ]; then
   OUTPUT_FILE_SUFFIX=".xenial.all"
 fi
 
-if hash apt-get 2>/dev/null; then
+FPM_PARAMS=""
+if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
   FPM_PARAMS="-d 'openssl' -d 'libpcre3' -d 'perl'"
   PACKAGE_TYPE="deb"
+elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
+  PACKAGE_TYPE="rpm"
 fi
 
 fpm -a all -f -s dir \

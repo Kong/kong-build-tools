@@ -19,7 +19,7 @@ git clone git@github.com:Kong/kong.git
 git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
 make build-kong
-ls output/
+ls output/ fp 
 kong-community-edition-0.0.0.xenial.all.deb
 ```
 
@@ -32,5 +32,6 @@ The most common ones are the following:
 KONG_SOURCE_LOCATION=/src/projects/custom-kong-location
 KONG_PACKAGE_NAME=custom-kong-name
 KONG_VERSION=v1.0.0
-RESTY_IMAGE_TAG=trusty|xenial|xenial
+RESTY_IMAGE_BASE=ubuntu|centos
+RESTY_IMAGE_TAG=trusty|xenial|xenial|7
 ```
