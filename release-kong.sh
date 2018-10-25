@@ -34,20 +34,6 @@ BINTRAY_PUT_ARGS="$BINTRAY_PUT_ARGS?publish=1&override=0"
 DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
 BUILD_DIR="$CWD/output/"
 
-function get {
-  [[ "$#" != 1 ]] && exit 1
-  key=$1
-  for pair in "${MAP[@]}" ; do
-    KEY=${pair%%=*}
-    VALUE=${pair#*=}
-    if [[ "$KEY" == "$key" ]]
-      then
-        echo $VALUE
-        break
-    fi
-  done
-}
-
 function print_result {
   [[ "$#" != 2 ]] && exit 1
   local status=$(echo $2 | awk -F"=" '{print $2}')
