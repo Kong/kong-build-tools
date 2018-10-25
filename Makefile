@@ -1,5 +1,6 @@
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
+PACKAGE_TYPE?=debian
 KONG_NETTLE_VERSION?="3.4"
 KONG_GMP_VERSION?="6.1.2"
 RESTY_VERSION?="1.13.6.2"
@@ -12,6 +13,9 @@ KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?="0.0.0"
+
+release-kong:
+	./release-kong.sh
 
 build-kong: build-openresty-base
 	docker build -f Dockerfile.kong \
