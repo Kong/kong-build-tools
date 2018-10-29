@@ -12,7 +12,7 @@ fi
 
 FPM_PARAMS=""
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
-  FPM_PARAMS="-d 'openssl' -d 'libpcre3' -d 'perl'"
+  FPM_PARAMS="-d openssl -d libpcre3 -d perl"
   PACKAGE_TYPE="deb"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   PACKAGE_TYPE="rpm"
