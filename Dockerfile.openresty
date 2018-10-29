@@ -3,8 +3,6 @@ ARG RESTY_IMAGE_TAG="xenial"
 
 FROM kong:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
-ARG KONG_NETTLE_VERSION="3.4"
-ARG KONG_GMP_VERSION="6.1.2"
 ARG RESTY_VERSION="1.13.6.2"
 ARG RESTY_LUAROCKS_VERSION="2.4.3"
 ARG RESTY_OPENSSL_VERSION="1.0.2p"
@@ -32,16 +30,13 @@ ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --w
 RUN cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+    && ln -s /tmp/openssl-1.0.2p /tmp/openssl \
     && curl -fSL https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && curl -fSL https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
     && tar xzf openresty-${RESTY_VERSION}.tar.gz \
     && curl -fSL https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && curl -fSL https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 -o gmp-${KONG_GMP_VERSION}.tar.bz2 \
-    && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
-    && curl -fSL https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz -o nettle-${KONG_NETTLE_VERSION}.tar.gz \
-    && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
 
 RUN cd /tmp \
     && curl -fSL https://github.com/Kong/openresty-patches/archive/master.tar.gz -o kong-patches.tar.gz \
@@ -66,19 +61,4 @@ RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
 RUN cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
     && make clean \
     && ./config -fPIC \
-    && make -j${RESTY_J}
-
-RUN cd /tmp/gmp-${KONG_GMP_VERSION} \
-    && ./configure \
-        --build=x86_64-linux-gnu \
-        --enable-static=no \
-        --libdir=$BUILD/usr/local/kong/lib \
-    && make -j${RESTY_J}
-
-RUN cd /tmp/nettle-${KONG_NETTLE_VERSION} \
-    && DFLAGS="-Wl,-rpath,/usr/local/kong/lib" \
-        ./configure --disable-static \
-        --libdir=$BUILD/usr/local/kong/lib \
-        --with-include-path="$TMP/gmp-${KONG_DEP_GMP_VERSION}/" \
-        --with-lib-path="$TMP/gmp-${KONG_DEP_GMP_VERSION}/.libs/" \
     && make -j${RESTY_J}
