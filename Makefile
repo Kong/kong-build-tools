@@ -17,6 +17,12 @@ KONG_VERSION?="0.0.0"
 release-kong:
 	./release-kong.sh
 
+clean:
+	docker rmi kong:fpm
+	docker rmi kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	docker rmi kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+
 package-kong: build-kong
 	docker build -f Dockerfile.fpm \
 	-t kong:fpm .
@@ -50,8 +56,6 @@ build-kong: build-openresty-base
 
 build-openresty-base: build-base
 	docker build -f Dockerfile.openresty \
-	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
-	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
