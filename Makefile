@@ -17,12 +17,29 @@ KONG_VERSION?="0.0.0"
 release-kong:
 	./release-kong.sh
 
+package-kong: build-kong
+	docker build -f Dockerfile.fpm \
+	-t kong:fpm .
+	docker run -t --rm \
+	-v $$PWD/output/build:/tmp/build \
+	-v $$PWD/output:/output \
+	-e KONG_VERSION=$(KONG_VERSION) \
+	-e KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
+	-e KONG_LICENSE=$(KONG_LICENSE) \
+	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	kong:fpm
+	
+
 build-kong: build-openresty-base
 	docker build -f Dockerfile.kong \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
-	docker run -t --rm -v $(KONG_SOURCE_LOCATION):/kong -v $$PWD/output/:/output \
+	docker run -it --rm \
+	-v $(KONG_SOURCE_LOCATION):/kong \
+	-v $$PWD/output/build:/output/build \
 	-e KONG_VERSION=$(KONG_VERSION) \
 	-e KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
