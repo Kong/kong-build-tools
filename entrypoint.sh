@@ -11,9 +11,16 @@ export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/tmp/build/usr/local/share/lua/5.1/?.lua;${BUILD}/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/tmp/build/usr/local/openresty/luajit/bin
 
-/tmp/build/usr/local/bin/luarocks make kong-*.rockspec \
-  OPENSSL_LIBDIR=/tmp/openssl \
-  OPENSSL_DIR=/tmp/openssl
+pushd /tmp/openssl
+  make install_sw
+popd
+
+pushd /kong
+  /tmp/build/usr/local/bin/luarocks make kong-*.rockspec \
+    OPENSSL_INCDIR=/tmp/openssl/include \
+    CRYPTO_INCDIR=/tmp/openssl/include \
+    CRYPTO_LIBDIR=/tmp/openssl
+popd
 
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
 sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' /tmp/build/usr/local/bin/kong && \
