@@ -5,7 +5,7 @@ KONG_NETTLE_VERSION?="3.4"
 KONG_GMP_VERSION?="6.1.2"
 RESTY_VERSION?="1.13.6.2"
 RESTY_LUAROCKS_VERSION?="2.4.3"
-RESTY_OPENSSL_VERSION?="1.0.2p"
+RESTY_OPENSSL_VERSION?="1.1.1"
 RESTY_PCRE_VERSION?="8.41"
 
 KONG_PACKAGE_NAME?="kong-community-edition"
@@ -65,7 +65,20 @@ build-openresty-base: build-base
 	-t kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 
 build-base:
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	make build-rhel-base
+else
 	docker build -f Dockerfile.$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+endif
+
+build-rhel-base:
+	@docker build -f Dockerfile.rhel \
+	--build-arg RESTY_IMAGE_BASE=registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} \
+	--build-arg RESTY_IMAGE_TAG=latest \
+	--build-arg RHEL=true \
+	--build-arg REDHAT_USERNAME=$(REDHAT_USERNAME) \
+	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
