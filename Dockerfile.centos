@@ -14,23 +14,23 @@ RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${RE
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
 RUN yum -y install \
-    git \
-    wget \
-    tar \
-    readline-devel \
-    pcre-devel \
-    gcc \
-    curl \
-    unzip \
-    zlib-devel \
-    make \
-    gcc \
-    gcc-c++ \
-    bzip2 \
-    patch \
-    perl \
-    openssl-devel \
-    m4
+  wget \
+  tar \
+  readline-devel \
+  pcre-devel \
+  openssl-devel \
+  gcc \
+  curl \
+  unzip \
+  zlib-devel \
+  make \
+  gcc \
+  gcc-c++ \
+  bzip2 \
+  patch \
+  perl \
+  m4 \
+  git
 
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin

@@ -2,20 +2,18 @@
 
 cd /tmp/build
 
-if [ "$RESTY_IMAGE_TAG" == "trusty" ]; then
-  OUTPUT_FILE_SUFFIX=".trusty.all"
-elif [ "$RESTY_IMAGE_TAG" == "bionic" ]; then
-  OUTPUT_FILE_SUFFIX=".bionic.all"
-elif [ "$RESTY_IMAGE_TAG" == "xenial" ]; then
-  OUTPUT_FILE_SUFFIX=".xenial.all"
-fi
-
 FPM_PARAMS=""
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
-  FPM_PARAMS="-d openssl -d libpcre3 -d perl"
   PACKAGE_TYPE="deb"
+  FPM_PARAMS="-d openssl -d libpcre3 -d perl"
+  OUTPUT_FILE_SUFFIX="${RESTY_IMAGE_TAG}.all"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   PACKAGE_TYPE="rpm"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d openssl"
+elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+  PACKAGE_TYPE="rpm"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d openssl"
+  OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}.noarch"
 fi
 
 fpm -a all -f -s dir \
