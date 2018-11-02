@@ -10,6 +10,7 @@ if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   PACKAGE_TYPE="rpm"
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d openssl"
+  OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}.noarch"
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   PACKAGE_TYPE="rpm"
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d openssl"

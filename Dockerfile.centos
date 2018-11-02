@@ -32,6 +32,12 @@ RUN yum -y install \
   m4 \
   git
 
+RUN if [ "$RHEL" = "true" ] ; then \
+  subscription-manager remove --all \ 
+  && subscription-manager unregister \
+  && subscription-manager clean \
+  ; fi
+
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
 
