@@ -17,16 +17,19 @@ BUILD_DIR="output"
 REPOSITORY_NAME=""
 BINTRAY_PUT_ARGS=""
 
-if [ "$PACKAGE_TYPE" == "debian" ]; then
+if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
+  PACKAGE_TYPE="deb"
   REPOSITORY_NAME=$KONG_PACKAGE_NAME-deb
-  if [ "$RESTY_IMAGE_TAG" == "trusty" ]; then
-    OUTPUT_FILE_SUFFIX=".trusty.all.deb"
-  elif [ "$RESTY_IMAGE_TAG" == "bionic" ]; then
-    OUTPUT_FILE_SUFFIX=".bionic.all.deb"
-  elif [ "$RESTY_IMAGE_TAG" == "xenial" ]; then
-    OUTPUT_FILE_SUFFIX=".xenial.all.deb"
-  fi
+  OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}.all.deb"
   BINTRAY_PUT_ARGS=";deb_distribution=$RESTY_IMAGE_TAG;deb_component=main;deb_architecture=i386,amd64,noarch"
+elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+  PACKAGE_TYPE="rpm"
+  REPOSITORY_NAME=$KONG_PACKAGE_NAME-rpm
+  OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}.noarch.rpm"
+elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
+  PACKAGE_TYPE="rpm"
+  REPOSITORY_NAME=$KONG_PACKAGE_NAME-rpm
+  OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}.noarch.rpm"
 fi
 
 BINTRAY_PUT_ARGS="$BINTRAY_PUT_ARGS?publish=1&override=0"
