@@ -32,8 +32,8 @@ The most common ones are the following:
 KONG_SOURCE_LOCATION=/src/projects/custom-kong-location
 KONG_PACKAGE_NAME=custom-kong-name
 KONG_VERSION=v1.0.0
-RESTY_IMAGE_BASE=ubuntu|centos|rhel
-RESTY_IMAGE_TAG=trusty|xenial|6|7
+RESTY_IMAGE_BASE=ubuntu|centos|rhel|alpine
+RESTY_IMAGE_TAG=trusty|xenial|6|7|latest
 ```
 
 For RedHat additionally export:

@@ -46,10 +46,9 @@ RUN cd /tmp \
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 RUN cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
-    && eval ./config \
-      --prefix=/tmp/build/usr/local/kong \
-      --openssldir=/tmp/build/usr/local/kong \
-      shared \
+    && export OPENSSL_OPTIONS="--prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong" \
+    && if [ "$RESTY_IMAGE_BASE" = "alpine" ] ; then export OPENSSL_OPTIONS="$OPENSSL_OPTIONS -no-async" ; fi \
+    && eval ./config $OPENSSL_OPTIONS shared \
     && make -j${RESTY_J}
 
 RUN cd /tmp/openresty-${RESTY_VERSION} \
