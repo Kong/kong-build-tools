@@ -20,7 +20,14 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   fi
 fi
 
-fpm -a all -f -s dir \
+if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+  pushd /tmp/build
+    mkdir -p etc/kong
+    mv usr/local/lib/luarocks/rocks/kong/*/kong.conf.default etc/kong
+    tar -zcvf /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz usr etc
+  popd
+else
+  fpm -a all -f -s dir \
     -t $PACKAGE_TYPE \
     -m 'support@konghq.com' \
     -n $KONG_PACKAGE_NAME \
@@ -31,6 +38,7 @@ fpm -a all -f -s dir \
     --vendor 'Kong Inc.' \
     --license "$KONG_LICENSE" \
     --url 'https://getkong.org/' usr \
-  && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE} \
-  && rm -rf /tmp/build/*
-  
+  && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
+fi
+
+rm -rf /tmp/build/*

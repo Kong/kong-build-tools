@@ -16,10 +16,16 @@ pushd /tmp/openssl
 popd
 
 pushd /kong
-  /tmp/build/usr/local/bin/luarocks make kong-*.rockspec \
+  ROCKSPEC_VERSION=`basename $TMP/kong/kong-*.rockspec` \
+    && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
+    && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
+    
+  /tmp/build/usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     OPENSSL_INCDIR=/tmp/openssl/include \
     CRYPTO_INCDIR=/tmp/openssl/include \
     CRYPTO_LIBDIR=/tmp/openssl
+
+  cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rocks/kong/$ROCKSPEC_VERSION/kong.conf.default
 popd
 
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
