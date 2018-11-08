@@ -21,7 +21,7 @@ KONG_LICENSE?="ASL 2.0"
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?="0.0.0"
 
-release-kong:
+release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -94,13 +94,17 @@ else
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
 
-test: setup_tests
+.PHONY: test
+test:
 	microk8s.reset
 	sleep 3
 	microk8s.enable storage dns registry
 	sleep 3
 	/snap/bin/helm init
-	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) KONG_VERSION=$(KONG_VERSION) test/run_tests.sh
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	KONG_VERSION=$(KONG_VERSION) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	test/run_tests.sh
 
 cleanup_tests:
 	microk8s.reset

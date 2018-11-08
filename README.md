@@ -42,6 +42,21 @@ export REDHAT_USERNAME=rhuser
 export REDHAT_PASSWORD=password
 ```
 
+## Testing
+
+*Prerequisites:*
+
+- Docker
+- Microk8s
+- Helm
+
+A Make task `setup_tests` exists that will install the prerequisites for you which assumes you're on a system that can
+install microk8s via snap (aka Ubuntu). There's also a `cleanup_tests` make task to uninstall microk8s / helm
+
+```
+make test
+```
+
 ## Releasing a Kong Distribution
 
 The same defaults that applied when creating a packaged version of Kong apply to releasing said package
