@@ -3,6 +3,7 @@ ARG RESTY_IMAGE_TAG="xenial"
 
 FROM kong:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
+ARG OPENSSL_EXTRA_OPTIONS
 ARG RESTY_VERSION="1.13.6.2"
 ARG RESTY_LUAROCKS_VERSION="2.4.3"
 ARG RESTY_OPENSSL_VERSION="1.1.1"
@@ -46,10 +47,8 @@ RUN cd /tmp \
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 RUN cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
-    && eval ./config \
-      --prefix=/tmp/build/usr/local/kong \
-      --openssldir=/tmp/build/usr/local/kong \
-      shared \
+    && export OPENSSL_OPTIONS="--prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong $OPENSSL_EXTRA_OPTIONS" \
+    && eval ./config $OPENSSL_OPTIONS shared \
     && make -j${RESTY_J}
 
 RUN cd /tmp/openresty-${RESTY_VERSION} \
