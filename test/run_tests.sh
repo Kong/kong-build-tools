@@ -1,7 +1,21 @@
 #!/bin/bash
 
-cp ../output/kong.*.tar.gz kong.apk.tar.gz && \
-microk8s.docker build -f Dockerfile.alpine -t localhost:32000/kong . && \
+set -e
+
+if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+  DOCKER_FILE="Dockerfile.alpine"
+else
+  echo "Unrecognized base image $RESTY_IMAGE_BASE"
+  exit 1
+fi
+
+microk8s.docker build -f test/$DOCKER_FILE -t localhost:32000/kong .
+
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:32000)" != 200 ]]; do
+  echo "waiting for K8s registry to be ready"
+  sleep 5;
+done
+
 microk8s.docker push localhost:32000/kong
 
 helm init --wait
@@ -10,21 +24,27 @@ helm install --name kong --set image.repository=localhost,image.tag=32000/kong s
 microk8s.kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}'
 
 while [[ "$(microk8s.kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}')" != 1 ]]; do
+  echo "waiting for Kong to be ready"
   sleep 5;
-  print "waiting for Kong to be available"
 done
 
-HOST="https://"$(kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}')
-ADMIN_PORT=$(kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}')
-PROXY_PORT=$(kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
+HOST="https://$(microk8s.kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}')"
+echo $HOST
+ADMIN_PORT=$(microk8s.kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}')
+echo $ADMIN_PORT
+PROXY_PORT=$(microk8s.kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
+echo $PROXY_PORT
 CURL_COMMAND="curl -s -o /dev/null -w %{http_code} --insecure "
+echo $CURL_COMMAND
 
 if ! [ `$CURL_COMMAND$HOST:$ADMIN_PORT` == "200" ]; then
   echo "Can't invoke admin API"
   exit 1
 fi
 
-RANDOM_API_NAME=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1`
+echo "Admin API passed"
+
+RANDOM_API_NAME="randomapiname"
 RESPONSE=`$CURL_COMMAND -d "name=$RANDOM_API_NAME&hosts=$RANDOM_API_NAME.com&upstream_url=http://mockbin.org" $HOST:$ADMIN_PORT/apis/`
 if ! [ $RESPONSE == "201" ]; then
   echo "Can't create API"
