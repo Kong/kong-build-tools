@@ -1,3 +1,6 @@
+export SHELL:=/bin/bash
+export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
+
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=debian
@@ -18,7 +21,7 @@ KONG_LICENSE?="ASL 2.0"
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?="0.0.0"
 
-release-kong:
+release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -90,3 +93,28 @@ else
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
+	
+.PHONY: test
+test:
+	microk8s.reset
+	sleep 3
+	microk8s.enable storage dns registry
+	sleep 3
+	/snap/bin/helm init
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_VERSION=$(KONG_VERSION) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	test/run_tests.sh
+
+cleanup_tests:
+	microk8s.reset
+	sudo snap unalias kubectl
+	sudo snap remove microk8s
+	sudo snap remove helm
+
+setup_tests:
+	sudo snap install microk8s --classic
+	sudo snap install helm --classic
+	sudo snap alias microk8s.kubectl kubectl
+	#sudo iptables -P FORWARD ACCEPT
