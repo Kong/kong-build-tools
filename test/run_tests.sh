@@ -4,12 +4,15 @@ set -e
 
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   DOCKER_FILE="Dockerfile.alpine"
+elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
+  DOCKER_FILE="Dockerfile.ubuntu"
 else
   echo "Unrecognized base image $RESTY_IMAGE_BASE"
   exit 1
 fi
 
-microk8s.docker build --build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME --build-arg KONG_VERSION=$KONG_VERSION -f test/$DOCKER_FILE -t localhost:32000/kong .
+
+microk8s.docker build --build-arg RESTY_IMAGE_TAG=xenial -f test/$DOCKER_FILE -t localhost:32000/kong .
 
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:32000)" != 200 ]]; do
   echo "waiting for K8s registry to be ready"

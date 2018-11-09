@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 cd /tmp/build
 
 FPM_PARAMS=""
@@ -20,6 +22,13 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   fi
 fi
 
+ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`
+
+echo "#!/bin/sh
+mkdir -p /etc/kong
+mv usr/local/lib/luarocks/rocks/kong/$ROCKSPEC_VERSION/kong.conf.default /etc/kong/kong.conf.default
+" > /tmp/post_install_script
+
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   pushd /tmp/build
     mkdir -p etc/kong
@@ -37,6 +46,7 @@ else
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "$KONG_LICENSE" \
+    --after-install /tmp/post_install_script \
     --url 'https://getkong.org/' usr \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
 fi

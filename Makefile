@@ -93,7 +93,7 @@ else
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
-
+	
 .PHONY: test
 test:
 	microk8s.reset
@@ -102,6 +102,7 @@ test:
 	sleep 3
 	/snap/bin/helm init
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	test/run_tests.sh
