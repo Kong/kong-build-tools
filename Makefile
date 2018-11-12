@@ -20,6 +20,7 @@ KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?="0.0.0"
+PRIVATE_REPOSITORY?=true
 
 release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -28,6 +29,7 @@ release-kong: test
 	KONG_VERSION=$(KONG_VERSION) \
 	BINTRAY_USR=$(BINTRAY_USR) \
 	BINTRAY_KEY=$(BINTRAY_KEY) \
+	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
 
 clean:

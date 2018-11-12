@@ -51,7 +51,7 @@ function create_repo {
   local repo_name=$1
   local repo_type=$2
 
-  local repo_is_private=true
+  local repo_is_private=$PRIVATE_REPOSITORY
 
   local metadata_depth_json
   if [[ "$repo_type" == "rpm" ]]; then
