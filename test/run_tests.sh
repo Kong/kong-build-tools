@@ -13,7 +13,12 @@ else
   exit 1
 fi
 
-microk8s.docker build --build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG -f test/$DOCKER_FILE -t localhost:32000/kong .
+microk8s.docker build \
+--build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
+--build-arg KONG_VERSION=$KONG_VERSION \
+--build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME \
+-f test/$DOCKER_FILE \
+-t localhost:32000/kong .
 
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:32000)" != 200 ]]; do
   echo "waiting for K8s registry to be ready"
