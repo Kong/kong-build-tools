@@ -92,6 +92,10 @@ EOF
     result=$(echo $resp | awk -F"=" '{print $1}')
 
     echo "Repo creation status: [status: $status] $result"
+    
+    if [[ "$status" -ne "201" ]]; then
+        exit 1
+    fi
   fi
 }
 
@@ -115,7 +119,7 @@ function create_package {
   local result=$(echo $resp | awk -F"=" '{print $1}')
 
   # if package does not exist, create
-  if [[ "$status" -ne "200" ]]; then
+  if [[ "$status" -ne "201" ]]; then
 
     echo "Creating package $package_name..."
 
@@ -140,6 +144,10 @@ EOF
     result=$(echo $resp | awk -F"=" '{print $1}')
 
     echo "Package creation status: [status: $status] $result"
+    
+    if [[ "$status" -ne "201" ]]; then
+        exit 1
+    fi
   fi
 }
 
