@@ -119,7 +119,7 @@ function create_package {
   local result=$(echo $resp | awk -F"=" '{print $1}')
 
   # if package does not exist, create
-  if [[ "$status" -ne "201" ]]; then
+  if [[ "$status" -ne "200" ]]; then
 
     echo "Creating package $package_name..."
 
