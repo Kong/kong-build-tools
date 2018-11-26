@@ -1,0 +1,10 @@
+dist: xenial
+sudo: false
+language: minimal
+
+before_install:
+  - make setup_tests
+  - sudo iptables -P FORWARD ACCEPT
+
+script:
+  - make test
