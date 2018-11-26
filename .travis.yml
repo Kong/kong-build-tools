@@ -3,8 +3,12 @@ sudo: false
 language: minimal
 
 before_install:
-  - make setup_tests
+  - sudo make setup_tests
   - sudo iptables -P FORWARD ACCEPT
+  - git clone git@github.com:Kong/kong.git ../kong
+
+install:
+  - make package-kong
 
 script:
   - make test
