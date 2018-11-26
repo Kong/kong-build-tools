@@ -9,7 +9,7 @@ ARG REDHAT_PASSWORD
 RUN subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach && \
   yum-config-manager --enable 'rhel-*-server-optional-rpms'
 
-RUN yum -y install perl openssl
+RUN yum -y install perl openssl hostname
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.noarch.rpm /kong.rpm
 
