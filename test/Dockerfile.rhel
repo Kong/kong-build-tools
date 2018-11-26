@@ -1,0 +1,25 @@
+FROM registry.access.redhat.com/rhel7/rhel
+
+ARG KONG_VERSION="0.0.0"
+ARG KONG_PACKAGE_NAME="kong-community-edition"
+ARG RESTY_IMAGE_TAG="7"
+ARG REDHAT_USERNAME
+ARG REDHAT_PASSWORD
+
+RUN subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach && \
+  yum-config-manager --enable 'rhel-*-server-optional-rpms'
+
+RUN yum -y install perl openssl
+
+COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.noarch.rpm /kong.rpm
+
+RUN rpm -i kong.rpm
+
+COPY test/docker-entrypoint.sh /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+EXPOSE 8000 8443 8001 8444
+
+STOPSIGNAL SIGTERM
+
+CMD ["kong", "docker-start"]
