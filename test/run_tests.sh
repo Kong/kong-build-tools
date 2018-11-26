@@ -8,6 +8,8 @@ elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
   DOCKER_FILE="Dockerfile.ubuntu"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   DOCKER_FILE="Dockerfile.centos"
+elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+  DOCKER_FILE="Dockerfile.rhel"
 else
   echo "Unrecognized base image $RESTY_IMAGE_BASE"
   exit 1
@@ -17,6 +19,8 @@ microk8s.docker build \
 --build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
 --build-arg KONG_VERSION=$KONG_VERSION \
 --build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME \
+--build-arg REDHAT_USERNAME=$REDHAT_USERNAME \
+--build-arg REDHAT_PASSWORD=$REDHAT_PASSWORD \
 -f test/$DOCKER_FILE \
 -t localhost:32000/kong .
 
