@@ -2,6 +2,13 @@ dist: xenial
 sudo: false
 language: minimal
 
+env:
+- RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty
+- RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial
+- RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6
+- RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7
+- RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest
+
 before_install:
   - sudo make setup_tests
   - sudo iptables -P FORWARD ACCEPT
