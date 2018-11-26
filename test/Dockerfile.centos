@@ -4,7 +4,7 @@ ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong-community-edition"
 ARG RESTY_IMAGE_TAG="7"
 
-RUN yum -y install perl openssl
+RUN yum -y install perl
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm /kong.rpm
 
