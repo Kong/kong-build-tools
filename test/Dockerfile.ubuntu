@@ -4,7 +4,7 @@ ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong-community-edition"
 ARG RESTY_IMAGE_TAG="xenial"
 
-RUN apt-get update && apt-get install -y perl openssl
+RUN apt-get update && apt-get install -y perl
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.all.deb /kong.deb
 
