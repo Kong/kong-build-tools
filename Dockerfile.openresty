@@ -10,9 +10,8 @@ ARG RESTY_OPENSSL_VERSION=1.1.1
 ARG RESTY_PCRE_VERSION=8.41
 ARG RESTY_J=2
 ARG RESTY_CONFIG_OPTIONS="\
-  --with-cc-opt='-I/tmp/openssl-${RESTY_OPENSSL_VERSION}/include' \
-  --with-ld-opt='-L/tmp/openssl-${RESTY_OPENSSL_VERSION} -Wl,-rpath,/usr/local/kong/lib' \
-  -j${RESTY_J} \
+  --with-cc-opt='-I/tmp/openssl/include' \
+  --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
   --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
   --with-pcre-jit \
   --with-http_realip_module \
