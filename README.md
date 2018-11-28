@@ -102,3 +102,9 @@ REPOSITORY_OS_NAME=ubuntu|rhel|centos|alpine-tar
 
 bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
 ```
+
+Using all defaults one would end up with
+
+```
+bintray.com/kong/kong-community-edition/ubuntu/0.0.0/kong-community-edition-0.0.0.xenial.all.deb
+```
