@@ -72,3 +72,33 @@ export KONG_PACKAGE_NAME=somename
 export KONG_VERSION=1.2.3
 make release-kong
 ```
+
+Required release ENV variables:
+```
+BINTRAY_USR
+BINTRAY_KEY
+```
+
+Required release ENV variables that have defaults if they are not set:
+```
+RESTY_IMAGE_BASE
+RESTY_IMAGE_TAG
+KONG_PACKAGE_NAME
+KONG_VERSION
+```
+
+Optional release ENV variables:
+```
+REPOSITORY_TYPE
+REPOSITORY_NAME
+REPOSITORY_OS_NAME
+```
+
+The defaults when the optional arguments aren't passed are (in the following order ubuntu|rhel|centos|alpine):
+```
+REPOSITORY_TYPE=deb|deb|rpm|generic
+REPOSITORY_NAME=$KONG_PACKAGE_NAME-$REPOSITORY_TYPE
+REPOSITORY_OS_NAME=ubuntu|rhel|centos|alpine-tar
+
+bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
+```
