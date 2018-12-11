@@ -1,31 +1,38 @@
 dist: xenial
-sudo: required
-language: minimal
+language: generic
 
 env:
   global:
     - CHANGE_MINIKUBE_NONE_USER=true
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_WANTREPORTERRORPROMPT=false
+    - MINIKUBE_HOME=$HOME
+    - KONG_SOURCE_LOCATION=$PWD/kong
+    - HELM_VERSION=v2.8.0
   matrix:
     - RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty
     - RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial
     - RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6
     - RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7
-    - RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=6
-    - RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7
     - RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest
 
 install:
+  - git clone --single-branch -b next git@github.com:Kong/kong.git kong
   - make package-kong
 
 before_script:
-  - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.7.0/bin/linux/amd64/kubectl && \
-      chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-  - curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
-      chmod +x minikube && sudo mv minikube /usr/local/bin/
-  - sudo minikube start --vm-driver=none --kubernetes-version=v1.7.0
+  - sudo apt-get update && sudo apt-get install -y socat
+  - sudo curl -Lo /usr/bin/minikube https://storage.googleapis.com/minikube/releases/v0.27.0/minikube-linux-amd64
+  - sudo chmod +x /usr/bin/minikube
+  - sudo curl -Lo /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+  - sudo chmod +x /usr/bin/kubectl
+  - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+  - chmod 700 get_helm.sh
+  - sudo ./get_helm.sh
+  - sudo minikube start --vm-driver=none
+  - sudo minikube addons enable registry
   - minikube update-context
-  - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; \
-      until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+  - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
 
 script:
   - make test
