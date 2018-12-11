@@ -2,6 +2,15 @@
 
 set -e
 
+kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
+curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
+
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]]; do
+  sleep 5;
+  echo "waiting for registry to be ready"
+done  
+  
+
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   DOCKER_FILE="Dockerfile.alpine"
 elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
@@ -15,39 +24,35 @@ else
   exit 1
 fi
 
-microk8s.docker build \
+docker build \
 --build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
 --build-arg KONG_VERSION=$KONG_VERSION \
 --build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME \
 --build-arg REDHAT_USERNAME=$REDHAT_USERNAME \
 --build-arg REDHAT_PASSWORD=$REDHAT_PASSWORD \
 -f test/$DOCKER_FILE \
--t localhost:32000/kong .
+-t localhost:5000/kong .
 
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:32000)" != 200 ]]; do
-  echo "waiting for K8s registry to be ready"
-  sleep 5;
-done
-
-microk8s.docker push localhost:32000/kong
+docker push localhost:5000/kong
 
 helm init --wait
-helm install --name kong --set image.repository=localhost,image.tag=32000/kong stable/kong
+helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong helm/stable/kong/
 
-microk8s.kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}'
+kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}'
 
-while [[ "$(microk8s.kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}')" != 1 ]]; do
+while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
   sleep 5;
 done
 
-HOST="https://$(microk8s.kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}')"
+HOST="https://$(kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}')"
 echo $HOST
-ADMIN_PORT=$(microk8s.kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}')
+ADMIN_PORT=$(kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}')
 echo $ADMIN_PORT
-PROXY_PORT=$(microk8s.kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
+PROXY_PORT=$(kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
 echo $PROXY_PORT
-CURL_COMMAND="curl -s -o /dev/null -w %{http_code} --insecure "
+CURL_COMMAND="curl -s -o /tmp/out.txt -w %{http_code} --insecure "
 echo $CURL_COMMAND
 
 if ! [ `$CURL_COMMAND$HOST:$ADMIN_PORT` == "200" ]; then
@@ -57,17 +62,27 @@ fi
 
 echo "Admin API passed"
 
-RANDOM_API_NAME="randomapiname"
-RESPONSE=`$CURL_COMMAND -d "name=$RANDOM_API_NAME&hosts=$RANDOM_API_NAME.com&upstream_url=http://mockbin.org" $HOST:$ADMIN_PORT/apis/`
+RANDOM_SERVICE_NAME="randomapiname"
+RESPONSE=`$CURL_COMMAND -d "name=$RANDOM_SERVICE_NAME&url=http://mockbin.org" $HOST:$ADMIN_PORT/services`
 if ! [ $RESPONSE == "201" ]; then
-  echo "Can't create API"
+  echo "Can't create service"
   exit 1
 fi
 
 sleep 3
 
+SERVICE_ID=$(cat /tmp/out.txt | sed 's,^.*"id":"\([^"]*\)".*$,\1,')
+echo $SERVICE_ID
+RESPONSE=`$CURL_COMMAND -d "hosts[]=$RANDOM_SERVICE_NAME.com&service.id=$SERVICE_ID" $HOST:$ADMIN_PORT/routes`
+if ! [ $RESPONSE == "201" ]; then
+  echo "Can't create service"
+  exit 1
+fi  
+
+sleep 3
+
 # Proxy Tests
-RESPONSE=`$CURL_COMMAND -H "Host: $RANDOM_API_NAME.com" $HOST:$PROXY_PORT/request`
+RESPONSE=`$CURL_COMMAND -H "Host: $RANDOM_SERVICE_NAME.com" $HOST:$PROXY_PORT/request`
 if ! [ $RESPONSE == "200" ]; then
   echo "Can't invoke API on HTTP"
   exit 1

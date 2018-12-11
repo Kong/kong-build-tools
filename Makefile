@@ -98,11 +98,7 @@ endif
 	
 .PHONY: test
 test:
-	microk8s.reset
-	sleep 3
-	microk8s.enable storage dns registry
-	sleep 3
-	/snap/bin/helm init
+	[[ -d helm ]] || git clone --single-branch -b kong/1.0 https://github.com/hutchic/charts.git helm
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
@@ -110,13 +106,10 @@ test:
 	test/run_tests.sh
 
 cleanup_tests:
-	microk8s.reset
-	sudo snap unalias kubectl
-	sudo snap remove microk8s
-	sudo snap remove helm
+	-sudo minikube delete
 
-setup_tests:
-	sudo snap install microk8s --classic
-	sudo snap install helm --classic
-	sudo snap alias microk8s.kubectl kubectl
-	#sudo iptables -P FORWARD ACCEPT
+setup_tests: cleanup_tests
+	sudo minikube start --vm-driver none
+	sudo minikube addons enable registry
+	sudo chown -R $$USER $$HOME/.minikube
+	sudo chgrp -R $$USER $$HOME/.minikube
