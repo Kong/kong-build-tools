@@ -1,9 +1,10 @@
 # Dockerfile - Centos
 # Centos base image with all prerequisites to compile / install openresty and Kong
 
+ARG RESTY_IMAGE_BASE="centos"
 ARG RESTY_IMAGE_TAG="7"
 
-FROM registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}/rhel
+FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG REDHAT_USERNAME
 ARG REDHAT_PASSWORD
