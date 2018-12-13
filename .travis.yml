@@ -10,14 +10,24 @@ env:
     - KONG_SOURCE_LOCATION=$PWD/kong
     - HELM_VERSION=v2.8.0
   matrix:
-    - RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty
-    - RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial
-    - RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic
-    - RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch
-    - RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=jessie
-    - RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6
-    - RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7
-    - RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=latest
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=jessie
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7
+    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest
+
+matrix:
+  allow_failures:
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
 
 install:
   - git clone --single-branch -b next git@github.com:Kong/kong.git kong

@@ -3,6 +3,7 @@ export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
+PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
 KONG_NETTLE_VERSION?=3.4
 KONG_GMP_VERSION?=6.1.2
@@ -84,7 +85,8 @@ build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-	@docker build -f Dockerfile.rhel \
+	PACKAGE_TYPE=rpm
+	@docker build -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -92,7 +94,7 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
-	docker build -f Dockerfile.$(RESTY_IMAGE_BASE) \
+	docker build -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
