@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM alpine
 
 ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong-community-edition"
