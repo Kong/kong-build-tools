@@ -5,7 +5,7 @@ set -e
 cd /tmp/build
 
 FPM_PARAMS=""
-if [ "$RESTY_IMAGE_BASE" == "ubuntu" ]; then
+if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   PACKAGE_TYPE="deb"
   FPM_PARAMS="-d libpcre3 -d perl"
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}.all"
