@@ -1,6 +1,3 @@
-ARG RESTY_IMAGE_BASE
-ARG RESTY_IMAGE_TAG
-
 FROM alpine
 
 RUN apk update \

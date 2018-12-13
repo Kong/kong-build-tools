@@ -7,7 +7,14 @@ ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong-community-edition"
 ARG RESTY_IMAGE_TAG
 
-RUN yum -y install perl
+ARG REDHAT_USERNAME
+ARG REDHAT_PASSWORD
+ARG RHEL="false"
+
+RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
+RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
+
+RUN yum -y install perl perl-Time-HiRes
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm /kong.rpm
 
