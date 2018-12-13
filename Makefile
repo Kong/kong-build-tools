@@ -82,10 +82,12 @@ build-openresty-base: build-base
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
+	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
+	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	@docker build -f Dockerfile.rhel \
-	--build-arg RESTY_IMAGE_BASE=registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} \
-	--build-arg RESTY_IMAGE_TAG=latest \
 	--build-arg RHEL=true \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg REDHAT_USERNAME=$(REDHAT_USERNAME) \
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
