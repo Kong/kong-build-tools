@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ROCKS_CONFIG=$(mktemp)
 echo "
 rocks_trees = {

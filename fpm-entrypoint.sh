@@ -20,6 +20,9 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
     FPM_PARAMS="$FPM_PARAMS -d hostname"
   fi
+elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+  PACKAGE_TYPE="rpm"
+  OUTPUT_FILE_SUFFIX=".aws"
 fi
 
 ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`

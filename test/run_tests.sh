@@ -17,6 +17,10 @@ elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ];
   DOCKER_FILE="Dockerfile.deb"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   DOCKER_FILE="Dockerfile.rpm"
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm output/kong.rpm
+elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+  DOCKER_FILE="Dockerfile.rpm"
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.rpm output/kong.rpm
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
