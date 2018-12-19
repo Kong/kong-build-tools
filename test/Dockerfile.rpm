@@ -16,7 +16,7 @@ RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-op
 
 RUN yum -y install perl perl-Time-HiRes
 
-COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm /kong.rpm
+COPY output/kong.rpm /kong.rpm
 
 RUN rpm -i kong.rpm
 
