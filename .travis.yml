@@ -31,7 +31,7 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
 
 install:
-  - git clone --single-branch -b next git@github.com:Kong/kong.git kong
+  - git clone --single-branch -b next https://github.com/Kong/kong.git kong
   - make package-kong
 
 before_script:
@@ -50,3 +50,4 @@ before_script:
 
 script:
   - make test
+
