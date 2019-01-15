@@ -43,6 +43,15 @@ export REDHAT_USERNAME=rhuser
 export REDHAT_PASSWORD=password
 ```
 
+## Building a Container
+
+Sometimes it's useful to have a docker image with the Kong asset installed that you just built.
+
+```
+export KONG_TEST_CONTAINER_NAME=kong:testing
+make build_test_container
+```
+
 ## Testing
 
 *Prerequisites:*

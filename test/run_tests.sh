@@ -8,39 +8,7 @@ curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-c
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]]; do
   sleep 5;
   echo "waiting for registry to be ready"
-done  
-  
-RHEL=false
-if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  DOCKER_FILE="Dockerfile.alpine"
-elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
-  DOCKER_FILE="Dockerfile.deb"
-elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
-  DOCKER_FILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm output/kong.rpm
-elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
-  DOCKER_FILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.rpm output/kong.rpm
-elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
-	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-  DOCKER_FILE="Dockerfile.rpm"
-  RHEL=true
-else
-  echo "Unrecognized base image $RESTY_IMAGE_BASE"
-  exit 1
-fi
-
-docker build \
---build-arg RESTY_IMAGE_BASE=$RESTY_IMAGE_BASE \
---build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
---build-arg KONG_VERSION=$KONG_VERSION \
---build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME \
---build-arg RHEL=$RHEL \
---build-arg REDHAT_USERNAME=$REDHAT_USERNAME \
---build-arg REDHAT_PASSWORD=$REDHAT_PASSWORD \
--f test/$DOCKER_FILE \
--t localhost:5000/kong .
+done 
 
 docker push localhost:5000/kong
 

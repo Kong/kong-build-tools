@@ -22,6 +22,7 @@ KONG_LICENSE?="ASL 2.0"
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?="0.0.0"
 PRIVATE_REPOSITORY?=true
+KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
 
 release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -101,13 +102,21 @@ else
 endif
 	
 .PHONY: test
-test:
+test: build_test_container
 	[[ -d helm ]] || git clone --single-branch -b kong/1.0 https://github.com/hutchic/charts.git helm
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	test/run_tests.sh
+
+build_test_container:
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_VERSION=$(KONG_VERSION) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+	test/build_container.sh
 
 cleanup_tests:
 	-sudo minikube delete
