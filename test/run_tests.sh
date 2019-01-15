@@ -13,8 +13,8 @@ done
 docker push localhost:5000/kong
 
 helm init --wait
-helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
-helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong helm/stable/kong/
+helm update stable
+helm install --dep-up --name kong --set ingressController.enabled=true --set image.repository=localhost,image.tag=5000/kong stable/kong
 
 kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}'
 
