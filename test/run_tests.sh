@@ -34,34 +34,41 @@ echo $CURL_COMMAND
 
 if ! [ `$CURL_COMMAND$HOST:$ADMIN_PORT` == "200" ]; then
   echo "Can't invoke admin API"
+  cat /tmp/out.txt
   exit 1
+else
+  echo "Admin API passed"
 fi
-
-echo "Admin API passed"
 
 RANDOM_SERVICE_NAME="randomapiname"
 RESPONSE=`$CURL_COMMAND -d "name=$RANDOM_SERVICE_NAME&url=http://mockbin.org" $HOST:$ADMIN_PORT/services`
 if ! [ $RESPONSE == "201" ]; then
   echo "Can't create service"
+  cat /tmp/out.txt
   exit 1
+else
+  echo "Created a service successfully"
 fi
 
-sleep 15
+sleep 5
 
 SERVICE_ID=$(cat /tmp/out.txt | sed 's,^.*"id":"\([^"]*\)".*$,\1,')
-echo $SERVICE_ID
 RESPONSE=`$CURL_COMMAND -d "hosts[]=$RANDOM_SERVICE_NAME.com&service.id=$SERVICE_ID" $HOST:$ADMIN_PORT/routes`
 if ! [ $RESPONSE == "201" ]; then
-  echo "Can't create service"
+  echo "Can't create route"
+  cat /tmp/out.txt
   exit 1
-fi  
+else
+  echo "Created a route successfully"
+fi
 
-sleep 3
+sleep 5
 
 # Proxy Tests
 RESPONSE=`$CURL_COMMAND -H "Host: $RANDOM_SERVICE_NAME.com" $HOST:$PROXY_PORT/request`
 if ! [ $RESPONSE == "200" ]; then
   echo "Can't invoke API on HTTP"
+  cat /tmp/out.txt
   exit 1
 fi
 
