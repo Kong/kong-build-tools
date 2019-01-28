@@ -46,7 +46,7 @@ if ! [ $RESPONSE == "201" ]; then
   exit 1
 fi
 
-sleep 3
+sleep 15
 
 SERVICE_ID=$(cat /tmp/out.txt | sed 's,^.*"id":"\([^"]*\)".*$,\1,')
 echo $SERVICE_ID
