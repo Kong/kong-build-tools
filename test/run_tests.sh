@@ -1,14 +1,14 @@
 #!/bin/bash
 
-set -x
 set +e
 
 kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
 curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
 
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]]; do
-  sleep 5;
+  curl -s -o /dev/null -w ''%{http_code}'' localhost:5000
   echo "waiting for registry to be ready"
+  sleep 10;
 done 
 
 docker push localhost:5000/kong
