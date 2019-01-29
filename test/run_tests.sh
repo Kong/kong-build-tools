@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -e
+set -x
+set +e
 
 kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
 curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
@@ -17,11 +18,11 @@ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.c
 helm repo update
 helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong stable/kong
 
-kubectl get deployment kong-kong | tail -n +2 | awk '{print $5}'
-
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
-  sleep 5;
+  kubectl get deployment kong-kong
+  kubectl get all
+  sleep 10;
 done
 
 HOST="$(kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}')"
