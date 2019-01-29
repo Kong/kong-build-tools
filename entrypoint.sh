@@ -26,7 +26,9 @@ pushd /kong
     OPENSSL_LIBDIR=/tmp/openssl \
     OPENSSL_DIR=/tmp/openssl
 
+  mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rocks/kong/$ROCKSPEC_VERSION/kong.conf.default
+  cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
 popd
 
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong

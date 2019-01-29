@@ -103,7 +103,6 @@ endif
 	
 .PHONY: test
 test: build_test_container
-	[[ -d helm ]] || git clone --single-branch -b kong/1.0 https://github.com/hutchic/charts.git helm
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \

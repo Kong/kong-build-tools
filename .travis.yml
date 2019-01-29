@@ -8,7 +8,8 @@ env:
     - MINIKUBE_WANTREPORTERRORPROMPT=false
     - MINIKUBE_HOME=$HOME
     - KONG_SOURCE_LOCATION=$PWD/kong
-    - HELM_VERSION=v2.8.0
+    - HELM_VERSION=v2.11.0
+    - MINIKUBE_VERSION=v0.33.1
   matrix:
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
@@ -36,7 +37,7 @@ install:
 
 before_script:
   - sudo apt-get update && sudo apt-get install -y socat
-  - sudo curl -Lo /usr/bin/minikube https://storage.googleapis.com/minikube/releases/v0.27.0/minikube-linux-amd64
+  - sudo curl -Lo /usr/bin/minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
   - sudo chmod +x /usr/bin/minikube
   - sudo curl -Lo /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - sudo chmod +x /usr/bin/kubectl
