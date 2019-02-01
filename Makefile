@@ -120,7 +120,7 @@ test: build_test_container
 
 run_tests:
 	cd test && docker build -t kong:test_runner -f Dockerfile.test_runner .
-	docker run -it -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong:test_runner py.test test_smoke.tavern.yaml
+	docker run -it --network host -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong:test_runner py.test test_smoke.tavern.yaml
 
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
