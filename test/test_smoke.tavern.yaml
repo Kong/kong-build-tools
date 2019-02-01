@@ -80,6 +80,6 @@ stages:
         url: http://randomapiname.com/request
       headers:
         Server: openresty/1.13.6.2
-        Via: kong/1.0.2
+        Via: kong/1.0.3
     delay_after: 5
     max_retries: 1
