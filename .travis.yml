@@ -37,17 +37,8 @@ install:
 
 before_script:
   - sudo apt-get update && sudo apt-get install -y socat
-  - sudo curl -Lo /usr/bin/minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
-  - sudo chmod +x /usr/bin/minikube
-  - sudo curl -Lo /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-  - sudo chmod +x /usr/bin/kubectl
-  - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
-  - chmod 700 get_helm.sh
-  - sudo ./get_helm.sh
-  - sudo minikube start --vm-driver=none
-  - sudo minikube addons enable registry
-  - minikube update-context
-  - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+  - make setup_tests
+  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
 
 script:
   - make test

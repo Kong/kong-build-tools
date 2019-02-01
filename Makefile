@@ -126,7 +126,23 @@ cleanup_tests:
 	-sudo minikube delete
 
 setup_tests: cleanup_tests
+ifeq (, $(shell which minikube))
+	curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+	sudo cp minikube /usr/local/bin/
+	sudo chmod 755 /usr/local/bin/minikube
+	rm minikube
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+	sudo cp kubectl /usr/local/bin/
+	sudo chmod 755 /usr/local/bin/kubectl
+	rm kubectl
+	curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
+	chmod +x get_helm.sh
+	sudo ./get_helm.sh
+	rm -rf get_helm.sh
+endif
 	sudo minikube start --vm-driver none
 	sudo minikube addons enable registry
 	sudo chown -R $$USER $$HOME/.minikube
 	sudo chgrp -R $$USER $$HOME/.minikube
+	sudo minikube update-context
+	until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
