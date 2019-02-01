@@ -60,8 +60,36 @@ make build_test_container
 - Minikube
 - Helm
 
+Which assuming Linux can be installed via `make setup_tests`
+
 ```
 make test
+```
+
+## Functional Tests
+
+The Kong functional tests use (Tavern)[https://taverntesting.github.io/].
+
+*Prerequisites*
+
+- Docker
+
+```
+make run_tests
+```
+
+Will run the functional tests against the defaults specified in the Makefile prefixed with `TEST_`
+
+The available ENV's and their defaults are as follows
+
+```
+TEST_ADMIN_PROTOCOL?=http://
+TEST_ADMIN_PORT?=8001
+TEST_HOST?=localhost
+TEST_ADMIN_URI?=$(TEST_ADMIN_PROTOCOL)$(TEST_HOST):$(TEST_ADMIN_PORT)
+TEST_PROXY_PROTOCOL?=http://
+TEST_PROXY_PORT?=8000
+TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 ```
 
 ## Releasing a Kong Distribution
