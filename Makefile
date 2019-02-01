@@ -12,6 +12,14 @@ RESTY_LUAROCKS_VERSION?=2.4.3
 RESTY_OPENSSL_VERSION?=1.1.1
 RESTY_PCRE_VERSION?=8.41
 
+TEST_ADMIN_PROTOCOL?=http://
+TEST_ADMIN_PORT?=8001
+TEST_HOST?=localhost
+TEST_ADMIN_URI?=$(TEST_ADMIN_PROTOCOL)$(TEST_HOST):$(TEST_ADMIN_PORT)
+TEST_PROXY_PROTOCOL?=http://
+TEST_PROXY_PORT?=8000
+TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
+
 ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONS=" -no-async"
 endif
@@ -111,8 +119,8 @@ test: build_test_container
 	./run_tests.sh
 
 run_tests:
-	docker build -t kong:test_runner -f Dockerfile.test_runner .
-	docker run -it -e ADMIN_URL=$HOST:$ADMIN_PORT -e HOST -e ADMIN_PORT -e PROXY_PORT kong:test_runner py.test test_smoke.tavern.yaml
+	cd test && docker build -t kong:test_runner -f Dockerfile.test_runner .
+	docker run -it -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong:test_runner py.test test_smoke.tavern.yaml
 
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
