@@ -103,11 +103,16 @@ endif
 	
 .PHONY: test
 test: build_test_container
+	pushd test && \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	test/run_tests.sh
+	./run_tests.sh
+
+run_tests:
+	docker build -t kong:test_runner -f Dockerfile.test_runner .
+	docker run -it -e ADMIN_URL=$HOST:$ADMIN_PORT -e HOST -e ADMIN_PORT -e PROXY_PORT kong:test_runner py.test test_smoke.tavern.yaml
 
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
