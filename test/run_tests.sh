@@ -30,5 +30,4 @@ echo $ADMIN_PORT
 PROXY_PORT=$(kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
 echo $PROXY_PORT
 
-cd ../ && \
 TEST_ADMIN_URI=https://$HOST:$ADMIN_PORT TEST_PROXY_URI=http://$HOST:$PROXY_PORT make -f Makefile run_tests
