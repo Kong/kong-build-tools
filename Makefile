@@ -24,7 +24,6 @@ KONG_LICENSE?="ASL 2.0"
 PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
-
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`

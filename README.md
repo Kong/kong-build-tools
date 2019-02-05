@@ -60,7 +60,7 @@ make build_test_container
 - Minikube
 - Helm
 
-Which assuming Linux can be installed via `make setup_tests`
+The above requirements can be installed via `make setup_tests` if running Linux
 
 ```
 make test
