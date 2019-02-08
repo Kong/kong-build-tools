@@ -48,6 +48,7 @@ before_install:
   # Load cached docker layers
   - ls $HOME/docker/
   - if [[ -f $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
+  - if [[ -f $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
   - if [[ -f $HOME/docker/kong:fpm.tar ]]; then docker load -i $HOME/docker/kong:fpm.tar; fi
 
 install:
