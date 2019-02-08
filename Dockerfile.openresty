@@ -40,20 +40,26 @@ RUN cd /tmp \
     && eval ./config $OPENSSL_OPTIONS shared \
     && make -j${RESTY_J}
 
-ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
-ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
 ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
 
 RUN cd /tmp \
-    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+    && tar xzf openresty-${RESTY_VERSION}.tar.gz
+    && tar -xzf kong-patches.tar.gz -C /tmp \
+    && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
+    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 RUN cd /tmp/openresty-${RESTY_VERSION} \
     && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install DESTDIR=/tmp/build
+
+ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
+ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+
+RUN cd /tmp
+    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
 
 RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
     && eval ./configure \
