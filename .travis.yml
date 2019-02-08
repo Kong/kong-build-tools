@@ -48,13 +48,14 @@ before_install:
   # Load cached docker layers
   - ls $HOME/docker/
   - if [[ -f $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
-  - sudo apt-get update && sudo apt-get install -y socat & make setup_tests&
+  - if [[ -f $HOME/docker/kong:fpm.tar ]]; then docker load -i $HOME/docker/kong:fpm.tar; fi
 
 install:
   - git clone https://github.com/Kong/kong.git kong
   - make package-kong
 
 before_script:
+  - sudo apt-get update && sudo apt-get install -y socat & make setup_tests
   - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
 
 script:
