@@ -31,6 +31,24 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
 
+cache:
+  timeout: 1000
+  directories:
+    - $HOME/docker
+
+before_cache:
+  # Save docker history of images we want the cache to be available for
+  - >
+    mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' 
+    | grep kong | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar || docker save -o $HOME/docker/$0.tar $(docker history -q $0 | tr "\n" " " | tr -d "<missing>")'
+  - ls $HOME/docker/
+
+before_install:
+  # Load cached docker layers
+  - ls $HOME/docker/
+  - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar | xargs -I {file} sh -c "docker load -i {file}"; fi
+  - docker images
+
 install:
   - git clone https://github.com/Kong/kong.git kong
   - make package-kong
