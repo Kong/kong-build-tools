@@ -79,7 +79,6 @@ stages:
       body:
         url: http://randomapiname.com/request
       headers:
-        Server: openresty/{tavern.env_vars.RESTY_VERSION}
         Via: "kong/{tavern.env_vars.KONG_VERSION}"
     delay_after: 5
     max_retries: 1
