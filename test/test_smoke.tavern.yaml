@@ -5,7 +5,7 @@ stages:
   - name: Check admin API is alive
     request:
       verify: false
-      url: https://{tavern.env_vars.ADMIN_URL}
+      url: "{tavern.env_vars.ADMIN_URI}"
       method: GET
     response:
       status_code: 200
@@ -14,7 +14,7 @@ stages:
   - name: Create a service
     request:
       verify: false
-      url: https://{tavern.env_vars.ADMIN_URL}/services
+      url: "{tavern.env_vars.ADMIN_URI}/services"
       method: POST
       json:
         name: randomapiname
@@ -28,7 +28,7 @@ stages:
   - name: List the services
     request:
       verify: false
-      url: https://{tavern.env_vars.ADMIN_URL}/services
+      url: "{tavern.env_vars.ADMIN_URI}/services"
       method: GET
     response:
       status_code: 200
@@ -40,7 +40,7 @@ stages:
   - name: Create the route
     request:
       verify: false
-      url: https://{tavern.env_vars.ADMIN_URL}/routes
+      url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: POST
       json:
         service:
@@ -55,7 +55,7 @@ stages:
   - name: List the routes
     request:
       verify: false
-      url: https://{tavern.env_vars.ADMIN_URL}/routes
+      url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: GET
     response:
       strict: False
@@ -69,7 +69,7 @@ stages:
     max_retries: 1
   - name: Proxy a request
     request:
-      url: http://{tavern.env_vars.HOST}:{tavern.env_vars.PROXY_PORT}/request
+      url: "{tavern.env_vars.PROXY_URI}/request"
       method: GET
       headers:
         host: randomapiname.com
@@ -79,9 +79,7 @@ stages:
       body:
         url: http://randomapiname.com/request
       headers:
-        Server: openresty/1.13.6.2
-        Via: kong/1.0.2
+        Server: openresty/{tavern.env_vars.RESTY_VERSION}
+        Via: "kong/{tavern.env_vars.KONG_VERSION}"
     delay_after: 5
     max_retries: 1
-
-          

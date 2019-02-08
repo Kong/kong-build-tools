@@ -5,12 +5,14 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-KONG_NETTLE_VERSION?=3.4
-KONG_GMP_VERSION?=6.1.2
-RESTY_VERSION?=1.13.6.2
-RESTY_LUAROCKS_VERSION?=2.4.3
-RESTY_OPENSSL_VERSION?=1.1.1
-RESTY_PCRE_VERSION?=8.41
+
+TEST_ADMIN_PROTOCOL?=http://
+TEST_ADMIN_PORT?=8001
+TEST_HOST?=localhost
+TEST_ADMIN_URI?=$(TEST_ADMIN_PROTOCOL)$(TEST_HOST):$(TEST_ADMIN_PORT)
+TEST_PROXY_PROTOCOL?=http://
+TEST_PROXY_PORT?=8000
+TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 
 ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONS=" -no-async"
@@ -19,10 +21,15 @@ endif
 KONG_PACKAGE_NAME?="kong-community-edition"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
-KONG_SOURCE_LOCATION?="$$PWD/../kong/"
-KONG_VERSION?="0.0.0"
 PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
+KONG_SOURCE_LOCATION?="$$PWD/../kong/"
+KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
+KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
 release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -100,19 +107,21 @@ else
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
-	
+
+
+
 .PHONY: test
 test: build_test_container
-	pushd test && \
+	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	./run_tests.sh
+	./test/run_tests.sh
 
 run_tests:
-	docker build -t kong:test_runner -f Dockerfile.test_runner .
-	docker run -it -e ADMIN_URL=$HOST:$ADMIN_PORT -e HOST -e ADMIN_PORT -e PROXY_PORT kong:test_runner py.test test_smoke.tavern.yaml
+	cd test && docker build -t kong:test_runner -f Dockerfile.test_runner .
+	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) ubuntu printenv
+	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong:test_runner py.test test_smoke.tavern.yaml
 
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \

@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set +e
-set -x
 
 kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
 curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
@@ -31,5 +30,4 @@ echo $ADMIN_PORT
 PROXY_PORT=$(kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}')
 echo $PROXY_PORT
 
-docker build -t kong:test_runner -f Dockerfile.test_runner .
-docker run -it -e ADMIN_URL=${HOST}:${ADMIN_PORT} -e HOST=${HOST} -e ADMIN_PORT=${ADMIN_PORT} -e PROXY_PORT=${PROXY_PORT} kong:test_runner py.test test_smoke.tavern.yaml
+TEST_ADMIN_URI=https://$HOST:$ADMIN_PORT TEST_PROXY_URI=http://$HOST:$PROXY_PORT make -f Makefile run_tests
