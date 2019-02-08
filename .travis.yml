@@ -33,7 +33,6 @@ matrix:
 
 install:
   - git clone https://github.com/Kong/kong.git kong
-  - cd kong && git reset --hard 1fc45e5 && cd ../
   - make package-kong
 
 before_script:
