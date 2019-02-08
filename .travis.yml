@@ -38,15 +38,15 @@ cache:
 
 before_cache:
   # Save docker history of images we want the cache to be available for
-  - >
-    mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}' 
-    | grep kong | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar || docker save -o $HOME/docker/$0.tar $(docker history -q $0 | tr "\n" " " | tr -d "<missing>")'
+  - mkdir -p $HOME/docker && 'test -e $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar || docker save -o $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG | tr "\n" " " | tr -d "<missing>")'
+  - mkdir -p $HOME/docker && 'test -e $HOME/docker/kong:fpm.tar || docker save -o $HOME/docker/kong:fpm.tar $(docker history -q kong:fpm | tr "\n" " " | tr -d "<missing>")'
   - ls $HOME/docker/
 
 before_install:
   # Load cached docker layers
   - ls $HOME/docker/
-  - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar | xargs -I {file} sh -c "docker load -i {file}"; fi
+  - if [[ -f $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
+  - if [[ -f $HOME/docker/kong:fpm.tar ]]; then docker load -i $HOME/docker/kong:fpm.tar; fi
   - docker images
 
 install:
