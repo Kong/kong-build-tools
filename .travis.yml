@@ -41,7 +41,7 @@ before_cache:
   # Save docker history of images we want the cache to be available for
   - mkdir -p $HOME/docker
   - docker save -o $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG | tr "\n" " " | tr -d "<missing>")
-  - docker save -o $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar | tr "\n" " " | tr -d "<missing>")
+  - docker save -o $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG | tr "\n" " " | tr -d "<missing>")
   - docker save -o $HOME/docker/kong:fpm.tar $(docker history -q kong:fpm | tr "\n" " " | tr -d "<missing>")
   - ls $HOME/docker/
 
