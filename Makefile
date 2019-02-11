@@ -148,6 +148,7 @@ ifeq (, $(shell which minikube))
 	chmod +x get_helm.sh
 	sudo ./get_helm.sh
 	rm -rf get_helm.sh
+	sudo apt-get update && sudo apt-get install -y socat
 endif
 	sudo minikube start --vm-driver none
 	sudo minikube addons enable registry
