@@ -153,5 +153,7 @@ endif
 	sudo minikube addons enable registry
 	sudo chown -R $$USER $$HOME/.minikube
 	sudo chgrp -R $$USER $$HOME/.minikube
+	sudo chown -R $$USER $$HOME/.kube
+	sudo chgrp -R $$USER $$HOME/.kube
 	sudo minikube update-context
 	until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
