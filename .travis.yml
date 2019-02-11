@@ -59,7 +59,7 @@ install:
   - make package-kong
 
 before_script:
-  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
+  - make setup_tests
 
 script:
   - make test

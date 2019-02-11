@@ -146,10 +146,13 @@ ifeq (, $(shell which minikube))
 	chmod +x get_helm.sh
 	sudo ./get_helm.sh
 	rm -rf get_helm.sh
+	sudo apt-get update && sudo apt-get install -y socat
 endif
 	sudo minikube start --vm-driver none
 	sudo minikube addons enable registry
 	sudo chown -R $$USER $$HOME/.minikube
 	sudo chgrp -R $$USER $$HOME/.minikube
+	sudo chown -R $$USER $$HOME/.kube
+	sudo chgrp -R $$USER $$HOME/.kube
 	sudo minikube update-context
 	until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
