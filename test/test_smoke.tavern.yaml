@@ -17,7 +17,7 @@ stages:
       url: "{tavern.env_vars.ADMIN_URI}/services"
       method: POST
       json:
-        name: randomapiname
+        name: smoketestservice
         url: http://mockbin.org
     response:
       status_code:
@@ -43,6 +43,7 @@ stages:
       url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: POST
       json:
+        name: smoketestroute
         service:
           id: "{service_id:s}"
         hosts:
@@ -80,5 +81,21 @@ stages:
         url: http://randomapiname.com/request
       headers:
         Via: "kong/{tavern.env_vars.KONG_VERSION}"
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the route
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/routes/smoketestroute"
+      method: DELETE
+    response:
+      status_code: 204
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the service
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/services/smoketestservice"
+      method: DELETE
+    response:
+      status_code: 204
     delay_after: 5
     max_retries: 1
