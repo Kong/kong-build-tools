@@ -33,7 +33,7 @@ elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}.noarch.rpm"
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-generic}"
-  REPOSITORY_OS_NAME="${REPOSITORY_OS_NAME:alpine-tar}"
+  REPOSITORY_OS_NAME="${REPOSITORY_OS_NAME:-alpine-tar}"
   REPOSITORY_NAME="${REPOSITORY_NAME:-$KONG_PACKAGE_NAME-alpine-tar}"
   OUTPUT_FILE_SUFFIX=".apk.tar.gz"
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
