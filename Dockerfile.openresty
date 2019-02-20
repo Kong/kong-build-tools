@@ -30,27 +30,31 @@ LABEL resty_config_options="${RESTY_CONFIG_OPTIONS}"
 
 RUN mkdir -p /tmp/build
 
+ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz
+
 RUN cd /tmp \
-    && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
-    && curl -fSL https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && curl -fSL https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
-    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
-    && curl -fSL https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
-
-RUN cd /tmp \
-    && curl -fSL https://github.com/Kong/openresty-patches/archive/master.tar.gz -o kong-patches.tar.gz \
-    && tar -xzf kong-patches.tar.gz -C /tmp \
-    && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
-    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
-
-RUN cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
+    && cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
     && export OPENSSL_OPTIONS="--prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong $OPENSSL_EXTRA_OPTIONS" \
     && eval ./config $OPENSSL_OPTIONS shared \
     && make -j${RESTY_J}
+
+ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
+ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
+
+ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
+ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+
+RUN cd /tmp \
+    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+
+RUN cd /tmp \
+    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
+    && tar -xzf kong-patches.tar.gz -C /tmp \
+    && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
+    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 RUN cd /tmp/openresty-${RESTY_VERSION} \
     && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \

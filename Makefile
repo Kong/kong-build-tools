@@ -108,8 +108,6 @@ else
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
 
-
-
 .PHONY: test
 test: build_test_container
 	KONG_VERSION=$(KONG_VERSION) \
