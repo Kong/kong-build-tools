@@ -6,6 +6,7 @@ FROM kong:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 ARG OPENSSL_EXTRA_OPTIONS
 ARG RESTY_VERSION=1.13.6.2
 ARG RESTY_LUAROCKS_VERSION=2.4.3
+ARG LIBYAML_VERSION=0.2.1
 ARG RESTY_OPENSSL_VERSION=1.1.1
 ARG RESTY_PCRE_VERSION=8.41
 ARG RESTY_J=2
@@ -42,13 +43,21 @@ RUN cd /tmp \
 
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
 ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
-
 ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
 ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+ADD https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz /tmp/yaml-${LIBYAML_VERSION}.tar.gz
 
 RUN cd /tmp \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && tar xzf yaml-${LIBYAML_VERSION}.tar.gz
+
+RUN cd /tmp/yaml-${LIBYAML_VERSION} \
+    && ./configure \
+      --libdir=/tmp/build/usr/local/kong/lib \
+      --includedir=/tmp/yaml-${LIBYAML_VERSION} \
+    && make -j${RESTY_J} \
+    && make install
 
 RUN cd /tmp \
     && tar xzf openresty-${RESTY_VERSION}.tar.gz \

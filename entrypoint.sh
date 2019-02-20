@@ -17,11 +17,20 @@ pushd /tmp/openssl
   make install_sw
 popd
 
+pushd /tmp/yaml-${LIBYAML_VERSION}
+  make install
+popd
+
 pushd /kong
-  ROCKSPEC_VERSION=`basename $TMP/kong/kong-*.rockspec` \
+  ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
-    
+
+  /tmp/build/usr/local/bin/luarocks install lyaml $LYAML_VERSION \
+    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
+    YAML_INCDIR=/tmp/yaml-${LIBYAML_VERSION} \
+    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
+
   /tmp/build/usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     OPENSSL_LIBDIR=/tmp/openssl \
     OPENSSL_DIR=/tmp/openssl
