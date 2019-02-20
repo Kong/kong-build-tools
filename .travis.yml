@@ -11,25 +11,34 @@ env:
     - HELM_VERSION=v2.11.0
     - MINIKUBE_VERSION=v0.33.1
   matrix:
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=latest
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=jessie
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest
-    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=latest KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=jessie KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing KONG_SOURCE=master
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=master
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 KONG_SOURCE=master
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
+    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=master
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=next
+    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=next
+    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
+    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
 matrix:
   allow_failures:
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing KONG_SOURCE=master
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=next
+    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=next
+    - env: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
+    - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
+
 
 cache:
   timeout: 1000
@@ -53,9 +62,7 @@ before_install:
   - if [[ -f $HOME/docker/kong:fpm.tar ]]; then docker load -i $HOME/docker/kong:fpm.tar; fi
 
 install:
-  - sudo apt-get update && sudo apt-get install -y socat
-  - make setup_tests > /dev/null 2>&1 &
-  - git clone https://github.com/Kong/kong.git kong
+  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
   - make package-kong
 
 before_script:
