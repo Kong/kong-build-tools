@@ -18,6 +18,7 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONS=" -no-async"
 endif
 
+EDITION?="community"
 KONG_PACKAGE_NAME?="kong-community-edition"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
@@ -25,11 +26,21 @@ PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
-KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
+  --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
+  --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
+  --with-pcre-jit \
+  --with-http_realip_module \
+  --with-http_ssl_module \
+  --with-http_stub_status_module \
+  --with-http_v2_module \
+  --with-stream_ssl_preread_module \
+  --with-stream_realip_module \
+  "
 LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
@@ -81,7 +92,8 @@ build-kong: build-openresty-base
 	-e LYAML_VERSION=$(LYAML_VERSION) \
 	kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
-build-openresty-base: build-base
+build-openresty-base:
+	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
 	docker build -f Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
@@ -91,8 +103,9 @@ build-openresty-base: build-base
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
+	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
+	--build-arg EDITION=$(EDITION) \
 	-t kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
-
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
