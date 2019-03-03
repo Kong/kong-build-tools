@@ -1,5 +1,4 @@
 export SHELL:=/bin/bash
-export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
@@ -50,7 +49,7 @@ clean:
 	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 development:
-	test -s output/kong-community-edition-1.1.0rc1.xenial.all.deb || make package-kong
+	test -s output/kong-community-edition-$(KONG_VERSION).xenial.all.deb || make package-kong
 	cp output/kong-community-edition-$(KONG_VERSION).xenial.all.deb output/kong-community-edition-$(KONG_VERSION).openresty-ubuntu-xenial.all.deb
 	docker inspect --type=image kong:openresty-ubuntu-xenial > /dev/null || make build-openresty-base
 	docker build \

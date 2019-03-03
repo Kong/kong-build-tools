@@ -23,6 +23,11 @@ make development
 
 From the command line prompt available the Kong source is mounted at `/src` all logs go to `/src/servroot/*`
 
+### Developing Kong Plugins
+
+The kong-plugin submodule is Kong plugin that is loaded and available as a template to base a Kong plugin off of
+or clone your own plugin source into it and update `KONG_PLUGINS` in the `docker-compose.yml` file
+
 ## Building a Kong Distribution
 
 The default build task builds an Ubuntu xenial package of Kong where the Kong source is assumed to be
