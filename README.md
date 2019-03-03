@@ -8,6 +8,21 @@ The tools necessary to build Kong
 - Docker
 - Make
 
+## Developing Kong
+
+This repository assumes it's the sibling repository of `/kong` where the Kong source code you wish to
+develop exists
+
+```
+cd ~
+git clone git@github.com:Kong/kong.git
+git clone git@github.com:Kong/kong-build-tools.git
+cd kong-build-tools
+make development
+```
+
+From the command line prompt available the Kong source is mounted at `/src` all logs go to `/src/servroot/*`
+
 ## Building a Kong Distribution
 
 The default build task builds an Ubuntu xenial package of Kong where the Kong source is assumed to be
