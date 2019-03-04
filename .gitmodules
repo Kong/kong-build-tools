@@ -1,3 +1,0 @@
-[submodule "kong-plugin"]
-	path = kong-plugin
-	url = https://github.com/Kong/kong-plugin.git
