@@ -65,6 +65,24 @@ RUN if [ "$EDITION" = "community" ] ; then cd /tmp \
     && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done ; fi
 
+RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
+    && cd /tmp \
+    && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
+    && cd /tmp/gmp-${KONG_GMP_VERSION} \
+    && ./configure --build=x86_64-linux-gnu --enable-static=no --libdir=/tmp/build/usr/local/kong/lib \
+    && make -j${RESTY_J}; fi
+
+RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
+    && cd /tmp \
+    && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz \
+    && cd /tmp/nettle-${KONG_NETTLE_VERSION} \
+    && LDFLAGS="-Wl,-rpath,/usr/local/kong/lib" \
+    ./configure --disable-static \
+    --libdir=$BUILD/usr/local/kong/lib \
+    --with-include-path="/tmp/gmp-${KONG_GMP_VERSION}/" \
+    --with-lib-path="/tmp/gmp-${KONG_GMP_VERSION}/.libs/" \
+    && make -j${RESTY_J}; fi
+
 RUN cd /tmp/openresty-${RESTY_VERSION} \
     && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \
     && make -j${RESTY_J} \
