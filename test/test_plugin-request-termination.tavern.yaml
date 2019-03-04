@@ -1,0 +1,59 @@
+---
+test_name: Test the request termination plugin
+
+stages:
+  - name: Create a route
+    request:
+      verify: false
+      url: "{tavern.env_vars.ADMIN_URI}/routes"
+      method: POST
+      json:
+        name: "requestterminationroute"
+        hosts:
+        - "requestterminationroute.com"
+    response:
+      status_code:
+        - 201
+      save:
+        body:
+          route_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Enable the request termination plugin
+    request:
+      verify: false
+      url: "{tavern.env_vars.ADMIN_URI}/routes/requestterminationroute/plugins/"
+      method: POST
+      json:
+        name: request-termination
+        config:
+          status_code: 418
+          message: "Im a teapot"
+    response:
+      strict: False
+      status_code: 201
+      save:
+        body:
+          plugin_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Use the request termination plugin
+    request:
+      url: "{tavern.env_vars.PROXY_URI}/request"
+      method: GET
+      headers:
+        host: requestterminationroute.com
+    response:
+      strict: False
+      status_code: 418
+      body:
+        message: "Im a teapot"
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the route
+    request:
+      verify: false
+      url: "{tavern.env_vars.ADMIN_URI}/routes/requestterminationroute"
+      method: DELETE
+    response:
+      status_code: 204
