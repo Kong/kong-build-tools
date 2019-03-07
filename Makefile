@@ -1,5 +1,4 @@
 export SHELL:=/bin/bash
-export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
@@ -48,6 +47,22 @@ clean:
 	docker rmi kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker rmi kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+
+development:
+	test -s output/kong-community-edition-$(KONG_VERSION).xenial.all.deb || make package-kong
+	cp output/kong-community-edition-$(KONG_VERSION).xenial.all.deb output/kong-community-edition-$(KONG_VERSION).openresty-ubuntu-xenial.all.deb
+	docker inspect --type=image kong:openresty-ubuntu-xenial > /dev/null || make build-openresty-base
+	docker build \
+	--build-arg RESTY_IMAGE_BASE=kong \
+	--build-arg RESTY_IMAGE_TAG=openresty-ubuntu-xenial \
+	--build-arg KONG_VERSION=$(KONG_VERSION) \
+	-f test/Dockerfile.deb \
+	-t kong:development .
+	- docker-compose stop
+	- docker-compose rm -f
+	docker-compose up -d && \
+	docker-compose exec kong make dev && \
+	docker-compose exec kong /bin/bash
 
 package-kong: build-kong
 	docker build -f Dockerfile.fpm \
