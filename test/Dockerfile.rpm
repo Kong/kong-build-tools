@@ -7,6 +7,9 @@ ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong-community-edition"
 ARG RESTY_IMAGE_TAG
 
+ARG SU_EXEC_VERSION=0.2
+ARG SU_EXEC_URL="https://github.com/ncopa/su-exec/archive/v${SU_EXEC_VERSION}.tar.gz"
+
 ARG REDHAT_USERNAME
 ARG REDHAT_PASSWORD
 ARG RHEL="false"
@@ -14,11 +17,15 @@ ARG RHEL="false"
 RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
-RUN yum -y install perl perl-Time-HiRes
+RUN yum -y install perl perl-Time-HiRes gcc make unzip
 
 COPY output/kong.rpm /kong.rpm
 
-RUN rpm -i kong.rpm
+RUN rpm -i kong.rpm \
+  && curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
+  && make -C "/tmp/su-exec-${SU_EXEC_VERSION}" \
+  && cp "/tmp/su-exec-${SU_EXEC_VERSION}/su-exec" /usr/bin \
+  && useradd --uid 1337 kong
 
 COPY test/docker-entrypoint.sh /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]

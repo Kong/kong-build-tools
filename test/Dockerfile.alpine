@@ -6,11 +6,12 @@ ARG KONG_PACKAGE_NAME="kong-community-edition"
 LABEL maintainer="Kong Core Team <team-core@konghq.com>"
 
 RUN apk add --no-cache --virtual .build-deps tar ca-certificates \
-	&& apk add --no-cache libgcc pcre perl tzdata bash
+	&& apk add --no-cache libgcc pcre perl tzdata bash su-exec
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.apk.tar.gz kong.apk.tar.gz
 
-RUN tar -xzf kong.apk.tar.gz -C /tmp \
+RUN adduser -Su 1337 kong \
+  && tar -xzf kong.apk.tar.gz -C /tmp \
 	&& rm -f kong.tar.gz \
 	&& cp -R /tmp/usr / \
 	&& rm -rf /tmp/usr \
