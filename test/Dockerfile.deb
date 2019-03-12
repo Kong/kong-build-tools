@@ -10,7 +10,7 @@ ARG RESTY_IMAGE_TAG
 ARG SU_EXEC_VERSION=0.2
 ARG SU_EXEC_URL="https://github.com/ncopa/su-exec/archive/v${SU_EXEC_VERSION}.tar.gz"
 
-RUN apt-get update && apt-get install -y perl curl gcc build-essential
+RUN apt-get update && apt-get install -y perl curl gcc build-essential libcap2-bin
 
 RUN curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
   && make -C "/tmp/su-exec-${SU_EXEC_VERSION}" \
