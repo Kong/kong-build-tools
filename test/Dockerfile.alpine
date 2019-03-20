@@ -1,7 +1,7 @@
 FROM alpine
 
 ARG KONG_VERSION="0.0.0"
-ARG KONG_PACKAGE_NAME="kong-community-edition"
+ARG KONG_PACKAGE_NAME="kong"
 
 LABEL maintainer="Kong Core Team <team-core@konghq.com>"
 
