@@ -16,6 +16,12 @@ RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-op
 
 RUN yum -y install perl perl-Time-HiRes hostname
 
+RUN if [ "$RHEL" = "true" ] ; then \
+  subscription-manager remove --all \
+  && subscription-manager unregister \
+  && subscription-manager clean \
+  ; fi
+
 COPY output/kong.rpm /kong.rpm
 
 RUN rpm -i kong.rpm
