@@ -17,7 +17,7 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONS=" -no-async"
 endif
 
-KONG_PACKAGE_NAME?="kong-community-edition"
+KONG_PACKAGE_NAME?="kong"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 PRIVATE_REPOSITORY?=true

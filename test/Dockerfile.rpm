@@ -4,7 +4,7 @@ ARG RESTY_IMAGE_TAG="7"
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 ARG KONG_VERSION="0.0.0"
-ARG KONG_PACKAGE_NAME="kong-community-edition"
+ARG KONG_PACKAGE_NAME="kong"
 ARG RESTY_IMAGE_TAG
 
 ARG SU_EXEC_VERSION=0.2
@@ -18,6 +18,12 @@ RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${RE
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
 RUN yum -y install perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils
+
+RUN if [ "$RHEL" = "true" ] ; then \
+  subscription-manager remove --all \
+  && subscription-manager unregister \
+  && subscription-manager clean \
+  ; fi
 
 COPY output/kong.rpm /kong.rpm
 

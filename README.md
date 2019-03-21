@@ -40,7 +40,7 @@ git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
 make package-kong
 ls output/
-kong-community-edition-0.0.0.xenial.all.deb
+kong-0.0.0.xenial.all.deb
 ```
 
 Environment variables:
@@ -161,5 +161,5 @@ bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAG
 Using all defaults one would end up with
 
 ```
-bintray.com/kong/kong-community-edition/ubuntu/0.0.0/kong-community-edition-0.0.0.xenial.all.deb
+bintray.com/kong/kong-deb/ubuntu/0.0.0/kong-0.0.0.xenial.all.deb
 ```
