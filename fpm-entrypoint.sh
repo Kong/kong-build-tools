@@ -22,6 +22,7 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   fi
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   PACKAGE_TYPE="rpm"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes"
   OUTPUT_FILE_SUFFIX=".aws"
 fi
 
