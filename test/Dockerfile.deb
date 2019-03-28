@@ -7,7 +7,15 @@ ARG KONG_VERSION="0.0.0"
 ARG KONG_PACKAGE_NAME="kong"
 ARG RESTY_IMAGE_TAG
 
-RUN apt-get update && apt-get install -y perl
+ARG SU_EXEC_VERSION=0.2
+ARG SU_EXEC_URL="https://github.com/ncopa/su-exec/archive/v${SU_EXEC_VERSION}.tar.gz"
+
+RUN apt-get update && apt-get install -y perl curl gcc build-essential libcap2-bin
+
+RUN curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
+  && make -C "/tmp/su-exec-${SU_EXEC_VERSION}" \
+  && cp "/tmp/su-exec-${SU_EXEC_VERSION}/su-exec" /usr/bin \
+  && useradd --uid 1337 kong
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.all.deb /kong.deb
 
