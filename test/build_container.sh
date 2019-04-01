@@ -15,6 +15,8 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
   DOCKER_FILE="Dockerfile.rpm"
   RHEL=true
+elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
+  exit 0
 else
   echo "Unrecognized base image $RESTY_IMAGE_BASE"
   exit 1
