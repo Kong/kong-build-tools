@@ -40,6 +40,7 @@ pushd /kong
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
 popd
 
+cp /kong/COPYRIGHT /tmp/build/usr/local/kong/
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
 sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' /tmp/build/usr/local/bin/kong && \
   rm /tmp/build/usr/local/bin/kong.bak
