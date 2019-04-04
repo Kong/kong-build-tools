@@ -42,10 +42,13 @@ RUN cd /tmp \
     && make -j${RESTY_J}
 
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
-ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
 ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
 ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
 ADD https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz /tmp/yaml-${LIBYAML_VERSION}.tar.gz
+
+RUN git clone https://github.com/Kong/openresty-patches.git /tmp/openresty-patches \
+    && cd /tmp/openresty-patches \
+    && git checkout ${RESTY_VERSION}
 
 RUN cd /tmp \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
@@ -61,9 +64,8 @@ RUN cd /tmp/yaml-${LIBYAML_VERSION} \
 
 RUN cd /tmp \
     && tar xzf openresty-${RESTY_VERSION}.tar.gz \
-    && tar -xzf kong-patches.tar.gz -C /tmp \
     && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
-    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
+    && for i in /tmp/openresty-patches/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 RUN cd /tmp/openresty-${RESTY_VERSION} \
     && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \
