@@ -56,13 +56,15 @@ development:
 	--build-arg RESTY_IMAGE_BASE=kong \
 	--build-arg RESTY_IMAGE_TAG=openresty-ubuntu-xenial \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
+	--build-arg KONG_UID=$$(id -u) \
+	--build-arg USER=$$USER \
+	--build-arg RUNAS_USER=$$USER \
 	-f test/Dockerfile.deb \
 	-t kong:development .
 	- docker-compose stop
 	- docker-compose rm -f
-	docker-compose up -d && \
+	USER=$$(id -u) docker-compose up -d && \
 	docker-compose exec kong make dev && \
-	docker-compose exec kong chmod -R 777 /kong && \
 	docker-compose exec kong /bin/bash
 
 package-kong: build-kong

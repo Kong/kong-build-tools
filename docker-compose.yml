@@ -3,6 +3,7 @@ services:
   kong:
     image: kong:development
     entrypoint: tail -f /dev/null
+    user: ${USER:-root}
     working_dir: /kong
     volumes:
       - ../kong:/kong
@@ -15,6 +16,7 @@ services:
       KONG_PREFIX: /kong/servroot
       KONG_PLUGINS: bundled,myplugin
       KONG_ADMIN_LISTEN: '0.0.0.0:8001'
+      KONG_TEST_DATABASE: postgres
       KONG_DATABASE: postgres
       KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
       KONG_PG_HOST: 127.0.0.1
