@@ -1,12 +1,17 @@
 #!/bin/bash
 
-set +e
+set -e
+
+if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
+  exit 0
+fi
+
+docker run -it --rm localhost:5000/kong /bin/sh -c "luarocks --version"
 
 kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
 curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
 
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]]; do
-  curl -s -o /dev/null -w ''%{http_code}'' localhost:5000
   echo "waiting for registry to be ready"
   sleep 10;
 done 
