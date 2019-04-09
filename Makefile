@@ -49,18 +49,21 @@ clean:
 	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 development:
-	test -s output/kong-community-edition-$(KONG_VERSION).xenial.all.deb || make package-kong
-	cp output/kong-community-edition-$(KONG_VERSION).xenial.all.deb output/kong-community-edition-$(KONG_VERSION).openresty-ubuntu-xenial.all.deb
+	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
+	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).openresty-ubuntu-xenial.all.deb
 	docker inspect --type=image kong:openresty-ubuntu-xenial > /dev/null || make build-openresty-base
 	docker build \
 	--build-arg RESTY_IMAGE_BASE=kong \
 	--build-arg RESTY_IMAGE_TAG=openresty-ubuntu-xenial \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
+	--build-arg KONG_UID=$$(id -u) \
+	--build-arg USER=$$USER \
+	--build-arg RUNAS_USER=$$USER \
 	-f test/Dockerfile.deb \
 	-t kong:development .
 	- docker-compose stop
 	- docker-compose rm -f
-	docker-compose up -d && \
+	USER=$$(id -u) docker-compose up -d && \
 	docker-compose exec kong make dev && \
 	docker-compose exec kong /bin/bash
 
