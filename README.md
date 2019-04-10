@@ -88,7 +88,7 @@ make test
 
 ## Functional Tests
 
-The Kong functional tests use (Tavern)[https://taverntesting.github.io/].
+The Kong functional tests use [Tavern](https://taverntesting.github.io/).
 
 *Prerequisites*
 
