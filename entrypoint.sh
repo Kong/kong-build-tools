@@ -21,20 +21,6 @@ if test -f /root/id_rsa; then
   chmod 700 /root/.ssh/id_rsa
 fi
 
-pushd /tmp/openssl
-  make clean
-  eval ./config --prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong -fPIC shared
-  make -j${RESTY_J}
-  make test
-  make install
-  make install_sw
-popd
-
-pushd /tmp/yaml-${LIBYAML_VERSION}
-  make -j${RESTY_J} \
-  && make install
-popd
-
 pushd /kong
   ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
       && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
