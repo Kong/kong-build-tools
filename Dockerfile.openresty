@@ -35,11 +35,7 @@ ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/
 
 RUN cd /tmp \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
-    && cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
-    && export OPENSSL_OPTIONS="--prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong $OPENSSL_EXTRA_OPTIONS" \
-    && eval ./config $OPENSSL_OPTIONS shared \
-    && make -j${RESTY_J}
+    && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl
 
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
 ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
@@ -56,9 +52,7 @@ RUN cd /tmp \
 RUN cd /tmp/yaml-${LIBYAML_VERSION} \
     && ./configure \
       --libdir=/tmp/build/usr/local/kong/lib \
-      --includedir=/tmp/yaml-${LIBYAML_VERSION} \
-    && make -j${RESTY_J} \
-    && make install
+      --includedir=/tmp/yaml-${LIBYAML_VERSION}
 
 RUN if [ "$EDITION" = "community" ] ; then cd /tmp \
     && tar -xzf kong-patches.tar.gz -C /tmp \
