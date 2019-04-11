@@ -17,6 +17,7 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONS=" -no-async"
 endif
 
+EDITION?="community"
 KONG_PACKAGE_NAME?="kong"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
@@ -24,11 +25,23 @@ PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
-KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
+  --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
+  --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
+  --with-pcre-jit \
+  --with-http_realip_module \
+  --with-http_ssl_module \
+  --with-http_stub_status_module \
+  --with-http_v2_module \
+  --with-stream_ssl_preread_module \
+  --with-stream_realip_module \
+  "
 LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
@@ -45,16 +58,15 @@ release-kong: test
 clean:
 	docker rmi kong:fpm
 	docker rmi kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	docker rmi kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 development:
 	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
-	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).openresty-ubuntu-xenial.all.deb
-	docker inspect --type=image kong:openresty-ubuntu-xenial > /dev/null || make build-openresty-base
+	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
+	docker inspect --type=image kong:kong-ubuntu-xenial > /dev/null || make build-kong
 	docker build \
 	--build-arg RESTY_IMAGE_BASE=kong \
-	--build-arg RESTY_IMAGE_TAG=openresty-ubuntu-xenial \
+	--build-arg RESTY_IMAGE_TAG=kong-ubuntu-xenial \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_UID=$$(id -u) \
 	--build-arg USER=$$USER \
@@ -81,26 +93,9 @@ package-kong: build-kong
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	kong:fpm
 
-build-kong: build-openresty-base
+build-kong:
+	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
 	docker build -f Dockerfile.kong \
-	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-t kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
-	docker run -it --rm \
-	-v $(KONG_SOURCE_LOCATION):/kong \
-	-v $$PWD/output/build:/output/build \
-	-e KONG_VERSION=$(KONG_VERSION) \
-	-e KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
-	-e KONG_LICENSE=$(KONG_LICENSE) \
-	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-e LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	-e LYAML_VERSION=$(LYAML_VERSION) \
-	kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-
-build-openresty-base: build-base
-	docker build -f Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -109,8 +104,15 @@ build-openresty-base: build-base
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	-t kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
-
+	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
+	--build-arg EDITION=$(EDITION) \
+	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
+	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
+	-t kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+	docker run -it --rm \
+	-v $(KONG_SOURCE_LOCATION):/kong \
+	-v $$PWD/output/build:/output/build \
+	kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)

@@ -8,7 +8,7 @@ ARG KONG_PACKAGE_NAME="kong"
 ARG KONG_UID="1337"
 ARG USER="kong"
 ARG RUNAS_USER="root"
-ARG RESTY_IMAGE_TAG
+ARG RESTY_IMAGE_TAG="xenial"
 
 ARG SU_EXEC_VERSION=0.2
 ARG SU_EXEC_URL="https://github.com/ncopa/su-exec/archive/v${SU_EXEC_VERSION}.tar.gz"
@@ -24,7 +24,7 @@ RUN adduser --uid ${KONG_UID} ${USER} \
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.all.deb /kong.deb
 
-RUN dpkg -i kong.deb
+RUN dpkg -i /kong.deb
 
 RUN if [ "$KONG_UID" != "1337" ] ; then chown -R ${USER}:0 /usr/local/kong \
   && chmod -R g=u /usr/local/kong \
