@@ -22,7 +22,7 @@ KONG_PACKAGE_NAME?="kong"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 PRIVATE_REPOSITORY?=true
-KONG_TEST_CONTAINER_NAME?=localhost:5000/kong
+KONG_TEST_CONTAINER_NAME?=localhost:5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`

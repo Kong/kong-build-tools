@@ -42,10 +42,10 @@ matrix:
     - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
 install:
-  - docker pull kong/kong-build-tools:fpm
-  - docker pull kong/kong-build-tools:test_runner
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  - docker pull kong/kong-build-tools:fpm || true
+  - docker pull kong/kong-build-tools:test_runner || true
+  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
   - make package-kong
 
