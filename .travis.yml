@@ -41,8 +41,9 @@ matrix:
     - env: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
     - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
-
 install:
+  - echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+  - sudo service docker restart
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
   - make package-kong
 
