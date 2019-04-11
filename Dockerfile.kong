@@ -3,8 +3,6 @@ ARG RESTY_IMAGE_TAG="xenial"
 
 FROM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
-ENV LUA_PATH /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;
-
 RUN mkdir -p /tmp/build
 
 ARG LIBYAML_VERSION=0.2.1
@@ -95,6 +93,8 @@ RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
     && make install DESTDIR=/tmp/build
 
 WORKDIR /kong
+
+ENV LUA_PATH /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;
 
 COPY entrypoint.sh /entrypoint.sh
 
