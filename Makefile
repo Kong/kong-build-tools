@@ -101,6 +101,7 @@ build-kong: build-openresty-base
 
 build-openresty-base: build-base
 	docker build -f Dockerfile.openresty \
+	--cache-from kong/kong-build-tools:openresy-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -111,13 +112,13 @@ build-openresty-base: build-base
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	-t kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 
-
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
 	@docker build -f Dockerfile.$(PACKAGE_TYPE) \
+	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_TAG)-$(RESTY_IMAGE_BASE) \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -126,10 +127,15 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
 	docker build -f Dockerfile.$(PACKAGE_TYPE) \
+	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_TAG)-$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 endif
+
+update_cache:
+	./docker_push_latest_if_changed.py --source kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) --target kong/kong-build-tools:$(RESTY_IMAGE_TAG)-$(RESTY_IMAGE_BASE)
+	./docker_push_latest_if_changed.py --source kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) kong/kong-build-tools:openresy-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 .PHONY: test
 test: build_test_container
@@ -151,7 +157,6 @@ develop_tests:
 	-v $$PWD/test:/app \
 	kong:test_runner /bin/bash
   
-
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
