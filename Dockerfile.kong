@@ -7,18 +7,6 @@ ENV LUA_PATH /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openr
 
 RUN mkdir -p /tmp/build
 
-ARG OPENSSL_EXTRA_OPTIONS
-ARG RESTY_OPENSSL_VERSION=1.1.1
-LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
-ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz
-RUN cd /tmp \
-    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
-    && cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
-    && eval ./config --prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong ${OPENSSL_EXTRA_OPTIONS} -fPIC shared \
-    && make -j${RESTY_J} \
-    && make install_sw
-
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
 ADD https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz /tmp/yaml-${LIBYAML_VERSION}.tar.gz
@@ -58,6 +46,18 @@ RUN if [ "$EDITION" = "community" ] ; then cd /tmp \
     && tar -xzf kong-patches.tar.gz -C /tmp \
     && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done ; fi
+
+ARG OPENSSL_EXTRA_OPTIONS
+ARG RESTY_OPENSSL_VERSION=1.1.1
+LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
+ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz
+RUN cd /tmp \
+    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+    && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
+    && cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
+    && eval ./config --prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong ${OPENSSL_EXTRA_OPTIONS} -fPIC shared \
+    && make -j${RESTY_J} \
+    && make install_sw
 
 ARG RESTY_PCRE_VERSION=8.41
 ARG RESTY_J=2

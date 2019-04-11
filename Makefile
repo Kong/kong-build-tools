@@ -78,7 +78,7 @@ build-development-image:
 	-f test/Dockerfile.deb \
 	-t kong/kong-build-tools:development .
 
-development:
+development: build-development-image
 	- docker-compose stop
 	- docker-compose rm -f
 	USER=$$(id -u) docker-compose up -d && \

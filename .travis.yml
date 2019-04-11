@@ -55,3 +55,7 @@ before_script:
 script:
   - make test
 
+after_script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - update-docker-cache
+
