@@ -8,6 +8,26 @@ The tools necessary to build Kong
 - Docker
 - Make
 
+## Developing Kong
+
+This repository assumes it's the sibling repository of `/kong` where the Kong source code you wish to
+develop exists
+
+```
+cd ~
+git clone git@github.com:Kong/kong.git
+git clone git@github.com:Kong/kong-build-tools.git
+cd kong-build-tools
+make development
+```
+
+From the command line prompt available the Kong source is mounted at `/src` all logs go to `/src/servroot/*`
+
+### Developing Kong Plugins
+
+The kong-plugin submodule is Kong plugin that is loaded and available as a template to base a Kong plugin off of
+or clone your own plugin source into it and update `KONG_PLUGINS` in the `docker-compose.yml` file
+
 ## Building a Kong Distribution
 
 The default build task builds an Ubuntu xenial package of Kong where the Kong source is assumed to be
@@ -20,7 +40,7 @@ git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
 make package-kong
 ls output/
-kong-community-edition-0.0.0.xenial.all.deb
+kong-0.0.0.xenial.all.deb
 ```
 
 Environment variables:
@@ -68,14 +88,16 @@ make test
 
 ## Functional Tests
 
-The Kong functional tests use (Tavern)[https://taverntesting.github.io/].
+The Kong functional tests use [Tavern](https://taverntesting.github.io/).
 
 *Prerequisites*
 
 - Docker
+- A Packaged Kong Release (`make package-kong`)
+- K8s and helm (`make setup-tests`)
 
 ```
-make run_tests
+make test
 ```
 
 Will run the functional tests against the defaults specified in the Makefile prefixed with `TEST_`
@@ -90,6 +112,16 @@ TEST_ADMIN_URI?=$(TEST_ADMIN_PROTOCOL)$(TEST_HOST):$(TEST_ADMIN_PORT)
 TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
+```
+
+### Developing Functional Tests
+
+With the same prerequisites as running functional tests
+
+```
+make test
+make develop_tests
+py.test test_your_test.tavern.yaml # Expect warnings about https and structure different
 ```
 
 ## Releasing a Kong Distribution
@@ -141,5 +173,5 @@ bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAG
 Using all defaults one would end up with
 
 ```
-bintray.com/kong/kong-community-edition/ubuntu/0.0.0/kong-community-edition-0.0.0.xenial.all.deb
+bintray.com/kong/kong-deb/ubuntu/0.0.0/kong-0.0.0.xenial.all.deb
 ```

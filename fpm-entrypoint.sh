@@ -22,6 +22,7 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   fi
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   PACKAGE_TYPE="rpm"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes"
   OUTPUT_FILE_SUFFIX=".aws"
 fi
 
@@ -42,6 +43,7 @@ else
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "$KONG_LICENSE" \
+    --provides 'kong-community-edition' \
     --url 'https://getkong.org/' usr etc \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
 fi

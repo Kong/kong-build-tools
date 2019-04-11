@@ -10,10 +10,13 @@ elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   DOCKER_FILE="Dockerfile.rpm"
   cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.rpm output/kong.rpm
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+	cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.noarch.rpm output/kong.rpm
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
   DOCKER_FILE="Dockerfile.rpm"
   RHEL=true
+elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
+  exit 0
 else
   echo "Unrecognized base image $RESTY_IMAGE_BASE"
   exit 1

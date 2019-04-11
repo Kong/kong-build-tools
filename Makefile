@@ -1,5 +1,4 @@
 export SHELL:=/bin/bash
-export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
@@ -19,7 +18,7 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 endif
 
 EDITION?="community"
-KONG_PACKAGE_NAME?="kong-community-edition"
+KONG_PACKAGE_NAME?="kong"
 KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 PRIVATE_REPOSITORY?=true
@@ -59,8 +58,26 @@ release-kong: test
 clean:
 	docker rmi kong:fpm
 	docker rmi kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	docker rmi kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker rmi kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+
+development:
+	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
+	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
+	docker inspect --type=image kong:kong-ubuntu-xenial > /dev/null || make build-kong
+	docker build \
+	--build-arg RESTY_IMAGE_BASE=kong \
+	--build-arg RESTY_IMAGE_TAG=kong-ubuntu-xenial \
+	--build-arg KONG_VERSION=$(KONG_VERSION) \
+	--build-arg KONG_UID=$$(id -u) \
+	--build-arg USER=$$USER \
+	--build-arg RUNAS_USER=$$USER \
+	-f test/Dockerfile.deb \
+	-t kong:development .
+	- docker-compose stop
+	- docker-compose rm -f
+	USER=$$(id -u) docker-compose up -d && \
+	docker-compose exec kong make dev && \
+	docker-compose exec kong /bin/bash
 
 package-kong: build-kong
 	docker build -f Dockerfile.fpm \
