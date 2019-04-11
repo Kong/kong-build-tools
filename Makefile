@@ -77,27 +77,8 @@ package-kong: build-kong
 	kong:fpm
 
 build-kong:
-	docker inspect --type=image kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-openresty-base
-	docker build -f Dockerfile.kong \
-	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-t kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
-	docker run -it --rm \
-	-v $(KONG_SOURCE_LOCATION):/kong \
-	-v $$PWD/output/build:/output/build \
-	-e KONG_VERSION=$(KONG_VERSION) \
-	-e KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
-	-e KONG_LICENSE=$(KONG_LICENSE) \
-	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-e LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	-e LYAML_VERSION=$(LYAML_VERSION) \
-	kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-
-build-openresty-base:
 	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
-	docker build -f Dockerfile.openresty \
+	docker build -f Dockerfile.kong \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -110,7 +91,11 @@ build-openresty-base:
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
-	-t kong:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+	-t kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+	docker run -it --rm \
+	-v $(KONG_SOURCE_LOCATION):/kong \
+	-v $$PWD/output/build:/output/build \
+	kong:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
