@@ -16,11 +16,8 @@ ARG RHEL="false"
 RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
-RUN yum -y install epel-release \
-  && yum repolist \
-  && yum -y install wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
-  zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git dpkg-devel dpkg-dev \
-  && chmod 777 /usr/bin/dpkg 
+RUN yum -y install wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
+  zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git
 
 RUN if [ "$RHEL" = "true" ] ; then \
   subscription-manager remove --all \ 
