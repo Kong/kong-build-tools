@@ -56,7 +56,7 @@ install:
 
 before_script:
   - cat make.log
-  - fg
+  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
 
 script:
   - make test
