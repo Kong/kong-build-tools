@@ -88,10 +88,11 @@ development: build-development-image
 	docker-compose exec kong /bin/bash
 
 package-kong: build-kong
+  sudo chown -R $$USER:$$USER $$PWD/output
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	-t kong/kong-build-tools:fpm .
-	sudo chown -r $$USER:$$USER $$PWD/output/build
+	sudo chown -R $$USER:$$USER $$PWD/output
 	docker run -t --rm \
 	-v $$PWD/output/build:/tmp/build \
 	-v $$PWD/output:/output \
