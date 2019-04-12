@@ -44,6 +44,7 @@ matrix:
     - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
 install:
+  - make setup_scripts > /var/log/tests.log 2>&1
   - docker pull kong/kong-build-tools:fpm || true
   - docker pull kong/kong-build-tools:test_runner || true
   - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
@@ -53,7 +54,8 @@ install:
   - make package-kong
 
 before_script:
-  - make setup_tests
+  - cat /var/log/tests.log
+  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
 
 script:
   - make test
