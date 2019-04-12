@@ -16,9 +16,9 @@ env:
 jobs:
   include:
     - &run
-      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
       stage: run
-      setup:
+      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
+      before_install:
         - make setup_tests >make.log 2>&1 &
         - docker pull kong/kong-build-tools:fpm || true
         - docker pull kong/kong-build-tools:test_runner || true
@@ -26,12 +26,11 @@ jobs:
         - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
         - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
         - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
-      package:
+      install:
         - make package-kong
-      test:
+      before_script:
         - cat make.log
         - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
+      script:
         - make test
-      - <<: *run
-        env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
 
