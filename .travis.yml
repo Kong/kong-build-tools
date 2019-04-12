@@ -1,4 +1,4 @@
-dist: xenial
+-dist: xenial
 language: python
 python:
   - "3.6"
@@ -12,54 +12,26 @@ env:
     - KONG_SOURCE_LOCATION=$PWD/kong
     - HELM_VERSION=v2.11.0
     - MINIKUBE_VERSION=v0.33.1
-  matrix:
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=latest KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=jessie KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing KONG_SOURCE=master
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=master
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 KONG_SOURCE=master
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=6 KONG_SOURCE=master
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7 KONG_SOURCE=master
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
-    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=master
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=next
-    - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=next
-    - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
-    - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
-matrix:
-  allow_failures:
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=testing KONG_SOURCE=master
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=next
-    - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=next
-    - env: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
-    - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
+jobs:
+  include:
+    - &run
+      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
+      stage: run
+      setup:
+        - make setup_tests >make.log 2>&1 &
+        - docker pull kong/kong-build-tools:fpm || true
+        - docker pull kong/kong-build-tools:test_runner || true
+        - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+        - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+        - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+        - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
+      package:
+        - make package-kong
+      test:
+        - cat make.log
+        - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
+        - make test
+      - <<: *run
+        env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
 
-install:
-  - make setup_tests >make.log 2>&1 &
-  - docker pull kong/kong-build-tools:fpm || true
-  - docker pull kong/kong-build-tools:test_runner || true
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
-  - make package-kong
-
-before_script:
-  - cat make.log
-  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
-
-script:
-  - make test
-
-after_script:
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - make update-docker-cache

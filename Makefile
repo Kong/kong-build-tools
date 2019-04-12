@@ -50,6 +50,7 @@ LYAML_VERSION ?= 6.2.3
 update-docker-cache:
 ifneq ($(RESTY_IMAGE_BASE),rhel)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:development || true
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test_runner && echo "success!" || docker push kong/kong-build-tools:test_runner
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
@@ -72,6 +73,7 @@ build-development-image:
 	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
 	docker inspect --type=image kong:kong-ubuntu-xenial > /dev/null || make build-kong
 	docker build \
+	--cache-from kong/kong-build-tools:development \
 	--build-arg RESTY_IMAGE_BASE=kong \
 	--build-arg RESTY_IMAGE_TAG=kong-ubuntu-xenial \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
