@@ -13,11 +13,8 @@ env:
     - HELM_VERSION=v2.11.0
     - MINIKUBE_VERSION=v0.33.1
 
-jobs:
-  include:
-    - &run
+run: &run
       stage: run
-      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
       before_install:
         - make setup_tests >make.log 2>&1 &
         - docker pull kong/kong-build-tools:fpm || true
@@ -33,4 +30,11 @@ jobs:
         - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
       script:
         - make test
+
+jobs:
+  include:
+    - <<: *run
+      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
+    - <<: *run
+      env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=master
 
