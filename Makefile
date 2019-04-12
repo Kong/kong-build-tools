@@ -102,7 +102,8 @@ package-kong: build-kong
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	kong/kong-build-tools:fpm
 
-build-kong: build-base
+build-kong:
+	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
 	docker build -f Dockerfile.kong \
 	--cache-from kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
