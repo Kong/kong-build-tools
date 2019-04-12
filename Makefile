@@ -46,15 +46,14 @@ LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
 update-docker-cache:
-ifeq ($(RESTY_IMAGE_BASE),rhel)
-	exit 0
-endif
+ifneq ($(RESTY_IMAGE_BASE),rhel)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test_runner && echo "success!" || docker push kong/kong-build-tools:test_runner
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	-docker tag $(KONG_TEST_CONTAINER_NAME) kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+endif
 
 release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
