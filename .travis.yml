@@ -62,6 +62,6 @@ script:
   - make test
 
 after_success:
-  - if [ "$TRAVIS_EVENT_TYPE" == "cron" && "$RESTY_IMAGE_TAG" == "xenial" ]; then build-development-image; fi
-  - if [ "$TRAVIS_EVENT_TYPE" == "cron" && "$RESTY_IMAGE_BASE" != "rhel" ]; then make update-docker-cache; fi
+  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then build-development-image; fi
+  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make update-docker-cache; fi
 

@@ -69,6 +69,7 @@ release-kong: test
 	./release-kong.sh
 
 build-development-image:
+ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker pull kong/kong-build-tools:kong-ubuntu-xenial
 	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
 	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
@@ -83,13 +84,16 @@ build-development-image:
 	--build-arg RUNAS_USER=$$USER \
 	-f test/Dockerfile.deb \
 	-t kong/kong-build-tools:development .
+endif
 
 development: build-development-image
+ifeq ($(RESTY_IMAGE_TAG),xenial)
 	- docker-compose stop
 	- docker-compose rm -f
 	USER=$$(id -u) docker-compose up -d && \
 	docker-compose exec kong make dev && \
 	docker-compose exec kong /bin/bash
+endif
 
 package-kong: build-kong
 	docker build -f Dockerfile.fpm \
