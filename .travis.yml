@@ -45,9 +45,9 @@ matrix:
 
 install:
   - make setup_tests >make.log 2>&1 &
-  - docker pull kong/kong-build-tools:fpm >/dev/null 2>&1 &
-  - docker pull kong/kong-build-tools:test_runner >/dev/null 2>&1 &
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} >/dev/null 2>&1 &
+  - docker pull kong/kong-build-tools:fpm || true
+  - docker pull kong/kong-build-tools:test_runner || true
+  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
@@ -63,4 +63,3 @@ script:
 after_script:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make update-docker-cache
-

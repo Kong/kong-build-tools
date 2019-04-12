@@ -104,7 +104,7 @@ package-kong: build-kong
 	kong/kong-build-tools:fpm
 
 build-kong:
-	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
+	docker inspect --type=image kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
 	docker build -f Dockerfile.kong \
 	--cache-from kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -129,7 +129,8 @@ build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-	docker build -f Dockerfile.$(PACKAGE_TYPE) \
+	PACKAGE_TYPE=rpm
+	@docker build -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
