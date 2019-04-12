@@ -49,11 +49,12 @@ update-docker-cache:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	exit 0
 endif
-	./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
-	./docker_push_latest_if_changed.py --source kong/kong-build-tools:test_runner
-	./docker_push_latest_if_changed.py --source kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	./docker_push_latest_if_changed.py --source kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	./docker_push_latest_if_changed.py --source $(KONG_TEST_CONTAINER_NAME) kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test_runner && echo "success!" || docker push kong/kong-build-tools:test_runner
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-docker tag $(KONG_TEST_CONTAINER_NAME) kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 release-kong: test
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -102,7 +103,7 @@ package-kong: build-kong
 	kong/kong-build-tools:fpm
 
 build-kong:
-	docker inspect --type=image kong:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
+	docker inspect --type=image kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
 	docker build -f Dockerfile.kong \
 	--cache-from kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \

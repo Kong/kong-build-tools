@@ -17,7 +17,9 @@ ARG RHEL="false"
 RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
-RUN yum -y install perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils hostname
+RUN yum -y install epel-release \
+  && yum repolist \
+  && yum -y install perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils hostname dpkg-devel dpkg-dev
 
 RUN if [ "$RHEL" = "true" ] ; then \
   subscription-manager remove --all \
