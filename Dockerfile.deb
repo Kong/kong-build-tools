@@ -6,9 +6,6 @@ ARG RESTY_IMAGE_TAG="xenial"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
-ENV RESTY_IMAGE_BASE $RESTY_IMAGE_BASE
-ENV RESTY_IMAGE_TAG $RESTY_IMAGE_TAG
-
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         build-essential \

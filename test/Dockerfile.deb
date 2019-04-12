@@ -8,7 +8,6 @@ ARG KONG_PACKAGE_NAME="kong"
 ARG KONG_UID="1337"
 ARG USER="kong"
 ARG RUNAS_USER="root"
-ARG RESTY_IMAGE_TAG="xenial"
 
 ARG SU_EXEC_VERSION=0.2
 ARG SU_EXEC_URL="https://github.com/ncopa/su-exec/archive/v${SU_EXEC_VERSION}.tar.gz"
@@ -22,6 +21,8 @@ RUN curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
 RUN adduser --uid ${KONG_UID} ${USER} \
   && mkdir -p "/usr/local/kong"
 
+ARG RESTY_IMAGE_TAG=kong-ubuntu-xenial
+ENV RESTY_IMAGE_TAG $RESTY_IMAGE_TAG
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.all.deb /kong.deb
 
 RUN dpkg -i /kong.deb

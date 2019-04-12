@@ -69,13 +69,14 @@ release-kong: test
 	./release-kong.sh
 
 build-development-image:
+	docker pull kong/kong-build-tools:kong-ubuntu-xenial
 	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
 	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
-	docker inspect --type=image kong:kong-ubuntu-xenial > /dev/null || make build-kong
+	docker inspect --type=image kong/kong-build-tools:kong-ubuntu-xenial > /dev/null || make build-kong
 	docker build \
 	--cache-from kong/kong-build-tools:development \
-	--build-arg RESTY_IMAGE_BASE=kong \
-	--build-arg RESTY_IMAGE_TAG=kong-ubuntu-xenial \
+	--build-arg RESTY_IMAGE_BASE=kong/kong-build-tools \
+	--build-arg RESTY_IMAGE_TAG="kong-ubuntu-xenial" \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_UID=$$(id -u) \
 	--build-arg USER=$$USER \
