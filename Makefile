@@ -91,6 +91,7 @@ package-kong: build-kong
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	-t kong/kong-build-tools:fpm .
+	ls -la output/build/usr/local/openresty/nginx/conf/nginx.conf
 	docker run -t --rm \
 	-v $$PWD/output/build:/tmp/build \
 	-v $$PWD/output:/output \
