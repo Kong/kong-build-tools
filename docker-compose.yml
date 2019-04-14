@@ -1,7 +1,7 @@
 version: '2.1'
 services:
   kong:
-    image: kong:development
+    image: kong/kong-build-tools:development
     entrypoint: tail -f /dev/null
     user: ${USER:-root}
     working_dir: /kong

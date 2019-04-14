@@ -6,7 +6,7 @@ if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
   exit 0
 fi
 
-docker run -it --rm localhost:5000/kong /bin/sh -c "luarocks --version"
+docker run -it --rm localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} /bin/sh -c "luarocks --version"
 
 kubectl apply -f https://github.com/Faithlife/minikube-registry-proxy/raw/master/kube-registry-proxy.yml
 curl -L https://github.com/Faithlife/minikube-registry-proxy/raw/master/docker-compose.yml | MINIKUBE_IP=$(minikube ip) docker-compose -p mkr -f - up -d
@@ -16,12 +16,12 @@ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]];
   sleep 10;
 done 
 
-docker push localhost:5000/kong
+docker push localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
 helm init --wait
 helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
 helm repo update
-helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong stable/kong
+helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} stable/kong
 
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"

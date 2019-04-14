@@ -1,5 +1,7 @@
 dist: xenial
-language: generic
+language: python
+python:
+  - "3.6"
 
 env:
   global:
@@ -30,7 +32,6 @@ env:
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=stretch KONG_SOURCE=next
     - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
     - PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
-
 matrix:
   allow_failures:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
@@ -41,35 +42,26 @@ matrix:
     - env: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=6 KONG_SOURCE=next
     - env: PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=latest KONG_SOURCE=next
 
-
-cache:
-  timeout: 1000
-  directories:
-    - $HOME/docker
-    - output/build
-
-before_cache:
-  # Save docker history of images we want the cache to be available for
-  - mkdir -p $HOME/docker
-  - docker save -o $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG | tr "\n" " " | tr -d "<missing>")
-  - docker save -o $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar $(docker history -q kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG | tr "\n" " " | tr -d "<missing>")
-  - docker save -o $HOME/docker/kong:fpm.tar $(docker history -q kong:fpm | tr "\n" " " | tr -d "<missing>")
-  - ls $HOME/docker/
-
 before_install:
-  # Load cached docker layers
-  - ls $HOME/docker/
-  - if [[ -f $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
-  - if [[ -f $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar ]]; then docker load -i $HOME/docker/kong:openresty-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG.tar; fi
-  - if [[ -f $HOME/docker/kong:fpm.tar ]]; then docker load -i $HOME/docker/kong:fpm.tar; fi
+  - make setup_tests >make.log 2>&1 &
+  - docker pull kong/kong-build-tools:fpm || true
+  - docker pull kong/kong-build-tools:test_runner || true
+  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
+  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
 
 install:
-  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
   - make package-kong
 
 before_script:
-  - make setup_tests
+  - cat make.log
+  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
 
 script:
   - make test
+
+after_success:
+  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then build-development-image; fi
+  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make update-docker-cache; fi
 

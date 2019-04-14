@@ -75,4 +75,4 @@ sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/bin/ -maxdepth 1 -type f`
 sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/share/lua/5.1/luarocks/ -maxdepth 1 -type f`
 
 cp -R /tmp/build/* /output/build/
-chown -R 1000:1000 /output/build/*
+chown -R 1000:1000 /output/*
