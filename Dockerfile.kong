@@ -40,10 +40,10 @@ ARG RESTY_VERSION=1.13.6.2
 LABEL resty_version="${RESTY_VERSION}"
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
 RUN cd /tmp && tar xzf openresty-${RESTY_VERSION}.tar.gz
-RUN if [ "$EDITION" = "community" ] ; then cd /tmp \
+RUN cd /tmp \
     && tar -xzf kong-patches.tar.gz -C /tmp \
     && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
-    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done ; fi
+    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 ARG OPENSSL_EXTRA_OPTIONS
 ARG RESTY_OPENSSL_VERSION=1.1.1
