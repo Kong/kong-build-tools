@@ -8,8 +8,10 @@ RUN mkdir -p /tmp/build
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
 ADD https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz /tmp/yaml-${LIBYAML_VERSION}.tar.gz
-RUN cd /tmp && tar xzf yaml-${LIBYAML_VERSION}.tar.gz
-RUN cd /tmp/yaml-${LIBYAML_VERSION} \
+RUN cd /tmp \
+    && tar xzf yaml-${LIBYAML_VERSION}.tar.gz \
+    && ln -s /tmp/yaml-${LIBYAML_VERSION} /tmp/yaml \
+    && cd /tmp/yaml \
     && ./configure \
       --libdir=/tmp/build/usr/local/kong/lib \
       --includedir=/tmp/yaml-${LIBYAML_VERSION} \
@@ -19,7 +21,8 @@ ARG KONG_GMP_VERSION=6.1.2
 RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
     && cd /tmp \
     && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
-    && cd /tmp/gmp-${KONG_GMP_VERSION} \
+    && ln -s /tmp/gmp-${KONG_GMP_VERSION} /tmp/gmp \
+    && cd /tmp/gmp \
     && ./configure --build=x86_64-linux-gnu --enable-static=no --libdir=/tmp/build/usr/local/kong/lib \
     && make -j${RESTY_J}; fi
 
@@ -27,7 +30,8 @@ ARG KONG_NETTLE_VERSION=3.4.1
 RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
     && cd /tmp \
     && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz \
-    && cd /tmp/nettle-${KONG_NETTLE_VERSION} \
+    && ln -s /tmp/nettle-${KONG_NETTLE_VERSION} /tmp/nettle \
+    && cd /tmp/nettle \
     && LDFLAGS="-Wl,-rpath,/usr/local/kong/lib" \
     ./configure --disable-static \
     --libdir=$BUILD/usr/local/kong/lib \
@@ -39,10 +43,11 @@ ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-pa
 ARG RESTY_VERSION=1.13.6.2
 LABEL resty_version="${RESTY_VERSION}"
 ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
-RUN cd /tmp && tar xzf openresty-${RESTY_VERSION}.tar.gz
 RUN cd /tmp \
+    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
+    && ln -s /tmp/openresty-${RESTY_VERSION} /tmp/openresty \
     && tar -xzf kong-patches.tar.gz -C /tmp \
-    && cd /tmp/openresty-${RESTY_VERSION}/bundle/ \
+    && cd /tmp/openresty/bundle/ \
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 ARG OPENSSL_EXTRA_OPTIONS
@@ -52,7 +57,7 @@ ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/
 RUN cd /tmp \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
-    && cd /tmp/openssl-${RESTY_OPENSSL_VERSION} \
+    && cd /tmp/openssl \
     && eval ./config --prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong ${OPENSSL_EXTRA_OPTIONS} -fPIC shared \
     && make -j${RESTY_J} \
     && make install_sw
@@ -62,7 +67,7 @@ ARG RESTY_J=2
 ARG RESTY_CONFIG_OPTIONS="\
     --with-cc-opt='-I/tmp/openssl/include' \
     --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
-    --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
+    --with-pcre=/tmp/pcre \
     --with-pcre-jit \
     --with-http_realip_module \
     --with-http_ssl_module \
@@ -74,8 +79,10 @@ ARG RESTY_CONFIG_OPTIONS="\
 LABEL resty_config_options="${RESTY_CONFIG_OPTIONS}"
 LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
-RUN cd /tmp && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz
-RUN cd /tmp/openresty-${RESTY_VERSION} \
+RUN cd /tmp \
+    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
+    && ln -s /tmp/pcre-${RESTY_PCRE_VERSION} /tmp/pcre \
+    && cd /tmp/openresty \
     && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install DESTDIR=/tmp/build
@@ -83,8 +90,10 @@ RUN cd /tmp/openresty-${RESTY_VERSION} \
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
-RUN cd /tmp && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
-RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
+RUN cd /tmp \
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && ln -s /tmp/luarocks-${RESTY_LUAROCKS_VERSION} /tmp/luarocks \
+    && cd /tmp/luarocks \
     && eval ./configure \
         --lua-suffix=jit \
         --with-lua=/tmp/build/usr/local/openresty/luajit \

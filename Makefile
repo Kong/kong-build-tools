@@ -16,16 +16,17 @@ TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 
 ifeq ($(RESTY_IMAGE_BASE),alpine)
-	OPENSSL_EXTRA_OPTIONS=" -no-async"
+	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
-EDITION?="community"
-KONG_PACKAGE_NAME?="kong"
-KONG_CONFLICTS?="kong-enterprise-edition"
-KONG_LICENSE?="ASL 2.0"
+KONG_SOURCE_LOCATION?="$$PWD/../kong/"
+EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_PACKAGE_NAME?=`grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_CONFLICTS?=`grep KONG_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_LICENSE?=`grep KONG_LICENSE= $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
 PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -71,8 +72,8 @@ release-kong: test
 build-development-image:
 ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker pull kong/kong-build-tools:kong-ubuntu-xenial
-	test -s output/kong-$(KONG_VERSION).xenial.all.deb || make package-kong
-	cp output/kong-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
+	test -s output/$(KONG_PACKAGE_NAME)-$(KONG_VERSION).xenial.all.deb || make package-kong
+	cp output/$(KONG_PACKAGE_NAME)-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
 	docker inspect --type=image kong/kong-build-tools:kong-ubuntu-xenial > /dev/null || make build-kong
 	docker build \
 	--cache-from kong/kong-build-tools:development \
@@ -95,7 +96,7 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker-compose exec kong /bin/bash
 endif
 
-package-kong: build-kong
+package-kong:
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	-t kong/kong-build-tools:fpm .
@@ -105,7 +106,6 @@ package-kong: build-kong
 	-e KONG_VERSION=$(KONG_VERSION) \
 	-e KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
-	-e KONG_LICENSE=$(KONG_LICENSE) \
 	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	kong/kong-build-tools:fpm
@@ -122,7 +122,7 @@ build-kong:
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
+	--build-arg RESTY_CONFIG_OPTIONS="$(RESTY_CONFIG_OPTIONS)" \
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
