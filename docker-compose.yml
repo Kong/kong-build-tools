@@ -6,7 +6,7 @@ services:
     user: ${USER:-root}
     working_dir: /kong
     volumes:
-      - ${KONG_SOURCE_LOCATION}:/kong
+      - ${KONG_SOURCE_LOCATION:-../kong}:/kong
       - ./kong-plugin:/kong-plugin
     depends_on:
       db:
