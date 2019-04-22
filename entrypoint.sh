@@ -19,6 +19,7 @@ if test -f /root/id_rsa; then
   mkdir -p /root/.ssh
   mv /root/id_rsa /root/.ssh/id_rsa
   chmod 700 /root/.ssh/id_rsa
+  ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 fi
 
 pushd /kong
