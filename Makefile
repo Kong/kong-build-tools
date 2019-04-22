@@ -48,6 +48,13 @@ RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
 LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
+pull-docker-cache:
+  - docker pull kong/kong-build-tools:fpm
+  - docker pull kong/kong-build-tools:test_runner
+  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+
 update-docker-cache:
 ifneq ($(RESTY_IMAGE_BASE),rhel)
 	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
@@ -97,6 +104,7 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 endif
 
 package-kong:
+	if [ ! -d "output/build/usr" ]; then make build-kong; fi
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	-t kong/kong-build-tools:fpm .
@@ -122,7 +130,7 @@ build-kong:
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg RESTY_CONFIG_OPTIONS="$(RESTY_CONFIG_OPTIONS)" \
+	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \

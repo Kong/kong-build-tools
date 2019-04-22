@@ -12,6 +12,10 @@ env:
     - KONG_SOURCE_LOCATION=$PWD/kong
     - HELM_VERSION=v2.11.0
     - MINIKUBE_VERSION=v0.33.1
+    - EDITION=community
+    - KONG_PACKAGE_NAME=kong
+    - KONG_CONFLICTS=kong-enterprise
+    - KONG_LICENSE="ASL 2.0"
   matrix:
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
