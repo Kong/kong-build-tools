@@ -48,4 +48,3 @@ else
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
 fi
 
-rm -rf /tmp/build/*
