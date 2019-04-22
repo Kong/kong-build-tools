@@ -49,11 +49,11 @@ LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
 pull-docker-cache:
-  - docker pull kong/kong-build-tools:fpm
-  - docker pull kong/kong-build-tools:test_runner
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+	- docker pull kong/kong-build-tools:fpm
+	- docker pull kong/kong-build-tools:test_runner
+	- docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+	- docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+	- docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
 update-docker-cache:
 ifneq ($(RESTY_IMAGE_BASE),rhel)
