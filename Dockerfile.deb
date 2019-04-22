@@ -25,4 +25,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         libssl-dev \
         git \
         m4 \
-        file
+        file \
+	ssh
