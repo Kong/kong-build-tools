@@ -27,7 +27,7 @@ services:
     network_mode: "host"
     restart: on-failure
   db:
-    image: postgres:9.5
+    image: postgres:9.6
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
