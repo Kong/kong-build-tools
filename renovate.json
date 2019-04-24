@@ -8,6 +8,6 @@
     "enabled": true
   },
   "pip_requirements": {
-    "fileMatch": ["test/requirements.txt"]
+    "fileMatch": ["(^|/)test/requirements.txt$"]
   }
 }
