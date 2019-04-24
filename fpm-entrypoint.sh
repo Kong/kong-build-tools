@@ -42,7 +42,7 @@ else
     --conflicts $KONG_CONFLICTS \
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
-    --license "$KONG_LICENSE" \
+    --license "ASL 2.0" \
     --provides 'kong-community-edition' \
     --url 'https://getkong.org/' usr etc \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
