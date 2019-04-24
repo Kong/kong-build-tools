@@ -117,7 +117,6 @@ package-kong:
 	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-e KONG_LICENSE=$(KONG_LICENSE) \
 	kong/kong-build-tools:fpm
 
 build-kong:
