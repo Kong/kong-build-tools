@@ -105,6 +105,7 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 endif
 
 package-kong:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	if [ ! -d "output/build/usr" ]; then make build-kong; fi
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
@@ -118,6 +119,7 @@ package-kong:
 	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	kong/kong-build-tools:fpm
+endif
 
 build-kong:
 	docker inspect --type=image kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
