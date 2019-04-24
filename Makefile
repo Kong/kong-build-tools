@@ -21,9 +21,9 @@ endif
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_PACKAGE_NAME?=`grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_CONFLICTS?=`grep KONG_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_LICENSE?=`grep KONG_LICENSE= $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_PACKAGE_NAME?="kong"
+KONG_CONFLICTS?="kong-enterprise-edition"
+KONG_LICENSE?="ASL 2.0"
 
 PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME?=localhost:5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
@@ -57,13 +57,13 @@ pull-docker-cache:
 
 update-docker-cache:
 ifneq ($(RESTY_IMAGE_BASE),rhel)
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:fpm
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:development || true
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test_runner && echo "success!" || docker push kong/kong-build-tools:test_runner
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-docker push kong/kong-build-tools:fpm
+	-docker push kong/kong-build-tools:development
+	-docker push kong/kong-build-tools:test_runner
+	-docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	-docker tag $(KONG_TEST_CONTAINER_NAME) kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-	-./docker_push_latest_if_changed.py --source kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) && echo "success!" || docker push kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-docker push kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 endif
 
 release-kong: test
@@ -117,7 +117,7 @@ package-kong:
 	-e KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-e RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	-e RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-e KONG_LICENSE="$(KONG_LICENSE)" \
+	-e KONG_LICENSE=$(KONG_LICENSE) \
 	kong/kong-build-tools:fpm
 
 build-kong:
