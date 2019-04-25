@@ -16,7 +16,7 @@ PyJWT==1.7.1
 pykwalify==1.7.0
 pytest==4.1.1
 python-box==3.2.3
-python-dateutil==2.7.5
+python-dateutil==2.8.0
 PyYAML==3.13
 requests==2.21.0
 six==1.12.0
