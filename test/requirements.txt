@@ -17,7 +17,7 @@ pykwalify==1.7.0
 pytest==4.4.1
 python-box==3.2.3
 python-dateutil==2.8.0
-PyYAML==3.13
+PyYAML==5.1
 requests==2.21.0
 six==1.12.0
 stevedore==1.30.1
