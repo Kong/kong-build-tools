@@ -19,15 +19,7 @@ spec:
     spec:
       containers:
       - name: registry
-        image: registry:2.5.1
-        resources:
-          # keep request = limit to keep this container in guaranteed class
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
+        image: registry
         env:
         - name: REGISTRY_HTTP_ADDR
           value: :5000
@@ -83,10 +75,6 @@ spec:
       containers:
       - name: kube-registry-proxy
         image: gcr.io/google_containers/kube-registry-proxy:0.4
-        resources:
-          limits:
-            cpu: 100m
-            memory: 50Mi
         env:
         - name: REGISTRY_HOST
           value: kube-registry.kube-system.svc.cluster.local
