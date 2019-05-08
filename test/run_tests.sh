@@ -15,7 +15,7 @@ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]];
   sleep 10;
 done 
 
-docker push localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+for i in {1..5}; do docker push localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} && break || sleep 15; done
 
 helm init --wait
 helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
