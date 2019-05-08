@@ -10,7 +10,7 @@ jmespath==0.9.4
 more-itertools==7.0.0
 paho-mqtt==1.3.1
 pbr==5.2.0
-pluggy==0.9.0
+pluggy==0.11.0
 py==1.8.0
 PyJWT==1.7.1
 pykwalify==1.7.0
