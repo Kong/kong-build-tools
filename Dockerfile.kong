@@ -7,8 +7,8 @@ RUN mkdir -p /tmp/build
 
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
-ADD https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz /tmp/yaml-${LIBYAML_VERSION}.tar.gz
-RUN cd /tmp \
+RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
+    && cd /tmp \
     && tar xzf yaml-${LIBYAML_VERSION}.tar.gz \
     && ln -s /tmp/yaml-${LIBYAML_VERSION} /tmp/yaml \
     && cd /tmp/yaml \
@@ -100,6 +100,9 @@ RUN cd /tmp \
         --with-lua-include=/tmp/build/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install DESTDIR=/tmp/build
+
+COPY install-lyaml.sh /tmp/install-lyaml.sh
+RUN /tmp/install-lyaml.sh
 
 WORKDIR /kong
 
