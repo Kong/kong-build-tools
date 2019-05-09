@@ -20,7 +20,7 @@ for i in {1..5}; do docker push localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_
 helm init --wait
 helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
 helm repo update
-helm install --dep-up --name kong --set image.repository=localhost,image.tag=5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} stable/kong
+helm install --dep-up --version 0.10.1 --name kong --set image.repository=localhost,image.tag=5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} stable/kong
 
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
