@@ -18,7 +18,7 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install
 
 ARG KONG_GMP_VERSION=6.1.2
-RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
+RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
     && cd /tmp \
     && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
     && ln -s /tmp/gmp-${KONG_GMP_VERSION} /tmp/gmp \
@@ -27,7 +27,7 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/gmp-${KONG_GMP_VERSI
     && make -j${RESTY_J}; fi
 
 ARG KONG_NETTLE_VERSION=3.4.1
-RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
+RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
     && cd /tmp \
     && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz \
     && ln -s /tmp/nettle-${KONG_NETTLE_VERSION} /tmp/nettle \
@@ -39,11 +39,11 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -L -o /tmp/nettle-${KONG_NETTLE
     --with-lib-path="/tmp/gmp-${KONG_GMP_VERSION}/.libs/" \
     && make -j${RESTY_J}; fi
 
-ADD https://github.com/Kong/openresty-patches/archive/master.tar.gz /tmp/kong-patches.tar.gz
+RUN curl -fsSLo /tmp/kong-patches.tar.gz https://github.com/Kong/openresty-patches/archive/master.tar.gz
 ARG RESTY_VERSION=1.13.6.2
 LABEL resty_version="${RESTY_VERSION}"
-ADD https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz /tmp/openresty-${RESTY_VERSION}.tar.gz
-RUN cd /tmp \
+RUN curl -fsSLo /tmp/openresty-${RESTY_VERSION}.tar.gz https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz \
+    && cd /tmp \
     && tar xzf openresty-${RESTY_VERSION}.tar.gz \
     && ln -s /tmp/openresty-${RESTY_VERSION} /tmp/openresty \
     && tar -xzf kong-patches.tar.gz -C /tmp \
@@ -53,8 +53,8 @@ RUN cd /tmp \
 ARG OPENSSL_EXTRA_OPTIONS
 ARG RESTY_OPENSSL_VERSION=1.1.1
 LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
-ADD https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz
-RUN cd /tmp \
+RUN curl -fsSLo /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
+    && cd /tmp \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
     && cd /tmp/openssl \
@@ -78,8 +78,8 @@ ARG RESTY_CONFIG_OPTIONS="\
     "
 LABEL resty_config_options="${RESTY_CONFIG_OPTIONS}"
 LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
-ADD https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz
-RUN cd /tmp \
+RUN curl -fsSLo /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz \
+    && cd /tmp \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && ln -s /tmp/pcre-${RESTY_PCRE_VERSION} /tmp/pcre \
     && cd /tmp/openresty \
@@ -89,8 +89,8 @@ RUN cd /tmp \
 
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
-ADD https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz
-RUN cd /tmp \
+RUN curl -fsSLo /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && cd /tmp \
     && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && ln -s /tmp/luarocks-${RESTY_LUAROCKS_VERSION} /tmp/luarocks \
     && cd /tmp/luarocks \
@@ -111,3 +111,4 @@ ENV LUA_PATH /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openr
 COPY entrypoint.sh /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
+
