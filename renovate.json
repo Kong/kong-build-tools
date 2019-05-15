@@ -1,8 +1,8 @@
 {
   "extends": [
-    "config:base",
-    "every weekend"
+    "config:base"
   ],
+  "schedule": "every weekend",
   "ignorePaths": [],
   "automerge": true,
   "major": {
