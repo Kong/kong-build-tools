@@ -51,7 +51,7 @@ RUN curl -fsSLo /tmp/openresty-${RESTY_VERSION}.tar.gz https://openresty.org/dow
     && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
 ARG OPENSSL_EXTRA_OPTIONS
-ARG RESTY_OPENSSL_VERSION=1.1.1
+ARG RESTY_OPENSSL_VERSION=1.1.1c
 LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
 RUN curl -fsSLo /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && cd /tmp \
