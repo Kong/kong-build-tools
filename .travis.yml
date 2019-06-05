@@ -61,6 +61,7 @@ before_install:
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
 
 install:
+  - make build-base
   - make package-kong
 
 before_script:
