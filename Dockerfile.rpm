@@ -14,7 +14,7 @@ RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${RE
 RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-optional-rpms' ; fi
 
 RUN yum -y install wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
-  zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git
+  zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git coreutils
 
 RUN if [ "$RHEL" = "true" ] ; then \
   subscription-manager remove --all \ 
