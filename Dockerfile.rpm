@@ -16,7 +16,7 @@ RUN if [ "$RHEL" = "true" ] ; then yum-config-manager --enable 'rhel-*-server-op
 RUN yum -y install wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
   zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git coreutils
 
-RUN which realpath || rpm -i <(wget -O - https://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el6/en/x86_64/rpmforge/RPMS/realpath-1.17-1.el6.rf.x86_64.rpm)
+RUN which realpath || curl -sSLO https://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el6/en/x86_64/rpmforge/RPMS/realpath-1.17-1.el6.rf.x86_64.rpm && rpm -i realpath-1.17-1.el6.rf.x86_64.rpm
 
 RUN if [ "$RHEL" = "true" ] ; then \
   subscription-manager remove --all \ 
