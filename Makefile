@@ -125,7 +125,7 @@ endif
 
 build-kong:
 	-rm -rf openresty-build-tools
-	git clone git@github.com:Kong/openresty-build-tools.git
+	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
 	git fetch; \
 	git reset --hard origin/$(OPENRESTY_BUILD_TOOLS_VERSION)
