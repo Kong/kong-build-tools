@@ -26,6 +26,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         git \
         m4 \
         file \
-        valgrind \
-        ssh \
-        lua-yaml-dev
+        ssh
