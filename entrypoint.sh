@@ -64,11 +64,8 @@ popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
-sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' /tmp/build/usr/local/bin/kong && \
-  rm /tmp/build/usr/local/bin/kong.bak
-
-sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/bin/ -maxdepth 1 -type f`
-sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/share/lua/5.1/luarocks/ -maxdepth 1 -type f`
+sed -i 's/resty/\/usr\/local\/openresty\/bin\/resty/' /tmp/build/usr/local/bin/kong
+sed -i 's/\/tmp\/build//' `grep -l -I -r \/tmp\/build /tmp/build/`
 
 cp -R /tmp/build/* /output/build/
 chown -R 1000:1000 /output/*

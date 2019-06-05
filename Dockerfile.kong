@@ -3,7 +3,7 @@ ARG RESTY_IMAGE_TAG="xenial"
 
 FROM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
 
-RUN mkdir -p /tmp/build
+RUN mkdir -p /tmp/build/usr/local
 
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
@@ -39,70 +39,34 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTL
     --with-lib-path="/tmp/gmp-${KONG_GMP_VERSION}/.libs/" \
     && make -j${RESTY_J}; fi
 
-RUN curl -fsSLo /tmp/kong-patches.tar.gz https://github.com/Kong/openresty-patches/archive/master.tar.gz
 ARG RESTY_VERSION=1.13.6.2
 LABEL resty_version="${RESTY_VERSION}"
-RUN curl -fsSLo /tmp/openresty-${RESTY_VERSION}.tar.gz https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
-    && ln -s /tmp/openresty-${RESTY_VERSION} /tmp/openresty \
-    && tar -xzf kong-patches.tar.gz -C /tmp \
-    && cd /tmp/openresty/bundle/ \
-    && for i in /tmp/openresty-patches-master/patches/${RESTY_VERSION}/*.patch; do patch -p1 < $i; done
 
-ARG OPENSSL_EXTRA_OPTIONS
 ARG RESTY_OPENSSL_VERSION=1.1.1c
 LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
-RUN curl -fsSLo /tmp/openssl-${RESTY_OPENSSL_VERSION}.tar.gz https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && ln -s /tmp/openssl-${RESTY_OPENSSL_VERSION} /tmp/openssl \
-    && cd /tmp/openssl \
-    && eval ./config --prefix=/tmp/build/usr/local/kong --openssldir=/tmp/build/usr/local/kong ${OPENSSL_EXTRA_OPTIONS} -fPIC shared \
-    && make -j${RESTY_J} \
-    && make install_sw
 
 ARG RESTY_PCRE_VERSION=8.41
-ARG RESTY_J=2
-ARG RESTY_CONFIG_OPTIONS="\
-    --with-cc-opt='-I/tmp/openssl/include' \
-    --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
-    --with-pcre=/tmp/pcre \
-    --with-pcre-jit \
-    --with-http_realip_module \
-    --with-http_ssl_module \
-    --with-http_stub_status_module \
-    --with-http_v2_module \
-    --with-stream_ssl_preread_module \
-    --with-stream_realip_module \
-    "
-LABEL resty_config_options="${RESTY_CONFIG_OPTIONS}"
 LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
-RUN curl -fsSLo /tmp/pcre-${RESTY_PCRE_VERSION}.tar.gz https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && ln -s /tmp/pcre-${RESTY_PCRE_VERSION} /tmp/pcre \
-    && cd /tmp/openresty \
-    && eval ./configure -j${RESTY_J} ${RESTY_CONFIG_OPTIONS} \
-    && make -j${RESTY_J} \
-    && make -j${RESTY_J} install DESTDIR=/tmp/build
 
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
-RUN curl -fsSLo /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && ln -s /tmp/luarocks-${RESTY_LUAROCKS_VERSION} /tmp/luarocks \
-    && cd /tmp/luarocks \
-    && eval ./configure \
-        --lua-suffix=jit \
-        --with-lua=/tmp/build/usr/local/openresty/luajit \
-        --with-lua-include=/tmp/build/usr/local/openresty/luajit/include/luajit-2.1 \
-    && make build \
-    && make install DESTDIR=/tmp/build
 
+COPY openresty-build-tools/kong-ngx-build /tmp/kong-ngx-build
 COPY install-lyaml.sh /tmp/install-lyaml.sh
-RUN /tmp/install-lyaml.sh
+
+RUN LUAROCKS_INSTALL=/usr/local \
+    LUAROCKS_DESTDIR=/tmp/build \
+    OPENRESTY_INSTALL=/usr/local/openresty \
+    OPENRESTY_DESTDIR=/tmp/build \
+    OPENSSL_INSTALL=/tmp/build/usr/local/kong \
+    OPENRESTY_RPATH=/usr/local/kong/lib \
+    /tmp/kong-ngx-build -p /tmp/build/usr/local \
+        --openresty $RESTY_VERSION \
+        --openssl $RESTY_OPENSSL_VERSION \
+        --luarocks $RESTY_LUAROCKS_VERSION \
+        --pcre $RESTY_PCRE_VERSION \
+        --work /tmp && \
+    /tmp/install-lyaml.sh
 
 WORKDIR /kong
 

@@ -6,6 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
+OPENRESTY_BUILD_TOOLS_VERSION?=feat/kong-build-tools
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -107,6 +108,7 @@ endif
 package-kong:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	if [ ! -d "output/build/usr" ]; then make build-kong; fi
+	docker pull kong/kong-build-tools:fpm
 	docker build -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	-t kong/kong-build-tools:fpm .
@@ -122,7 +124,12 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-kong:
-	docker inspect --type=image kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) > /dev/null || make build-base
+	-rm -rf openresty-build-tools
+	git clone git@github.com:Kong/openresty-build-tools.git
+	cd openresty-build-tools; \
+	git fetch; \
+	git reset --hard origin/$(OPENRESTY_BUILD_TOOLS_VERSION)
+	docker pull kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker build -f Dockerfile.kong \
 	--cache-from kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -156,6 +163,7 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
+	docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker build -f Dockerfile.$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
