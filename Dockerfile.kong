@@ -58,7 +58,8 @@ RUN LUAROCKS_INSTALL=/usr/local \
     LUAROCKS_DESTDIR=/tmp/build \
     OPENRESTY_INSTALL=/usr/local/openresty \
     OPENRESTY_DESTDIR=/tmp/build \
-    OPENSSL_INSTALL=/tmp/build/usr/local/kong \
+    OPENSSL_INSTALL=/usr/local/kong \
+    OPENSSL_DESTDIR=/tmp/build \
     OPENRESTY_RPATH=/usr/local/kong/lib \
     /tmp/kong-ngx-build -p /tmp/build/usr/local \
         --openresty $RESTY_VERSION \
