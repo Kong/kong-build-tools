@@ -39,7 +39,7 @@ pushd /kong
     version=$(echo $line | cut -d " " -f2)
     git clone --branch $version --recursive $repo_url /tmp/plugin/
     cd /tmp/plugin/
-    /usr/local/bin/luarocks make kong-*.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
+    /tmp/build/usr/local/bin/luarocks make kong-*.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
     cd /kong
   done
   

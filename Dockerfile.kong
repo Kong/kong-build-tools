@@ -69,6 +69,21 @@ RUN LUAROCKS_INSTALL=/usr/local \
         --work /tmp && \
     /tmp/install-lyaml.sh
 
+RUN curl -fsSLo /tmp/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && cp -R /tmp/build/* / \
+    && cd /tmp \
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && ln -s /tmp/luarocks-${RESTY_LUAROCKS_VERSION} /tmp/luarocks \
+    && cd /tmp/luarocks \
+    && eval ./configure \
+        --lua-suffix=jit \
+        --with-lua=/tmp/build/usr/local/openresty/luajit \
+        --with-lua-include=/tmp/build/usr/local/openresty/luajit/include/luajit-2.1 \
+        --with-lua=/usr/local/openresty/luajit \
+        --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
+    && make build \
+    && make install DESTDIR=/tmp/build
+
 WORKDIR /kong
 
 ENV LUA_PATH /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;
