@@ -128,7 +128,7 @@ build-kong:
 	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
 	git fetch; \
-	git reset --hard origin/$(OPENRESTY_BUILD_TOOLS_VERSION)
+	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
 	-docker pull kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker build -f Dockerfile.kong \
 	--cache-from kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
