@@ -10,10 +10,12 @@ rocks_trees = {
 }
 " > $ROCKS_CONFIG
 
+cp -R /tmp/build/* /
+
 export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 export LUAROCKS_CONFIG=$ROCKS_CONFIG
-export LUA_PATH="/tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
-export PATH=$PATH:/tmp/build/usr/local/openresty/luajit/bin
+export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
+export PATH=$PATH:/usr/local/openresty/luajit/bin
 
 if test -f /root/id_rsa; then
   mkdir -p /root/.ssh
@@ -37,7 +39,7 @@ pushd /kong
     version=$(echo $line | cut -d " " -f2)
     git clone --branch $version --recursive $repo_url /tmp/plugin/
     cd /tmp/plugin/
-    /tmp/build/usr/local/bin/luarocks make kong-*.rockspec OPENSSL_LIBDIR=/tmp/openssl OPENSSL_DIR=/tmp/openssl
+    /tmp/build/usr/local/bin/luarocks make kong-*.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
     cd /kong
   done
   
@@ -53,9 +55,9 @@ pushd /kong
     mv /tmp/plugin/dist /tmp/build/usr/local/kong/$directory
   done
 
-  /tmp/build/usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
-    OPENSSL_LIBDIR=/tmp/openssl \
-    OPENSSL_DIR=/tmp/openssl
+  /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
+    CRYPTO_DIR=/usr/local/kong \
+    OPENSSL_DIR=/usr/local/kong
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
@@ -64,11 +66,8 @@ popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
-sed -i.bak 's@#!/usr/bin/env resty@#!/usr/bin/env /usr/local/openresty/bin/resty@g' /tmp/build/usr/local/bin/kong && \
-  rm /tmp/build/usr/local/bin/kong.bak
-
-sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/bin/ -maxdepth 1 -type f`
-sed -i 's/\/tmp\/build//' `find /tmp/build/usr/local/share/lua/5.1/luarocks/ -maxdepth 1 -type f`
+sed -i 's/resty/\/usr\/local\/openresty\/bin\/resty/' /tmp/build/usr/local/bin/kong
+sed -i 's/\/tmp\/build//' `grep -l -I -r '\#\!\/tmp\/build' /tmp/build/`
 
 cp -R /tmp/build/* /output/build/
 chown -R 1000:1000 /output/*
