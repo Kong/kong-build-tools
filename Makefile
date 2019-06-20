@@ -154,7 +154,7 @@ build-base:
 ifeq ($(RESTY_IMAGE_BASE)$(RESTY_IMAGE_TAG),rhel6)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-else ifeq($(RESTY_IMAGE_BASE),rhel)
+else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi
 	docker tag registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi rhel:${RESTY_IMAGE_TAG}
 endif
