@@ -151,11 +151,17 @@ build-kong:
 	kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 
 build-base:
-ifeq ($(RESTY_IMAGE_BASE),rhel)
+ifeq ($(RESTY_IMAGE_BASE)$(RESTY_IMAGE_TAG),rhel6)
+	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
+	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
+else ifeq($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi
 	docker tag registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi rhel:${RESTY_IMAGE_TAG}
+endif
+ifeq ($(RESTY_IMAGE_BASE),rhel)
 	PACKAGE_TYPE=rpm
 	@docker build -f Dockerfile.$(PACKAGE_TYPE) \
+	--no-cache \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
