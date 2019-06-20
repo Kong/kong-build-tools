@@ -72,5 +72,6 @@ script:
   - make test
 
 after_success:
+  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; fi
   - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make build-development-image; fi
   - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make update-docker-cache; fi

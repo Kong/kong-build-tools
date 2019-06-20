@@ -123,7 +123,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	kong/kong-build-tools:fpm
 endif
 
-build-kong:
+build-kong: build-base
 	-rm -rf openresty-build-tools
 	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
