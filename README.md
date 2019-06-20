@@ -53,7 +53,7 @@ KONG_SOURCE_LOCATION=/src/projects/custom-kong-location
 KONG_PACKAGE_NAME=custom-kong-name
 KONG_VERSION=v1.0.0
 RESTY_IMAGE_BASE=ubuntu|centos|rhel|debian|alpine|amazonlinux
-RESTY_IMAGE_TAG=trusty|xenial|bionic|6|7|jessie|stretch|latest|latest
+RESTY_IMAGE_TAG=trusty|xenial|bionic|6|7|8|jessie|stretch|latest|latest
 PACKAGE_TYPE=deb|rpm|apk
 ```
 
