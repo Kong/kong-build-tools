@@ -1,3 +1,4 @@
+if docker image inspect $KONG_TEST_CONTAINER_NAME; then exit 0; fi
 RHEL=false
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   DOCKER_FILE="Dockerfile.alpine"
