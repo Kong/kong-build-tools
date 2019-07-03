@@ -33,7 +33,7 @@ if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
     tar -zcvf /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz usr etc
   popd
 else
-  fpm -a all -f -s dir \
+  fpm -f -s dir \
     -t $PACKAGE_TYPE \
     -m 'support@konghq.com' \
     -n $KONG_PACKAGE_NAME \
@@ -45,6 +45,7 @@ else
     --license "ASL 2.0" \
     --provides 'kong-community-edition' \
     --url 'https://getkong.org/' usr etc \
+  && mkdir /output/ \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
 fi
 

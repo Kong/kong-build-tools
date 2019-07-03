@@ -54,6 +54,7 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
+  - make setup_build >docker-machine.log 2>&1 &
   - make setup_tests >make.log 2>&1 &
   - docker pull kong/kong-build-tools:fpm || true
   - docker pull kong/kong-build-tools:test_runner || true

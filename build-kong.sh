@@ -69,5 +69,4 @@ cp /kong/bin/kong /tmp/build/usr/local/bin/kong
 sed -i 's/resty/\/usr\/local\/openresty\/bin\/resty/' /tmp/build/usr/local/bin/kong
 sed -i 's/\/tmp\/build//' `grep -l -I -r '\#\!\/tmp\/build' /tmp/build/` || true
 
-cp -R /tmp/build/* /output/build/
-chown -R 1000:1000 /output/*
+chown -R 1000:1000 /tmp/build/*

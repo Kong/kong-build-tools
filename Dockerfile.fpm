@@ -1,4 +1,10 @@
-FROM ubuntu:xenial
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="xenial"
+ARG KONG_VERSION
+
+FROM --platform=$BUILDPLATFORM kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${KONG_VERSION} as KONG
+
+FROM ubuntu:xenial as FPM
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -10,8 +16,17 @@ RUN apt-get update \
   build-essential \
   rpm
 
+COPY --from=KONG /tmp/build /tmp/build
 RUN gem install --no-ri --no-rdoc fpm
-
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
 
-CMD ["/fpm-entrypoint.sh"]
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="xenial"
+ARG KONG_VERSION
+ARG KONG_PACKAGE_NAME
+ARG KONG_CONFLICTS
+
+RUN /fpm-entrypoint.sh
+
+FROM scratch
+COPY --from=FPM /output/ /output/
