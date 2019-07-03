@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=0.0.1
+OPENRESTY_BUILD_TOOLS_VERSION?=0.0.2
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -27,7 +27,8 @@ KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 
 PRIVATE_REPOSITORY?=true
-KONG_TEST_CONTAINER_NAME?=localhost:5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+KONG_TEST_CONTAINER_TAG?=5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+KONG_TEST_CONTAINER_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -79,7 +80,7 @@ release-kong: test
 
 build-development-image:
 ifeq ($(RESTY_IMAGE_TAG),xenial)
-	docker inspect --type=image kong/kong-build-tools:kong-ubuntu-xenial > /dev/null || docker pull kong/kong-build-tools:kong-ubuntu-xenial
+	-docker inspect --type=image kong/kong-build-tools:kong-ubuntu-xenial > /dev/null || docker pull kong/kong-build-tools:kong-ubuntu-xenial
 	docker inspect --type=image kong/kong-build-tools:kong-ubuntu-xenial > /dev/null || make build-kong
 	test -s output/$(KONG_PACKAGE_NAME)-$(KONG_VERSION).xenial.all.deb || make package-kong
 	cp output/$(KONG_PACKAGE_NAME)-$(KONG_VERSION).xenial.all.deb output/kong-$(KONG_VERSION).kong-ubuntu-xenial.all.deb
@@ -123,7 +124,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	kong/kong-build-tools:fpm
 endif
 
-build-kong:
+build-kong: build-base
 	-rm -rf openresty-build-tools
 	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
@@ -169,7 +170,7 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
-	docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+	-docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker build -f Dockerfile.$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
@@ -182,6 +183,8 @@ test: build_test_container
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
+	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	./test/run_tests.sh
 
 run_tests:
@@ -194,7 +197,7 @@ develop_tests:
 	-e ADMIN_URI="https://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-e PROXY_URI="http://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-v $$PWD/test:/app \
-	kong:test_runner /bin/bash
+	kong/kong-build-tools:test_runner /bin/bash
 
 build_test_container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -209,11 +212,11 @@ cleanup_tests:
 
 setup_tests: cleanup_tests
 ifeq (, $(shell which minikube))
-	curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+	curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.33.1/minikube-linux-amd64
 	sudo cp minikube /usr/local/bin/
 	sudo chmod 755 /usr/local/bin/minikube
 	rm minikube
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.12.8/bin/linux/amd64/kubectl
 	sudo cp kubectl /usr/local/bin/
 	sudo chmod 755 /usr/local/bin/kubectl
 	rm kubectl
@@ -223,7 +226,7 @@ ifeq (, $(shell which minikube))
 	rm -rf get_helm.sh
 	sudo apt-get update && sudo apt-get install -y socat
 endif
-	sudo minikube start --vm-driver none
+	sudo minikube start --vm-driver none --kubernetes-version=v1.13.2
 	sudo minikube addons enable registry
 	sudo chown -R $$USER $$HOME/.minikube
 	sudo chgrp -R $$USER $$HOME/.minikube
