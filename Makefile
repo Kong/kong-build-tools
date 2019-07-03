@@ -206,11 +206,11 @@ cleanup_tests:
 
 setup_tests: cleanup_tests
 ifeq (, $(shell which minikube))
-	curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+	curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.33.1/minikube-linux-amd64
 	sudo cp minikube /usr/local/bin/
 	sudo chmod 755 /usr/local/bin/minikube
 	rm minikube
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.12.8/bin/linux/amd64/kubectl
 	sudo cp kubectl /usr/local/bin/
 	sudo chmod 755 /usr/local/bin/kubectl
 	rm kubectl
@@ -220,7 +220,7 @@ ifeq (, $(shell which minikube))
 	rm -rf get_helm.sh
 	sudo apt-get update && sudo apt-get install -y socat
 endif
-	sudo minikube start --vm-driver none
+	sudo minikube start --vm-driver none --kubernetes-version=v1.13.2
 	sudo minikube addons enable registry
 	sudo chown -R $$USER $$HOME/.minikube
 	sudo chgrp -R $$USER $$HOME/.minikube
