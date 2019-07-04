@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=0.0.2
+OPENRESTY_BUILD_TOOLS_VERSION?=master
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -67,7 +67,17 @@ ifneq ($(RESTY_IMAGE_BASE),rhel)
 	-docker push kong/kong-build-tools:test-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 endif
 
-release-kong: test
+release-kong:
+	ARCHITECTURE=amd64 \
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_VERSION=$(KONG_VERSION) \
+	BINTRAY_USR=$(BINTRAY_USR) \
+	BINTRAY_KEY=$(BINTRAY_KEY) \
+	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
+	./release-kong.sh
+	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -90,7 +100,6 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
-	-docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 	docker buildx build --push --platform=linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
@@ -180,7 +189,7 @@ test: build_test_container
 	./test/run_tests.sh
 
 run_tests:
-	cd test && docker buildx build -t kong/kong-build-tools:test_runner --cache-from kong/kong-build-tools:test_runner -f Dockerfile.test_runner .
+	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test_runner --cache-from kong/kong-build-tools:test_runner -f Dockerfile.test_runner .
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) ubuntu printenv
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test_runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 

@@ -23,7 +23,7 @@ RUN adduser --uid ${KONG_UID} ${USER} \
 
 ARG RESTY_IMAGE_TAG=kong-ubuntu-xenial
 ENV RESTY_IMAGE_TAG $RESTY_IMAGE_TAG
-COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.all.deb /kong.deb
+COPY output/linux_amd64/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${RESTY_IMAGE_TAG}.amd64.deb /kong.deb
 
 RUN dpkg -i /kong.deb
 

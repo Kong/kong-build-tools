@@ -25,8 +25,9 @@ ARG RESTY_IMAGE_TAG="xenial"
 ARG KONG_VERSION
 ARG KONG_PACKAGE_NAME
 ARG KONG_CONFLICTS
+ARG BUILDPLATFORM
 
 RUN /fpm-entrypoint.sh
 
 FROM scratch
-COPY --from=FPM /output/ /output/
+COPY --from=FPM /output/* .

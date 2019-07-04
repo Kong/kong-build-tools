@@ -54,17 +54,15 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
-  - make setup_build >docker-machine.log 2>&1 &
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - make setup_build
   - make setup_tests >make.log 2>&1 &
-  - docker pull kong/kong-build-tools:fpm || true
-  - docker pull kong/kong-build-tools:test_runner || true
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
 
 install:
   - make build-base
+  - make build-openresty
+  - make build-kong
   - make package-kong
 
 before_script:
@@ -74,7 +72,3 @@ before_script:
 script:
   - make test
 
-after_success:
-  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; fi
-  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make build-development-image; fi
-  - if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then make update-docker-cache; fi
