@@ -16,6 +16,7 @@ env:
     - KONG_PACKAGE_NAME=kong
     - KONG_CONFLICTS=kong-enterprise
     - KONG_LICENSE="ASL 2.0"
+    - DOCKER_BUILDKIT=1
   matrix:
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=devel KONG_SOURCE=master
     - PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=rolling KONG_SOURCE=master
@@ -54,6 +55,14 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+  - docker version
+  - docker build --platform=local -o . git://github.com/docker/buildx
+  - mv buildx ~/.docker/cli-plugins/docker-buildx
+  - docker buildx version
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make setup_build
   - make setup_tests >make.log 2>&1 &
