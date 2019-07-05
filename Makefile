@@ -52,6 +52,8 @@ RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
 LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
 
+DOCKER_BASE_SUFFIX=$$(md5sum Dockerfile.deb | cut -d' ' -f 1)`date +%V`
+
 pull-docker-cache:
 	- docker pull kong/kong-build-tools:fpm
 	- docker pull kong/kong-build-tools:test_runner
@@ -91,7 +93,7 @@ release-kong:
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
-	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
+	-docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
 	@docker buildx build --push --platform linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
@@ -102,11 +104,13 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
-	docker buildx build --push --platform=linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
+	docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) \
+	|| docker buildx build --push --platform=linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
+	docker tag kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 endif
 
 build-openresty:
