@@ -71,25 +71,27 @@ REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
 
-release-kong:
-	ARCHITECTURE=amd64 \
-	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_VERSION=$(KONG_VERSION) \
-	BINTRAY_USR=$(BINTRAY_USR) \
-	BINTRAY_KEY=$(BINTRAY_KEY) \
-	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
-	./release-kong.sh
-	ARCHITECTURE=arm64 \
-	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_VERSION=$(KONG_VERSION) \
-	BINTRAY_USR=$(BINTRAY_USR) \
-	BINTRAY_KEY=$(BINTRAY_KEY) \
-	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
-	./release-kong.sh
+setup_build:
+	docker buildx create --name multibuilder
+ifeq ($(ARM64),true)
+	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
+	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
+	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
+	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
+	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
+	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
+endif
+	docker buildx inspect multibuilder --bootstrap
+	docker buildx use multibuilder
+
+cleanup_build:
+	docker buildx use default
+	-docker buildx rm multibuilder
+ifeq ($(ARM64),true)
+	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
+	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
+endif
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
@@ -156,29 +158,28 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
+	-cp output/*/* .
 endif
 
-cleanup_build:
-	docker buildx use default
-	-docker buildx rm multibuilder
-ifeq ($(ARM64),true)
-	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
-	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
-endif
-
-setup_build:
-	docker buildx create --name multibuilder
-ifeq ($(ARM64),true)
-	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
-	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
-	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
-	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
-	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
-endif
-	docker buildx inspect multibuilder --bootstrap
-	docker buildx use multibuilder
+release-kong:
+	ARCHITECTURE=amd64 \
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_VERSION=$(KONG_VERSION) \
+	BINTRAY_USR=$(BINTRAY_USR) \
+	BINTRAY_KEY=$(BINTRAY_KEY) \
+	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
+	./release-kong.sh
+	ARCHITECTURE=arm64 \
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_VERSION=$(KONG_VERSION) \
+	BINTRAY_USR=$(BINTRAY_USR) \
+	BINTRAY_KEY=$(BINTRAY_KEY) \
+	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
+	./release-kong.sh
 
 test: build_test_container
 	KONG_VERSION=$(KONG_VERSION) \
@@ -208,9 +209,6 @@ build_test_container:
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	test/build_container.sh
 
-cleanup_tests:
-	-minikube delete
-
 setup_tests: cleanup_tests
 ifeq (, $(shell which minikube))
 	curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.33.1/minikube-linux-amd64
@@ -235,3 +233,6 @@ endif
 	sudo chgrp -R $$USER $$HOME/.kube
 	sudo minikube update-context
 	until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
+
+cleanup_tests:
+	-minikube delete

@@ -58,7 +58,7 @@ REPOSITORY_OS_NAME=$(sed -e 's/\//-/g' <<< $REPOSITORY_OS_NAME)
 BINTRAY_PUT_ARGS="$BINTRAY_PUT_ARGS?publish=1&override=0"
 
 DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
-BUILD_DIR="$CWD/output/linux_${ARCHITECTURE}/"
+BUILD_DIR="$CWD/output/"
 
 function print_result {
   [[ "$#" != 2 ]] && exit 1
