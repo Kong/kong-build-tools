@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=0.0.2
+OPENRESTY_BUILD_TOOLS_VERSION?=origin/fix/alpine-compatibility
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -158,7 +158,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
-	-cp output/*/* .
+	-cp output/*/* output/
 endif
 
 release-kong:

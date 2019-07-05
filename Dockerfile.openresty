@@ -4,8 +4,6 @@ ARG DOCKER_BASE_SUFFIX
 
 FROM --platform=$TARGETPLATFORM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
 
-RUN mkdir -p /tmp/build/usr/local
-
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
 RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
@@ -55,11 +53,17 @@ LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 COPY openresty-build-tools/kong-ngx-build /tmp/kong-ngx-build
 COPY install-lyaml.sh /tmp/install-lyaml.sh
 
-RUN LUAROCKS_INSTALL=/usr/local \
+RUN mkdir -p /tmp/build/usr/local/openresty && \
+    mkdir -p /tmp/build/usr/local/kong/lib && \
+    mkdir -p /tmp/build/usr/local/kong && \
+    mkdir -p /tmp/build/ && \
+    mkdir -p /work
+
+RUN LUAROCKS_PREFIX=/usr/local \
     LUAROCKS_DESTDIR=/tmp/build \
-    OPENRESTY_INSTALL=/usr/local/openresty \
+    OPENRESTY_PREFIX=/usr/local/openresty \
     OPENRESTY_DESTDIR=/tmp/build \
-    OPENSSL_INSTALL=/usr/local/kong \
+    OPENSSL_PREFIX=/usr/local/kong \
     OPENSSL_DESTDIR=/tmp/build \
     OPENRESTY_RPATH=/usr/local/kong/lib \
     /tmp/kong-ngx-build -p /tmp/build/usr/local \

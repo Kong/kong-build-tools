@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -x
 
 cd /tmp/build
 
@@ -31,6 +32,7 @@ ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`
 
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   pushd /tmp/build
+    mkdir /output
     tar -zcvf /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz usr etc
   popd
 else
