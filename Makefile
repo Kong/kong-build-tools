@@ -165,10 +165,10 @@ cleanup_build:
 	docker buildx use default
 	-docker buildx rm multibuilder
 	-docker context rm docker-arm64
-	-docker-machine rm --force docker-arm64
+	-docker-machine rm --force docker-arm64-${TRAVIS_BUILD_ID}
 
 setup_build:
-	-docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 docker-arm64
+	-docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} docker-arm64-${TRAVIS_BUILD_ID}
 	docker context create docker-arm64 --docker \
 	host=tcp://`docker-machine config docker-arm64 | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config docker-arm64 | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
