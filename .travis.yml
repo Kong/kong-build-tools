@@ -57,22 +57,9 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
-  - sudo apt-get update
-  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-  - echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
-  - curl -fsSLo buildx https://github.com/docker/buildx/releases/download/v0.2.2/buildx-v0.2.2.linux-amd64
-  - mkdir -p ~/.docker/cli-plugins/
-  - chmod +x buildx
-  - mv buildx ~/.docker/cli-plugins/docker-buildx
-  - sudo service docker restart
-  - curl -L $DOCKER_MACHINE_URL/docker-machine-$(uname -s)-$(uname -m) >docker-machine
-  - sudo install docker-machine /usr/local/bin/docker-machine
-  - docker version
-  - docker buildx version
+  - ./.ci/setup_ci.sh
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - make setup_build || make cleanup_build
+  - make setup_build
   - make setup_tests >minikube.log 2>&1 &
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 

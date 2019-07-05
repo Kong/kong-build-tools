@@ -2,7 +2,7 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
 ARG DOCKER_OPENRESTY_SUFFIX
 
-FROM --platform=$TARGETPLATFORM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX} as KONG
+FROM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX} as KONG
 
 WORKDIR /kong
 COPY kong /kong
@@ -10,7 +10,7 @@ COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
 
-FROM --platform=$TARGETPLATFORM ubuntu:xenial as FPM
+FROM ubuntu:xenial as FPM
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -35,5 +35,5 @@ ARG BUILDPLATFORM
 
 RUN /fpm-entrypoint.sh
 
-FROM scratch
-COPY --from=FPM /output/* .
+FROM alpine
+COPY --from=FPM /output /output

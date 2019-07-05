@@ -16,23 +16,6 @@ TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 
-DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
-
-ifeq ($(RESTY_IMAGE_BASE),alpine)
-	OPENSSL_EXTRA_OPTIONSs=" -no-async"
-endif
-
-ARM64=true
-DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
-ifeq ($(RESTY_IMAGE_TAG),jessie)
-	ARM64=false
-	DOCKER_ARCHITECTURES="linux/amd64"
-endif
-ifeq ($(PACKAGE_TYPE),rpm)
-	ARM64=false
-	DOCKER_ARCHITECTURES="linux/amd64"
-endif
-
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_PACKAGE_NAME?="kong"
@@ -62,6 +45,34 @@ RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
   "
 LIBYAML_VERSION ?= 0.2.1
 LYAML_VERSION ?= 6.2.3
+
+DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
+
+ifeq ($(RESTY_IMAGE_BASE),alpine)
+	OPENSSL_EXTRA_OPTIONSs=" -no-async"
+endif
+
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	ARM64=false
+	DOCKER_ARCHITECTURES="linux/amd64"
+	DOCKER_COMMAND?=docker build
+	DOCKER_COMMAND_OUTPUT?=$(DOCKER_COMMAND)
+else ifeq ($(RESTY_IMAGE_TAG),jessie)
+	ARM64=false
+	DOCKER_ARCHITECTURES="linux/amd64"
+	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
+	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+else ifeq ($(PACKAGE_TYPE),rpm)
+	ARM64=false
+	DOCKER_ARCHITECTURES="linux/amd64"
+	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
+	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+else
+	ARM64=true
+	DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
+	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
 CACHE_BUSTER?=`date +%V`
@@ -95,19 +106,17 @@ endif
 
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),rhel)
-	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
-	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-	PACKAGE_TYPE=rpm
-	@docker buildx build --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.$(PACKAGE_TYPE) \
+	PACKAGE_TYPE=rhel
+	$(DOCKER_COMMAND) -f Dockerfile.rhel \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg REDHAT_USERNAME=$(REDHAT_USERNAME) \
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
-	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
+	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
 else
 	docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
-	docker buildx build --push --platform=${DOCKER_ARCHITECTURES} -f Dockerfile.$(PACKAGE_TYPE) \
+	$(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
@@ -120,7 +129,7 @@ build-openresty:
 	git fetch; \
 	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
 	docker pull kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
-	docker buildx build --push --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.openresty \
+	$(DOCKER_COMMAND) -f Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -140,7 +149,7 @@ build-kong:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
 	cp -R $(KONG_SOURCE_LOCATION) kong
-	docker buildx build --output output --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.kong \
+	$(DOCKER_COMMAND_OUTPUT) -f Dockerfile.kong \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -158,7 +167,14 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
-	-cp output/*/* output/
+	-cp output/linux*/output/* output/
+	-cp output/output/* output/
+	rm -rf output/*/
+endif
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	docker run -d --rm --name rhel kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
+	docker cp rhel:/output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG)...rpm output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG).noarch.rpm
+	docker stop rhel
 endif
 
 release-kong:

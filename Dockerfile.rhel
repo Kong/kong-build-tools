@@ -1,0 +1,23 @@
+# Dockerfile - Centos
+# Centos base image with all prerequisites to compile / install openresty and Kong
+
+ARG RESTY_IMAGE_BASE="centos"
+ARG RESTY_IMAGE_TAG="7"
+
+FROM registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
+
+ARG REDHAT_USERNAME
+ARG REDHAT_PASSWORD
+ARG RHEL="false"
+
+RUN subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach && \
+    yum-config-manager --enable 'rhel-*-server-optional-rpms'
+
+RUN yum -y install wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
+  zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git coreutils which
+
+RUN which realpath || /bin/bash -c "curl -sSLO https://ftp.tu-chemnitz.de/pub/linux/dag/redhat/el6/en/x86_64/rpmforge/RPMS/realpath-1.17-1.el6.rf.x86_64.rpm && rpm -i realpath-1.17-1.el6.rf.x86_64.rpm"
+
+RUN subscription-manager remove --all \ 
+  && subscription-manager unregister \
+  && subscription-manager clean
