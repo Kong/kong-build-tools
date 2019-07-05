@@ -135,9 +135,10 @@ build-openresty:
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
 
 build-kong:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
 	cp -R $(KONG_SOURCE_LOCATION) kong
-	docker buildx build --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.kong \
+	docker buildx build --output output --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.kong \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -152,18 +153,9 @@ build-kong:
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
-	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
-
-package-kong:
-ifneq ($(RESTY_IMAGE_BASE),src)
-	docker buildx build --output output --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.fpm \
-	--cache-from kong/kong-build-tools:fpm \
-	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-t kong/kong-build-tools:fpm .
+	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
 endif
 
 cleanup_build:
