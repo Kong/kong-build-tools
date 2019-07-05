@@ -16,6 +16,8 @@ TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 
+DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
+
 ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
@@ -164,18 +166,18 @@ endif
 cleanup_build:
 	docker buildx use default
 	-docker buildx rm multibuilder
-	-docker context rm docker-arm64
-	-docker-machine rm --force docker-arm64-${TRAVIS_BUILD_ID}
+	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
+	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 
 setup_build:
-	-docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} docker-arm64-${TRAVIS_BUILD_ID}
-	docker context create docker-arm64 --docker \
-	host=tcp://`docker-machine config docker-arm64 | grep tcp | awk -F "//" '{print $$2}'`,\
-	ca=`docker-machine config docker-arm64 | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	cert=`docker-machine config docker-arm64 | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	key=`docker-machine config docker-arm64 | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
+	-docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
+	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
+	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
+	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
+	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
 	docker buildx create --name multibuilder
-	docker buildx create --name multibuilder --append docker-arm64
+	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
 	docker buildx inspect multibuilder --bootstrap
 	docker buildx use multibuilder
 
