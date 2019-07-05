@@ -54,7 +54,7 @@ LYAML_VERSION ?= 6.2.3
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
 CACHE_BUSTER?=`date +%V`
-DOCKER_BASE_SUFFIX=$$(md5sum Dockerfile.deb | cut -d' ' -f 1)${CACHE_BUSTER}
+DOCKER_BASE_SUFFIX=$$(md5sum Dockerfile.${PACKAGE_TYPE} | cut -d' ' -f 1)${CACHE_BUSTER}
 OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
@@ -162,7 +162,7 @@ cleanup_build:
 	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 
 setup_build:
-	-docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
