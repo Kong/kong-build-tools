@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=master
+OPENRESTY_BUILD_TOOLS_VERSION?=0.0.2
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -114,7 +114,8 @@ else
 endif
 
 build-openresty:
-	-git clone https://github.com/Kong/openresty-build-tools.git
+	-rm -rf openresty-build-tools
+	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
 	git fetch; \
 	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
