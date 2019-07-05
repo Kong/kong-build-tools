@@ -22,6 +22,21 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
+DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
+ifeq ($(RESTY_IMAGE_TAG),jessie)
+	DOCKER_ARCHITECTURES="linux/amd64"
+endif
+ifeq ($(RESTY_IMAGE_BASE),centos)
+	DOCKER_ARCHITECTURES="linux/amd64"
+endif
+ifeq ($(RESTY_IMAGE_BASE),amazonlinux)
+	DOCKER_ARCHITECTURES="linux/amd64"
+endif
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	DOCKER_ARCHITECTURES="linux/amd64"
+endif
+
+
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_PACKAGE_NAME?="kong"
@@ -59,6 +74,7 @@ OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
+DOCKER_TESTRUNNER_SUFFIX=$$(md5sum test/Dockerfile.test_runner | cut -d' ' -f 1)$$(md5sum test/requirements.txt | cut -d' ' -f 1)${CACHE_BUSTER}
 
 release-kong:
 	ARCHITECTURE=amd64 \
@@ -85,7 +101,7 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
-	@docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
+	@docker buildx build --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RHEL=true \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -93,8 +109,8 @@ ifeq ($(RESTY_IMAGE_BASE),rhel)
 	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) .
 else
-	-docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
-	docker buildx build --push --platform=linux/amd64,linux/arm64 -f Dockerfile.$(PACKAGE_TYPE) \
+	docker pull kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
+	docker buildx build --push --platform=${DOCKER_ARCHITECTURES} -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
@@ -106,8 +122,8 @@ build-openresty:
 	cd openresty-build-tools; \
 	git fetch; \
 	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
-	-docker pull kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
-	docker buildx build --push --platform linux/amd64,linux/arm64 -f Dockerfile.openresty \
+	docker pull kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
+	docker buildx build --push --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -126,7 +142,7 @@ build-openresty:
 build-kong:
 	-rm -rf kong
 	cp -R $(KONG_SOURCE_LOCATION) kong
-	docker buildx build --push --platform linux/amd64,linux/arm64 -f Dockerfile.kong \
+	docker buildx build --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.kong \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -145,7 +161,7 @@ build-kong:
 
 package-kong:
 ifneq ($(RESTY_IMAGE_BASE),src)
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.fpm \
+	docker buildx build --output output --platform ${DOCKER_ARCHITECTURES} -f Dockerfile.fpm \
 	--cache-from kong/kong-build-tools:fpm \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -183,9 +199,9 @@ test: build_test_container
 	./test/run_tests.sh
 
 run_tests:
-	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test_runner --cache-from kong/kong-build-tools:test_runner -f Dockerfile.test_runner .
-	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) ubuntu printenv
-	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test_runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
+	docker pull kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} || \
+	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} -f Dockerfile.test_runner .
+	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 
 develop_tests:
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
