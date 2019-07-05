@@ -26,16 +26,9 @@ DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
 ifeq ($(RESTY_IMAGE_TAG),jessie)
 	DOCKER_ARCHITECTURES="linux/amd64"
 endif
-ifeq ($(RESTY_IMAGE_BASE),centos)
+ifeq ($(PACKAGE_TYPE),rpm)
 	DOCKER_ARCHITECTURES="linux/amd64"
 endif
-ifeq ($(RESTY_IMAGE_BASE),amazonlinux)
-	DOCKER_ARCHITECTURES="linux/amd64"
-endif
-ifeq ($(RESTY_IMAGE_BASE),rhel)
-	DOCKER_ARCHITECTURES="linux/amd64"
-endif
-
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -74,7 +67,6 @@ OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
-DOCKER_TESTRUNNER_SUFFIX=$$(md5sum test/Dockerfile.test_runner | cut -d' ' -f 1)$$(md5sum test/requirements.txt | cut -d' ' -f 1)${CACHE_BUSTER}
 
 release-kong:
 	ARCHITECTURE=amd64 \
@@ -199,9 +191,8 @@ test: build_test_container
 	./test/run_tests.sh
 
 run_tests:
-	docker pull kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} || \
-	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} -f Dockerfile.test_runner .
-	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-${DOCKER_TESTRUNNER_SUFFIX} /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
+	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test-runner -f Dockerfile.test_runner .
+	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 
 develop_tests:
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
