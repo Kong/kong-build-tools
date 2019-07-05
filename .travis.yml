@@ -9,7 +9,7 @@ env:
     - MINIKUBE_WANTUPDATENOTIFICATION=false
     - MINIKUBE_WANTREPORTERRORPROMPT=false
     - MINIKUBE_HOME=$HOME
-    - KONG_SOURCE_LOCATION=$PWD/kong
+    - KONG_SOURCE_LOCATION=/tmp/kong
     - HELM_VERSION=v2.11.0
     - MINIKUBE_VERSION=v0.33.1
     - EDITION=community
@@ -74,7 +74,7 @@ before_install:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make setup_build
   - make setup_tests >make.log 2>&1 &
-  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
+  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 
 install:
   - make build-base

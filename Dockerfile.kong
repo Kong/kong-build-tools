@@ -2,7 +2,7 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
 ARG KONG_VERSION
 
-FROM --platform=$BUILDPLATFORM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${KONG_VERSION} as BUILD
+FROM --platform=$BUILDPLATFORM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} as BUILD
 
 WORKDIR /kong
 COPY kong /kong
