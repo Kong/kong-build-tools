@@ -22,11 +22,14 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
+ARM64=true
 DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
 ifeq ($(RESTY_IMAGE_TAG),jessie)
+	ARM64=false
 	DOCKER_ARCHITECTURES="linux/amd64"
 endif
 ifeq ($(PACKAGE_TYPE),rpm)
+	ARM64=false
 	DOCKER_ARCHITECTURES="linux/amd64"
 endif
 
@@ -166,18 +169,22 @@ endif
 cleanup_build:
 	docker buildx use default
 	-docker buildx rm multibuilder
+ifeq ($(ARM64),true)
 	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
 	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
+endif
 
 setup_build:
+	docker buildx create --name multibuilder
+ifeq ($(ARM64),true)
 	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
 	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
 	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
-	docker buildx create --name multibuilder
 	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
+endif
 	docker buildx inspect multibuilder --bootstrap
 	docker buildx use multibuilder
 
@@ -191,7 +198,7 @@ test: build_test_container
 	./test/run_tests.sh
 
 run_tests:
-	cd test && docker buildx build --push --platform linux/amd64 -t kong/kong-build-tools:test-runner -f Dockerfile.test_runner .
+	cd test && docker build -t kong/kong-build-tools:test-runner -f Dockerfile.test_runner .
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 
 develop_tests:
