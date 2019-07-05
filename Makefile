@@ -157,7 +157,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-t kong/kong-build-tools:fpm .
 endif
 
-
 cleanup_build:
 	docker buildx use default
 	-docker buildx rm multibuilder
