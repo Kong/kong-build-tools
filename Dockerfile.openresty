@@ -1,7 +1,8 @@
 ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
+ARG DOCKER_BASE_SUFFIX
 
-FROM --platform=$BUILDPLATFORM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+FROM --platform=$BUILDPLATFORM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
 
 RUN mkdir -p /tmp/build/usr/local
 
