@@ -174,8 +174,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker run -d --rm --name rhel kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
-	docker cp rhel:/output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG)...rpm output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG).noarch.rpm
+	docker cp rhel:/output/ output
 	docker stop rhel
+	cp output/output/*.rpm output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG).noarch.rpm
 endif
 	rm -rf output/*/
 
