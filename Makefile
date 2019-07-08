@@ -171,13 +171,13 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
 	-cp output/linux*/output/* output/
 	-cp output/output/* output/
-	rm -rf output/*/
 endif
 ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker run -d --rm --name rhel kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
 	docker cp rhel:/output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG)...rpm output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG).noarch.rpm
 	docker stop rhel
 endif
+	rm -rf output/*/
 
 release-kong:
 	ARCHITECTURE=amd64 \
