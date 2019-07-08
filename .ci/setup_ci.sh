@@ -15,5 +15,7 @@ if [[ ! $RESTY_IMAGE_TAG == jessie ]] && [[ ! $PACKAGE_TYPE == rpm ]]; then
 	sudo install docker-machine /usr/local/bin/docker-machine
 	docker-machine version
 fi
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+echo "$REDHAT_PASSWORD" | docker login -u "$REDHAT_USERNAME" registry.access.redhat.com --password-stdin
 docker version
 docker buildx version

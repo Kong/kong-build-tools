@@ -58,7 +58,6 @@ matrix:
 
 before_install:
   - ./.ci/setup_ci.sh
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - make setup_build
   - make setup_tests >minikube.log 2>&1 &
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
