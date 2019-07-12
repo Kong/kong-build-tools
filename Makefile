@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=origin/fix/alpine-compatibility
+OPENRESTY_BUILD_TOOLS_VERSION?=origin/hotfix/static-libpcre
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -255,3 +255,22 @@ endif
 
 cleanup_tests:
 	-minikube delete
+
+development:
+ifeq ($(RESTY_IMAGE_TAG),xenial)
+	$(MAKE) build-openresty
+	docker pull kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+	docker tag kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) kong/kong-build-tools:openresty-development
+	docker build \
+	--build-arg KONG_UID=$$(id -u) \
+	--build-arg USER=$$USER \
+	--build-arg RUNAS_USER=$$USER \
+	-f Dockerfile.development \
+	-t kong/kong-build-tools:development .
+	- docker-compose stop
+	- docker-compose rm -f
+	USER=$$(id -u) docker-compose up -d && \
+	docker-compose exec kong make dev && \
+	docker-compose exec kong ln -s /usr/local/openresty/bin/resty /usr/local/bin/resty && \
+	docker-compose exec kong /bin/bash
+endif
