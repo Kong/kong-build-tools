@@ -75,4 +75,7 @@ script:
 
 after_script:
   - make cleanup_build
-
+ after_failure:
+  - make cleanup_build
+ after_success:
+  - make cleanup_build
