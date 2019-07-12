@@ -74,4 +74,4 @@ RUN LUAROCKS_PREFIX=/usr/local \
         --work /work && \
     /tmp/install-lyaml.sh
 
-RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\#\!\/tmp\/build' /tmp/build/` || true
+RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
