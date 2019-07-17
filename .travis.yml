@@ -73,11 +73,8 @@ before_script:
 script:
   - make test
 
-after_script:
+after_failure:
   - make cleanup_build
 
- after_failure:
-  - make cleanup_build
-
- after_success:
+after_success:
   - make cleanup_build
