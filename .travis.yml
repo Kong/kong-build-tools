@@ -56,25 +56,19 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master POSTGRES_VERSION=11
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
-before_install:
+before_script:
   - ./.ci/setup_ci.sh
   - make setup_build
   - make setup_tests >minikube.log 2>&1 &
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 
-install:
+script:
   - make build-base
   - make build-openresty
   - make build-kong
-
-before_script:
   - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
-
-script:
   - make test
 
-after_failure:
+after_script:
   - make cleanup_build
 
-after_success:
-  - make cleanup_build
