@@ -16,7 +16,7 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
       --libdir=/tmp/build/usr/local/kong/lib \
       --includedir=/tmp/yaml-${LIBYAML_VERSION} \
     && make install \
-    && ./configure \
+    && ./configure --libdir=/usr/local/kong/lib \
     && make install
 
 ARG KONG_GMP_VERSION=6.1.2
@@ -54,7 +54,6 @@ ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
 COPY openresty-build-tools /tmp/openresty-build-tools/
-COPY install-lyaml.sh /tmp/install-lyaml.sh
 
 RUN mkdir -p /tmp/build/usr/local/openresty && \
     mkdir -p /tmp/build/usr/local/kong/lib && \
@@ -74,8 +73,7 @@ RUN LUAROCKS_PREFIX=/usr/local \
         --openssl $RESTY_OPENSSL_VERSION \
         --luarocks $RESTY_LUAROCKS_VERSION \
         --pcre $RESTY_PCRE_VERSION \
-        --work /work && \
-    /tmp/install-lyaml.sh
+        --work /work
 
 WORKDIR /kong
 
