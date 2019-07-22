@@ -15,6 +15,8 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && ./configure \
       --libdir=/tmp/build/usr/local/kong/lib \
       --includedir=/tmp/yaml-${LIBYAML_VERSION} \
+    && make install \
+    && ./configure \
     && make install
 
 ARG KONG_GMP_VERSION=6.1.2
@@ -51,22 +53,28 @@ LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
-COPY openresty-build-tools/kong-ngx-build /tmp/kong-ngx-build
+COPY openresty-build-tools /tmp/openresty-build-tools/
 COPY install-lyaml.sh /tmp/install-lyaml.sh
 
-RUN LUAROCKS_INSTALL=/usr/local \
+RUN mkdir -p /tmp/build/usr/local/openresty && \
+    mkdir -p /tmp/build/usr/local/kong/lib && \
+    mkdir -p /tmp/build/usr/local/kong && \
+    mkdir -p /tmp/build/ && \
+    mkdir -p /work
+
+RUN LUAROCKS_PREFIX=/usr/local \
     LUAROCKS_DESTDIR=/tmp/build \
-    OPENRESTY_INSTALL=/usr/local/openresty \
+    OPENRESTY_PREFIX=/usr/local/openresty \
     OPENRESTY_DESTDIR=/tmp/build \
-    OPENSSL_INSTALL=/usr/local/kong \
+    OPENSSL_PREFIX=/usr/local/kong \
     OPENSSL_DESTDIR=/tmp/build \
     OPENRESTY_RPATH=/usr/local/kong/lib \
-    /tmp/kong-ngx-build -p /tmp/build/usr/local \
+    /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
         --openresty $RESTY_VERSION \
         --openssl $RESTY_OPENSSL_VERSION \
         --luarocks $RESTY_LUAROCKS_VERSION \
         --pcre $RESTY_PCRE_VERSION \
-        --work /tmp && \
+        --work /work && \
     /tmp/install-lyaml.sh
 
 WORKDIR /kong
