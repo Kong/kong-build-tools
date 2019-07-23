@@ -49,42 +49,14 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
-  - GO111MODULE=on go get sigs.k8s.io/kind
-  - kind create cluster
-  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-  - chmod +x ./kubectl
-  - mv kubectl $HOME/bin/
-  - curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
-  - chmod +x get_helm.sh
-  - sudo ./get_helm.sh
-  - rm -rf get_helm.sh
+  - ./.ci/setup_ci.sh
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-  - kubectl create serviceaccount --namespace kube-system tiller
-  - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
-  - helm init --service-account tiller --upgrade
-  - kubectl get nodes -o wide
-  - kubectl get pods --all-namespaces -o wide
-  - kubectl get services --all-namespaces -o wide
-  - docker pull kong/kong-build-tools:fpm || true
-  - docker pull kong/kong-build-tools:test_runner || true
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 
-install:
-  - make build-base
-  - make package-kong
-
-before_script:
-  - sudo chown -R $USER $HOME/.minikube
-  - sudo chgrp -R $USER $HOME/.minikube
-  - sudo chown -R $USER $HOME/.kube
-  - sudo chgrp -R $USER $HOME/.kube
-  - cat make.log
-  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
 
 script:
+  - make build-base
+  - make package-kong
   - make test
 
 after_success:
