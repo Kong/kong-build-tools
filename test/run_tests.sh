@@ -25,6 +25,8 @@ helm install --dep-up --version 0.10.1 --name kong --set image.repository=localh
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
   kubectl get deployment kong-kong
+  kubectl get all
+  docker ps -a
   sleep 10;
 done
 
