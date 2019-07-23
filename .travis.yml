@@ -50,13 +50,17 @@ matrix:
 
 before_install:
   - GO111MODULE=on go get sigs.k8s.io/kind
-  - kind create cluster --config kind-config.yaml
+  - kind create cluster
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+  - kubectl create serviceaccount --namespace kube-system tiller
+  - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+  - helm init --service-account tiller --upgrade
   - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - chmod +x ./kubectl
-  - ./kubectl get nodes -o wide
-  - ./kubectl get pods --all-namespaces -o wide
-  - ./kubectl get services --all-namespaces -o wide
+  - mv kubectl $HOME/bin/
+  - kubectl get nodes -o wide
+  - kubectl get pods --all-namespaces -o wide
+  - kubectl get services --all-namespaces -o wide
   - docker pull kong/kong-build-tools:fpm || true
   - docker pull kong/kong-build-tools:test_runner || true
   - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
