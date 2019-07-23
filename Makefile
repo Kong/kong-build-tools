@@ -201,3 +201,5 @@ build_test_container:
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	test/build_container.sh
 
+setup_tests:
+	./.ci/setup_ci.sh
