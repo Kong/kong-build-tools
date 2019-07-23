@@ -54,6 +54,10 @@ before_install:
   - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - chmod +x ./kubectl
   - mv kubectl $HOME/bin/
+  - curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
+  - chmod +x get_helm.sh
+  - sudo ./get_helm.sh
+  - rm -rf get_helm.sh
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - kubectl create serviceaccount --namespace kube-system tiller
   - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
