@@ -32,7 +32,8 @@ helm install --dep-up --version 0.10.1 --name kong --set image.repository=localh
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
   kubectl get pod --all-namespaces -o wide
-  docker ps -a
+  kubectl describe pod/kong-postgresql-0
+  kubectl logs pod/kong-postgresql-0 || true
   sleep 10;
 done
 
