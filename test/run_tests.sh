@@ -9,8 +9,8 @@ fi
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
-while [[ "$(kubectl get pods --all-namespaces -o wide | grep -v Running | wc -l)" != 1 ]]; do
-  kubectl get pods --all-namespaces -o wide
+while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
+  kubectl get pod --all-namespaces -o wide
   echo "waiting for K8s to be ready"
   sleep 10;
 done
@@ -20,12 +20,18 @@ kind load docker-image ${KONG_TEST_CONTAINER_NAME}
 helm init --wait
 helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
 helm repo update
+
+while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
+  kubectl get pod --all-namespaces -o wide
+  echo "waiting for K8s to be ready"
+  sleep 10;
+done
+
 helm install --dep-up --version 0.10.1 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG} stable/kong
 
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
-  kubectl get deployment kong-kong
-  kubectl get all
+  kubectl get pod --all-namespaces -o wide
   docker ps -a
   sleep 10;
 done
