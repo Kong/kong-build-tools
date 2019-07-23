@@ -48,15 +48,14 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master POSTGRES_VERSION=11
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
-before_install:
-  - ./.ci/setup_ci.sh
-  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+before_script:
+  - ./.ci/setup_ci.sh >setup.log 2>&1 &
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
-
+  - make package-kong
 
 script:
-  - make build-base
-  - make package-kong
+  - cat setup.log
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - make test
 
 after_success:
