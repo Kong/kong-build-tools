@@ -8,14 +8,7 @@ fi
 
 docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
-kubectl create -f kube-registry.yaml
-
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5000)" != 200 ]]; do
-  echo "waiting for registry to be ready"
-  sleep 10;
-done 
-
-for i in {1..5}; do docker push ${KONG_TEST_CONTAINER_NAME} && break || sleep 15; done
+kind load docker-image ${KONG_TEST_CONTAINER_NAME}
 
 helm init --wait
 helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/

@@ -1,17 +1,12 @@
-dist: xenial
-language: python
-python:
-  - "3.6"
+sudo: required
+language: go
+go:
+    - "1.12"
 
 env:
   global:
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
     - KONG_SOURCE_LOCATION=$PWD/kong
     - HELM_VERSION=v2.11.0
-    - MINIKUBE_VERSION=v0.33.1
     - EDITION=community
     - KONG_PACKAGE_NAME=kong
     - KONG_CONFLICTS=kong-enterprise
@@ -53,28 +48,15 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master POSTGRES_VERSION=11
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
-before_install:
-  - make setup_tests >make.log 2>&1 &
-  - docker pull kong/kong-build-tools:fpm || true
-  - docker pull kong/kong-build-tools:test_runner || true
-  - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - docker pull kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
-  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git kong
-
-install:
-  - make build-base
+before_script:
+  - ./.ci/setup_ci.sh >setup.log 2>&1 &
+  - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
   - make package-kong
 
-before_script:
-  - sudo chown -R $USER $HOME/.minikube
-  - sudo chgrp -R $USER $HOME/.minikube
-  - sudo chown -R $USER $HOME/.kube
-  - sudo chgrp -R $USER $HOME/.kube
-  - cat make.log
-  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
-
 script:
+  - cat setup.log
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+  - until kubectl get nodes | grep -q Ready; do sleep 5 && kubectl get nodes; done
   - make test
 
 after_success:
