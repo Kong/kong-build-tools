@@ -17,6 +17,13 @@ export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/usr/local/openresty/luajit/bin
 
+/usr/local/bin/luarocks install lyaml 6.2.3 \
+    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
+    YAML_INCDIR=/tmp/yaml-6.2.3 \
+    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
+    
+cp -R /tmp/build/* /
+
 if test -f /root/id_rsa; then
   mkdir -p /root/.ssh
   mv /root/id_rsa /root/.ssh/id_rsa

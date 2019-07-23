@@ -67,6 +67,10 @@ install:
   - make package-kong
 
 before_script:
+  - sudo chown -R $USER $HOME/.minikube
+  - sudo chgrp -R $USER $HOME/.minikube
+  - sudo chown -R $USER $HOME/.kube
+  - sudo chgrp -R $USER $HOME/.kube
   - cat make.log
   - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
 

@@ -1,7 +1,7 @@
 FROM alpine
 
 RUN apk update \
-  && apk add ca-certificates wget \
+  && apk add ca-certificates wget coreutils patch \
   && update-ca-certificates \
   && apk add --virtual build-deps make gcc make g++ zlib-dev musl-dev pcre-dev \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \
