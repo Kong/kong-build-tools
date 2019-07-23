@@ -1,17 +1,12 @@
-dist: xenial
-language: python
-python:
-  - "3.6"
+sudo: required
+language: go
+go:
+    - "1.12"
 
 env:
   global:
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
     - KONG_SOURCE_LOCATION=$PWD/kong
     - HELM_VERSION=v2.11.0
-    - MINIKUBE_VERSION=v0.33.1
     - EDITION=community
     - KONG_PACKAGE_NAME=kong
     - KONG_CONFLICTS=kong-enterprise
@@ -54,7 +49,14 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_install:
-  - make setup_tests >make.log 2>&1 &
+  - GO111MODULE=on go get sigs.k8s.io/kind
+  - kind create cluster --config kind-config.yaml
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+  - chmod +x ./kubectl
+  - ./kubectl get nodes -o wide
+  - ./kubectl get pods --all-namespaces -o wide
+  - ./kubectl get services --all-namespaces -o wide
   - docker pull kong/kong-build-tools:fpm || true
   - docker pull kong/kong-build-tools:test_runner || true
   - docker pull kong/kong-build-tools:test-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} || true
