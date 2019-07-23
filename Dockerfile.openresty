@@ -14,6 +14,8 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && ./configure \
       --libdir=/tmp/build/usr/local/kong/lib \
       --includedir=/tmp/yaml-${LIBYAML_VERSION} \
+    && make install \
+    && ./configure --libdir=/usr/local/kong/lib \
     && make install
 
 ARG KONG_GMP_VERSION=6.1.2
@@ -71,7 +73,8 @@ RUN LUAROCKS_PREFIX=/usr/local \
         --openssl $RESTY_OPENSSL_VERSION \
         --luarocks $RESTY_LUAROCKS_VERSION \
         --pcre $RESTY_PCRE_VERSION \
-        --work /work && \
-    /tmp/install-lyaml.sh
+        --work /work
+
+RUN /tmp/install-lyaml.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
