@@ -1,12 +1,12 @@
 #!/bin/bash
 
 GO111MODULE=on go get sigs.k8s.io/kind
-kind create cluster
 curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
 chmod +x ./kubectl
 mv kubectl $HOME/bin/
 curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
 chmod +x get_helm.sh
+kind create cluster
 sudo ./get_helm.sh
 rm -rf get_helm.sh
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"

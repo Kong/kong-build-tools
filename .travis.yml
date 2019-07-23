@@ -56,6 +56,7 @@ before_script:
 script:
   - cat setup.log
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+  - until kubectl get nodes | grep -q Ready; do sleep 5 && kubectl get nodes; done
   - make test
 
 after_success:
