@@ -124,8 +124,7 @@ else
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
 endif
 
-
-build-openresty:
+build-openresty: build-base
 	-rm -rf openresty-build-tools
 	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
@@ -148,7 +147,7 @@ build-openresty:
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
 
-build-kong:
+build-kong: build-openresty
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
 	cp -R $(KONG_SOURCE_LOCATION) kong
