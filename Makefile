@@ -147,6 +147,8 @@ build-openresty: build-base
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
 
+package-kong: build-kong
+
 build-kong: build-openresty
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
@@ -228,34 +230,6 @@ build_test_container:
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	test/build_container.sh
 
-setup_tests: cleanup_tests
-ifeq (, $(shell which minikube))
-	curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.33.1/minikube-linux-amd64
-	sudo cp minikube /usr/local/bin/
-	sudo chmod 755 /usr/local/bin/minikube
-	rm minikube
-	curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.12.8/bin/linux/amd64/kubectl
-	sudo cp kubectl /usr/local/bin/
-	sudo chmod 755 /usr/local/bin/kubectl
-	rm kubectl
-	curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
-	chmod +x get_helm.sh
-	sudo ./get_helm.sh
-	rm -rf get_helm.sh
-	sudo apt-get update && sudo apt-get install -y socat
-endif
-	sudo minikube start --vm-driver none --kubernetes-version=v1.13.2
-	sudo minikube addons enable registry
-	sudo chown -R $$USER $$HOME/.minikube
-	sudo chgrp -R $$USER $$HOME/.minikube
-	sudo chown -R $$USER $$HOME/.kube
-	sudo chgrp -R $$USER $$HOME/.kube
-	sudo minikube update-context
-	until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 1 && kubectl get nodes; done
-
-cleanup_tests:
-	-minikube delete
-
 development:
 ifeq ($(RESTY_IMAGE_TAG),xenial)
 	$(MAKE) build-openresty
@@ -274,3 +248,6 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker-compose exec kong ln -s /usr/local/openresty/bin/resty /usr/local/bin/resty && \
 	docker-compose exec kong /bin/bash
 endif
+
+setup_tests:
+	./.ci/setup_ci.sh

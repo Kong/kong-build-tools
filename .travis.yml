@@ -5,13 +5,8 @@ python:
 
 env:
   global:
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
     - KONG_SOURCE_LOCATION=/tmp/kong
     - HELM_VERSION=v2.11.0
-    - MINIKUBE_VERSION=v0.33.1
     - EDITION=community
     - KONG_PACKAGE_NAME=kong
     - KONG_CONFLICTS=kong-enterprise
@@ -57,16 +52,13 @@ matrix:
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
 before_script:
-  - ./.ci/setup_ci.sh
+  - make setup_tests
   - make setup_build
-  - make setup_tests >minikube.log 2>&1 &
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
+  - make package-kong
 
 script:
-  - make build-base
-  - make build-openresty
-  - make build-kong
-  - until kubectl get nodes 2>&1 | sed -n 2p | grep -q Ready; do sleep 5 && kubectl get nodes; done
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - make test
 
 after_script:
