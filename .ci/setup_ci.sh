@@ -1,26 +1,23 @@
 #!/bin/bash
 
-if ! [ -x "$(command -v kind)" ]; then
-    curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
-    chmod +x ./kind
-    mv kind $HOME/bin/
+set -e
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
+sudo apt-get update
+sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+curl -fsSLo buildx https://github.com/docker/buildx/releases/download/v0.2.2/buildx-v0.2.2.linux-amd64
+mkdir -p ~/.docker/cli-plugins/
+chmod +x buildx
+mv buildx ~/.docker/cli-plugins/docker-buildx
+sudo service docker restart
+if [[ ! $RESTY_IMAGE_TAG == jessie ]] && [[ ! $PACKAGE_TYPE == rpm ]]; then 
+	curl -L $DOCKER_MACHINE_URL/docker-machine-$(uname -s)-$(uname -m) >docker-machine
+	sudo install docker-machine /usr/local/bin/docker-machine
+	docker-machine version
 fi
-if ! [ -x "$(command -v kubectl)" ]; then
-    curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-    chmod +x ./kubectl
-    mv kubectl $HOME/bin/
-fi
-kind create cluster
-if ! [ -x "$(command -v helm)" ]; then
-    curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
-    chmod +x get_helm.sh
-    sudo ./get_helm.shl
-    rm -rf get_helm.sh
-fi
-export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-kubectl create serviceaccount --namespace kube-system tiller
-kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
-helm init --service-account tiller --upgrade
-kubectl get nodes -o wide
-kubectl get pods --all-namespaces -o wide
-kubectl get services --all-namespaces -o wide
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+echo "$REDHAT_PASSWORD" | docker login -u "$REDHAT_USERNAME" registry.access.redhat.com --password-stdin
+docker version
+docker buildx version
