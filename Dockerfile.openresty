@@ -52,7 +52,7 @@ LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
-COPY openresty-build-tools/kong-ngx-build /tmp/kong-ngx-build
+COPY openresty-build-tools /tmp/openresty-build-tools/
 COPY install-lyaml.sh /tmp/install-lyaml.sh
 
 RUN mkdir -p /tmp/build/usr/local/openresty && \
@@ -68,7 +68,7 @@ RUN LUAROCKS_PREFIX=/usr/local \
     OPENSSL_PREFIX=/usr/local/kong \
     OPENSSL_DESTDIR=/tmp/build \
     OPENRESTY_RPATH=/usr/local/kong/lib \
-    /tmp/kong-ngx-build -p /tmp/build/usr/local \
+    /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
         --openresty $RESTY_VERSION \
         --openssl $RESTY_OPENSSL_VERSION \
         --luarocks $RESTY_LUAROCKS_VERSION \
