@@ -12,7 +12,8 @@ if ! [ -x "$(command -v kubectl)" ]; then
     chmod +x ./kubectl
     mv kubectl $HOME/bin/
 fi
-kind create cluster
+K8S_VERSION="${K8S_VERSION:-v1.15.0}"
+kind create cluster --image "kindest/node:${K8S_VERSION}"
 if ! [ -x "$(command -v helm)" ]; then
     curl -Lo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
     chmod +x get_helm.sh
@@ -20,9 +21,20 @@ if ! [ -x "$(command -v helm)" ]; then
     rm -rf get_helm.sh
 fi
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+
+while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
+  echo "waiting for K8s to be ready"
+  sleep 10;
+done
+
 kubectl create serviceaccount --namespace kube-system tiller
 kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
 helm init --service-account tiller --upgrade
 kubectl get nodes -o wide
 kubectl get pods --all-namespaces -o wide
 kubectl get services --all-namespaces -o wide
+
+while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
+  echo "waiting for tiller to be ready"
+  sleep 10;
+done
