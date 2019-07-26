@@ -6,7 +6,7 @@ ARG KONG_PACKAGE_NAME="kong"
 LABEL maintainer="Kong Core Team <team-core@konghq.com>"
 
 RUN apk add --no-cache --virtual .build-deps tar ca-certificates \
-	&& apk add --no-cache libgcc pcre perl tzdata bash su-exec libcap
+	&& apk add --no-cache libgcc pcre perl tzdata bash su-exec libcap unzip outils-md5
 
 COPY output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.apk.tar.gz kong.apk.tar.gz
 
