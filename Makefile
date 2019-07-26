@@ -249,5 +249,8 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker-compose exec kong /bin/bash
 endif
 
-setup_tests:
-	./.ci/setup_ci.sh
+setup_tests: cleanup_tests
+	./.ci/setup_kind.sh
+
+cleanup_tests:
+	-kind delete cluster
