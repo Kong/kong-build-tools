@@ -9,6 +9,8 @@ fi
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
+docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
+
 while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
   kubectl get pod --all-namespaces -o wide
   echo "waiting for K8s to be ready"
