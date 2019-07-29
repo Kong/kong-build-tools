@@ -53,7 +53,7 @@ matrix:
 
 script:
   - ./.ci/setup_ci.sh
-  - ./.ci/setup_dind.sh
+  - ./.ci/setup_kind.sh
   - make setup_build
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
   - make package-kong
