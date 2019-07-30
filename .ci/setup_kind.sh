@@ -38,3 +38,6 @@ while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Complet
   echo "waiting for tiller to be ready"
   sleep 10;
 done
+
+kind version
+kubectl version

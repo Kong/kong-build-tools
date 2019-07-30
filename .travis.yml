@@ -12,8 +12,7 @@ env:
     - KONG_CONFLICTS=kong-enterprise
     - KONG_LICENSE="ASL 2.0"
     - DOCKER_BUILDKIT=1
-    - DOCKER_MACHINE_URL=https://github.com/docker/machine/releases/download/v0.16.0
-    - DOCKER_MACHINE_ARM64_NAME=travis-ci-docker-machine-${TRAVIS_JOB_ID}
+    - DOCKER_MACHINE_ARM64_NAME=travis-ci-kong-build-tools-${TRAVIS_JOB_ID}
   matrix:
     - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=6 KONG_SOURCE=master
     - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7 KONG_SOURCE=master
@@ -51,12 +50,13 @@ matrix:
     - env: PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master POSTGRES_VERSION=11
     - end: PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=latest KONG_SOURCE=master
 
-script:
-  - ./.ci/setup_ci.sh
-  - ./.ci/setup_kind.sh
-  - make setup_build
+before_script:
+  - make setup-ci
+  - make setup-build
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
-  - make package-kong
+
+script:
+  - make build-kong
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - make test
 

@@ -52,26 +52,25 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
-ifeq ($(RESTY_IMAGE_BASE),rhel)
-	ARM64=false
-	DOCKER_ARCHITECTURES="linux/amd64"
-	DOCKER_COMMAND?=docker build
-	DOCKER_COMMAND_OUTPUT?=$(DOCKER_COMMAND)
-else ifeq ($(RESTY_IMAGE_TAG),jessie)
-	ARM64=false
-	DOCKER_ARCHITECTURES="linux/amd64"
-	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
-	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+ifeq ($(RESTY_IMAGE_BASE),src)
+	BUILDX?=false
 else ifeq ($(PACKAGE_TYPE),rpm)
-	ARM64=false
-	DOCKER_ARCHITECTURES="linux/amd64"
-	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
-	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+	BUILDX?=false
+else ifeq ($(RESTY_IMAGE_TAG),jessie)
+	BUILDX?=false
 else
-	ARM64=true
-	DOCKER_ARCHITECTURES="linux/amd64,linux/arm64"
-	DOCKER_COMMAND?=docker buildx build --push --platform=$(DOCKER_ARCHITECTURES)
-	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform=$(DOCKER_ARCHITECTURES)
+    BUILDX?=true
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform="linux/amd64,linux/arm64" -f Dockerfile.kong
+endif
+
+BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
+ifneq ($(BUILDX_INFO),)
+	BUILDX=false
+endif
+ifeq ($(BUILDX),false)
+	DOCKER_COMMAND?=docker build
+	DOCKER_COMMAND_OUTPUT?=$(DOCKER_COMMAND) -f Dockerfile.kong --build-arg BUILDPLATFORM=x/amd64
 endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
@@ -82,9 +81,13 @@ REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
 
-setup_build:
+setup-ci:
+	.ci/setup_ci.sh
+	.ci/setup_kind.sh
+
+setup-build:
+ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
-ifeq ($(ARM64),true)
 	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-monitoring --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
@@ -92,14 +95,14 @@ ifeq ($(ARM64),true)
 	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
 	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
 	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
-endif
 	docker buildx inspect multibuilder --bootstrap
 	docker buildx use multibuilder
+endif
 
 cleanup_build:
-	docker buildx use default
+ifeq ($(BUILDX),true)
+	-docker buildx use default
 	-docker buildx rm multibuilder
-ifeq ($(ARM64),true)
 	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
 	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 endif
@@ -152,8 +155,8 @@ package-kong: build-kong
 build-kong: build-openresty
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
-	cp -R $(KONG_SOURCE_LOCATION) kong
-	$(DOCKER_COMMAND_OUTPUT) -f Dockerfile.kong \
+	-cp -R $(KONG_SOURCE_LOCATION) kong
+	$(DOCKER_COMMAND_OUTPUT) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -174,11 +177,11 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-cp output/linux*/output/* output/
 	-cp output/output/* output/
 endif
-ifeq ($(RESTY_IMAGE_BASE),rhel)
-	docker run -d --rm --name rhel kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
-	docker cp rhel:/output/ output
-	docker stop rhel
-	cp output/output/*.rpm output/kong-$(KONG_VERSION).rhel$(RESTY_IMAGE_TAG).noarch.rpm
+ifeq ($(BUILDX),false)
+	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
+	docker cp output:/output/ output
+	docker stop output
+	mv output/output/*.$(PACKAGE_TYPE) output/
 endif
 	rm -rf output/*/
 
@@ -192,6 +195,7 @@ release-kong:
 	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
+ifneq ($(BUILDX),false)
 	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -201,8 +205,9 @@ release-kong:
 	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
+endif
 
-test: build_test_container
+test: build-test-container
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -215,14 +220,14 @@ run_tests:
 	cd test && docker build -t kong/kong-build-tools:test-runner -f Dockerfile.test_runner .
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 
-develop_tests:
+develop-tests:
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
 	-e ADMIN_URI="https://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-e PROXY_URI="http://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-v $$PWD/test:/app \
 	kong/kong-build-tools:test_runner /bin/bash
 
-build_test_container:
+build-test-container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
@@ -249,8 +254,12 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 	docker-compose exec kong /bin/bash
 endif
 
-setup_tests: cleanup_tests
+setup-tests: cleanup-tests
 	./.ci/setup_kind.sh
 
-cleanup_tests:
+cleanup-tests:
 	-kind delete cluster
+
+cleanup: cleanup-tests cleanup-build
+	-rm -rf kong
+	-rm -rf openresty-build-tools
