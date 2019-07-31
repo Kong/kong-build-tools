@@ -1,6 +1,4 @@
 #!/bin/bash
-# Abort on Error
-set -e
 
 export PING_SLEEP=50s
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -25,26 +23,25 @@ trap 'error_handler' ERR
 bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
 PING_LOOP_PID=$!
 
-LUAROCKS_PREFIX=/usr/local
-LUAROCKS_DESTDIR=/tmp/build
-OPENRESTY_PREFIX=/usr/local/openresty
-OPENRESTY_DESTDIR=/tmp/build
-OPENSSL_PREFIX=/usr/local/kong
-OPENSSL_DESTDIR=/tmp/build
-OPENRESTY_RPATH=/usr/local/kong/lib
-
 mkdir -p /tmp/build/usr/local/openresty
 mkdir -p /tmp/build/usr/local/kong/lib
 mkdir -p /tmp/build/usr/local/kong
 mkdir -p /tmp/build/
 mkdir -p /work
 
-exec /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
-        --openresty $RESTY_VERSION \
-        --openssl $RESTY_OPENSSL_VERSION \
-        --luarocks $RESTY_LUAROCKS_VERSION \
-        --pcre $RESTY_PCRE_VERSION \
-        --work /work >> $BUILD_OUTPUT 2>&1
+LUAROCKS_PREFIX=/usr/local \
+LUAROCKS_DESTDIR=/tmp/build \
+OPENRESTY_PREFIX=/usr/local/openresty \
+OPENRESTY_DESTDIR=/tmp/build \
+OPENSSL_PREFIX=/usr/local/kong \
+OPENSSL_DESTDIR=/tmp/build \
+OPENRESTY_RPATH=/usr/local/kong/lib \
+/tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
+--openresty $RESTY_VERSION \
+--openssl $RESTY_OPENSSL_VERSION \
+--luarocks $RESTY_LUAROCKS_VERSION \
+--pcre $RESTY_PCRE_VERSION \
+--work /work >> $BUILD_OUTPUT 2>&1
 
 # The build finished without returning an error so dump a tail of the output
 dump_output
