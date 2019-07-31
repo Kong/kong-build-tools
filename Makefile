@@ -1,4 +1,4 @@
-.PHONY: test build-kong
+.PHONY: test build-kong setup-build
 
 export SHELL:=/bin/bash
 
