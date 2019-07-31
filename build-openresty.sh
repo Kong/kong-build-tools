@@ -39,7 +39,7 @@ mkdir -p /tmp/build/usr/local/kong
 mkdir -p /tmp/build/
 mkdir -p /work
 
-exec /tmp/build-openresty.sh /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
+exec /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
         --openresty $RESTY_VERSION \
         --openssl $RESTY_OPENSSL_VERSION \
         --luarocks $RESTY_LUAROCKS_VERSION \
