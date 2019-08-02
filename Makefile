@@ -52,25 +52,26 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
+BUILDX?=false
 ifeq ($(RESTY_IMAGE_BASE),src)
 	BUILDX?=false
 else ifeq ($(PACKAGE_TYPE),rpm)
 	BUILDX?=false
 else ifeq ($(RESTY_IMAGE_TAG),jessie)
 	BUILDX?=false
-else
-    BUILDX?=true
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
-	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform="linux/amd64,linux/arm64" -f Dockerfile.kong
 endif
 
 BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
 ifneq ($(BUILDX_INFO),)
 	BUILDX=false
 endif
+
 ifeq ($(BUILDX),false)
 	DOCKER_COMMAND?=docker build
 	DOCKER_COMMAND_OUTPUT?=$(DOCKER_COMMAND) -f Dockerfile.kong --build-arg BUILDPLATFORM=x/amd64
+else
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64"
+	DOCKER_COMMAND_OUTPUT?=docker buildx build --output output --platform="linux/amd64,linux/arm64" -f Dockerfile.kong
 endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
@@ -181,7 +182,7 @@ ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
-	mv output/output/*.$(PACKAGE_TYPE) output/
+	mv output/output/*.$(PACKAGE_TYPE)* output/
 endif
 	rm -rf output/*/
 

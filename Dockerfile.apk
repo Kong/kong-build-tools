@@ -1,4 +1,4 @@
-FROM --platform=$TARGETPLATFORM alpine
+FROM alpine
 
 RUN apk update \
   && apk add ca-certificates wget coreutils patch grep \
