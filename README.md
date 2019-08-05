@@ -8,25 +8,11 @@ The tools necessary to build Kong
 - Docker
 - Make
 
-## Developing Kong
+Building non x86_64 architectures additionally requires:
 
-This repository assumes it's the sibling repository of `/kong` where the Kong source code you wish to
-develop exists
-
-```
-cd ~
-git clone git@github.com:Kong/kong.git
-git clone git@github.com:Kong/kong-build-tools.git
-cd kong-build-tools
-make development
-```
-
-From the command line prompt available the Kong source is mounted at `/src` all logs go to `/src/servroot/*`
-
-### Developing Kong Plugins
-
-The kong-plugin submodule is Kong plugin that is loaded and available as a template to base a Kong plugin off of
-or clone your own plugin source into it and update `KONG_PLUGINS` in the `docker-compose.yml` file
+- [Docker-machine](https://github.com/docker/machine)
+- [Buildx Docker plugin](https://github.com/docker/buildx)
+- AWS Credentials
 
 ## Building a Kong Distribution
 
@@ -38,7 +24,7 @@ cd ~
 git clone git@github.com:Kong/kong.git
 git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
-make package-kong
+make build-kong
 ls output/
 kong-0.0.0.xenial.all.deb
 ```
@@ -69,7 +55,7 @@ Sometimes it's useful to have a docker image with the Kong asset installed that 
 
 ```
 export KONG_TEST_CONTAINER_NAME=kong:testing
-make build_test_container
+make build-test-container
 ```
 
 ## Testing
@@ -77,10 +63,8 @@ make build_test_container
 *Prerequisites:*
 
 - Docker
-- Minikube
-- Helm
-
-The above requirements can be installed via `make setup_tests` if running Linux
+- [Kind](https://github.com/kubernetes-sigs/kind)
+- [Helm](https://github.com/helm/helm)
 
 ```
 make test
@@ -93,8 +77,7 @@ The Kong functional tests use [Tavern](https://taverntesting.github.io/).
 *Prerequisites*
 
 - Docker
-- A Packaged Kong Release (`make package-kong`)
-- K8s and helm (`make setup-tests`)
+- A Packaged Kong Release (`make build-kong`)
 
 ```
 make test
@@ -120,7 +103,7 @@ With the same prerequisites as running functional tests
 
 ```
 make test
-make develop_tests
+make develop-tests
 py.test test_your_test.tavern.yaml # Expect warnings about https and structure different
 ```
 

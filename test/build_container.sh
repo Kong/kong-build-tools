@@ -6,14 +6,14 @@ elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ];
   DOCKER_FILE="Dockerfile.deb"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   DOCKER_FILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.noarch.rpm output/kong.rpm
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   DOCKER_FILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.rpm output/kong.rpm
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.amd64.rpm output/kong.rpm
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-	cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.noarch.rpm output/kong.rpm
-	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
-	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
+  docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
+  docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
   DOCKER_FILE="Dockerfile.rpm"
   RHEL=true
 elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
@@ -31,6 +31,5 @@ docker build \
 --build-arg RHEL=$RHEL \
 --build-arg REDHAT_USERNAME=$REDHAT_USERNAME \
 --build-arg REDHAT_PASSWORD=$REDHAT_PASSWORD \
---cache-from kong/kong-build-tools:test-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG \
 -f test/$DOCKER_FILE \
 -t $KONG_TEST_CONTAINER_NAME .

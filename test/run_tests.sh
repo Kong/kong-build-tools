@@ -29,7 +29,7 @@ while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Complet
   sleep 10;
 done
 
-helm install --dep-up --version 0.10.1 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG} stable/kong
+helm install --dep-up --version 0.14.2 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG} stable/kong
 
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"

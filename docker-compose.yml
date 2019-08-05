@@ -12,8 +12,6 @@ services:
       db:
         condition: service_healthy
     environment:
-      LUA_PATH: /tmp/build/usr/local/share/lua/5.1/?.lua;/tmp/build/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/kong-plugin/?.lua;/kong/?.lua;;
-      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/build/usr/local/openresty/luajit/bin:/tmp/build/usr/local/openresty/luajit/bin;/usr/local/openresty/bin
       KONG_PREFIX: /kong/servroot
       KONG_PLUGINS: bundled,myplugin
       KONG_ADMIN_LISTEN: '0.0.0.0:8001'
