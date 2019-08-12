@@ -81,6 +81,8 @@ OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
+ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
 setup-ci:
 	.ci/setup_ci.sh
@@ -126,6 +128,7 @@ else
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
+	-docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
 endif
 
 build-openresty: build-base
@@ -150,6 +153,7 @@ build-openresty: build-base
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
+	-docker push kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 
 package-kong: build-kong
 
@@ -218,15 +222,19 @@ test: build-test-container
 	./test/run_tests.sh
 
 run_tests:
-	cd test && docker build -t kong/kong-build-tools:test-runner -f Dockerfile.test_runner .
-	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
+	cd test && \
+	docker pull kong/kong-build-tools:test-runner-$(TEST_SHA) || \
+	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
+	cd test && \
+	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
+	-docker push kong/kong-build-tools:test-runner-$(TEST_SHA)
 
 develop-tests:
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
 	-e ADMIN_URI="https://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-e PROXY_URI="http://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-v $$PWD/test:/app \
-	kong/kong-build-tools:test_runner /bin/bash
+	kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash
 
 build-test-container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
