@@ -52,7 +52,6 @@ matrix:
 
 before_script:
   - make setup-ci
-  - make setup-build
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 
 script:
