@@ -83,15 +83,16 @@ BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
 
 setup-ci:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	.ci/setup_ci.sh
 	$(MAKE) setup-tests
 	$(MAKE) setup-build
+endif
 
 setup-build:
 ifeq ($(RESTY_IMAGE_BASE),src)
-	exit 0
-endif
-ifeq ($(BUILDX),true)
+	@echo "nothing to be done"
+else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-monitoring --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
@@ -106,9 +107,8 @@ endif
 
 cleanup_build:
 ifeq ($(RESTY_IMAGE_BASE),src)
-	exit 0
-endif
-ifeq ($(BUILDX),true)
+	@echo "nothing to be done"
+else ifeq ($(BUILDX),true)
 	-docker buildx use default
 	-docker buildx rm multibuilder
 	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
