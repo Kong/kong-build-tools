@@ -196,7 +196,6 @@ actual-build-kong: build-openresty
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
 	-cp output/linux*/output/* output/
 	-cp output/output/* output/
-endif
 ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
 	docker cp output:/output/ output
