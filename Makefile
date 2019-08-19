@@ -6,7 +6,7 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=xenial
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=0.0.5
+OPENRESTY_BUILD_TOOLS_VERSION?=0.0.6
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -85,11 +85,16 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
 setup-ci:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	.ci/setup_ci.sh
-	.ci/setup_kind.sh
+	$(MAKE) setup-tests
+	$(MAKE) setup-build
+endif
 
 setup-build:
-ifeq ($(BUILDX),true)
+ifeq ($(RESTY_IMAGE_BASE),src)
+	@echo "nothing to be done"
+else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 --amazonec2-instance-type a1.medium --amazonec2-region us-east-1 --amazonec2-ami ami-0c46f9f09e3a8c2b5 --amazonec2-monitoring --amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
@@ -103,7 +108,9 @@ ifeq ($(BUILDX),true)
 endif
 
 cleanup_build:
-ifeq ($(BUILDX),true)
+ifeq ($(RESTY_IMAGE_BASE),src)
+	@echo "nothing to be done"
+else ifeq ($(BUILDX),true)
 	-docker buildx use default
 	-docker buildx rm multibuilder
 	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
@@ -111,7 +118,9 @@ ifeq ($(BUILDX),true)
 endif
 
 build-base:
-ifeq ($(RESTY_IMAGE_BASE),rhel)
+ifeq ($(RESTY_IMAGE_BASE),src)
+	@echo "nothing to be done"
+else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
 	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
@@ -132,6 +141,9 @@ else
 endif
 
 build-openresty: build-base
+ifeq ($(RESTY_IMAGE_BASE),src)
+	@echo "nothing to be done"
+else
 	-rm -rf openresty-build-tools
 	git clone https://github.com/Kong/openresty-build-tools.git
 	cd openresty-build-tools; \
@@ -154,11 +166,18 @@ build-openresty: build-base
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
 	-docker push kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+endif
 
 package-kong: build-kong
 
-build-kong: build-openresty
-ifneq ($(RESTY_IMAGE_BASE),src)
+ifeq ($(RESTY_IMAGE_BASE),src)
+build-kong:
+	@echo "nothing to be done"
+else
+build-kong: actual-build-kong
+endif
+
+actual-build-kong: build-openresty
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(DOCKER_COMMAND_OUTPUT) \
@@ -181,7 +200,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) .
 	-cp output/linux*/output/* output/
 	-cp output/output/* output/
-endif
 ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(KONG_VERSION) tail -f /dev/null
 	docker cp output:/output/ output
@@ -213,6 +231,7 @@ ifneq ($(BUILDX),false)
 endif
 
 test: build-test-container
+ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -220,29 +239,36 @@ test: build-test-container
 	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	./test/run_tests.sh
+endif
 
 run_tests:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	cd test && \
 	docker pull kong/kong-build-tools:test-runner-$(TEST_SHA) || \
 	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
 	cd test && \
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
 	-docker push kong/kong-build-tools:test-runner-$(TEST_SHA)
+endif
 
 develop-tests:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
 	-e ADMIN_URI="https://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-e PROXY_URI="http://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}'`" \
 	-v $$PWD/test:/app \
 	kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash
+endif
 
 build-test-container:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	test/build_container.sh
+endif
 
 development:
 ifeq ($(RESTY_IMAGE_TAG),xenial)
@@ -264,10 +290,14 @@ ifeq ($(RESTY_IMAGE_TAG),xenial)
 endif
 
 setup-tests: cleanup-tests
+ifneq ($(RESTY_IMAGE_BASE),src)
 	./.ci/setup_kind.sh
+endif
 
 cleanup-tests:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	-kind delete cluster
+endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
