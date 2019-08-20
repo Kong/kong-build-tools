@@ -10,20 +10,10 @@ COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
 
-FROM ubuntu:xenial as FPM
+FROM cdrx/fpm-ubuntu:18.04 as FPM
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  ruby \
-  ruby-dev \
-  rubygems \
-  lsb-release \
-  libffi-dev \
-  build-essential \
-  rpm
-
+RUN apt-get update && apt-get install -y --no-install-recommends rpm
 COPY --from=KONG /tmp/build /tmp/build
-RUN gem install --no-ri --no-rdoc fpm
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
 
 ARG RESTY_IMAGE_BASE="ubuntu"
