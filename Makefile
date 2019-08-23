@@ -52,7 +52,7 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
-BUILDX?=false
+BUILDX?=true
 ifeq ($(RESTY_IMAGE_BASE),src)
 	BUILDX?=false
 else ifeq ($(PACKAGE_TYPE),rpm)
@@ -88,6 +88,15 @@ ifeq ($(CACHE),true)
 	CACHE_COMMAND?=docker pull
 else
     CACHE_COMMAND?=false
+endif
+
+UPDATE_CACHE?=$(CACHE)
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	UPDATE_CACHE_COMMAND?=false
+else ifeq ($(UPDATE_CACHE),true)
+	UPDATE_CACHE_COMMAND?=docker push
+else
+	UPDATE_CACHE_COMMAND?=false
 endif
 
 setup-ci:
@@ -143,7 +152,7 @@ else
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
-	-docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
+	-$(UPDATE_CACHE) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
 endif
 
 build-openresty: build-base
@@ -171,9 +180,7 @@ else
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
-endif
-ifneq ($(RESTY_IMAGE_BASE),rhel)
-	-docker push kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+	-$(UPDATE_CACHE) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
 package-kong: build-kong
@@ -213,9 +220,7 @@ actual-build-kong: build-openresty
 	docker stop output
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
-ifneq ($(RESTY_IMAGE_BASE),rhel)
-	-docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
-endif
+	-$(UPDATE_CACHE) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
 
 release-kong:
 	ARCHITECTURE=amd64 \
@@ -257,7 +262,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
 	cd test && \
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
-	-docker push kong/kong-build-tools:test-runner-$(TEST_SHA)
+	-$(UPDATE_CACHE) kong/kong-build-tools:test-runner-$(TEST_SHA)
 endif
 
 develop-tests:

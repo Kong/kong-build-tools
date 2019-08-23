@@ -14,8 +14,8 @@ env:
     - DOCKER_BUILDKIT=1
     - DOCKER_MACHINE_ARM64_NAME=travis-ci-kong-build-tools-${TRAVIS_JOB_ID}
   matrix:
-    - CACHE=true BUILDX=true KONG_SOURCE=master
-    - CACHE=false BUILDX=true KONG_SOURCE=master
+    - UPDATE_CACHE=false CACHE=true BUILDX=false KONG_SOURCE=master
+    - UPDATE_CACHE=false CACHE=false BUILDX=false KONG_SOURCE=master
     - RESTY_IMAGE_BASE=src KONG_SOURCE=master
     - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=6 KONG_SOURCE=master
     - PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7 KONG_SOURCE=master

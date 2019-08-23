@@ -10,9 +10,8 @@ COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
 
-FROM cdrx/fpm-ubuntu:18.04 as FPM
+FROM kong/fpm:0.0.2 as FPM
 
-RUN apt-get update && apt-get install -y --no-install-recommends rpm
 COPY --from=KONG /tmp/build /tmp/build
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
 
