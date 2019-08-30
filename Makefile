@@ -59,6 +59,8 @@ else ifeq ($(PACKAGE_TYPE),rpm)
 	BUILDX?=false
 else ifeq ($(RESTY_IMAGE_TAG),jessie)
 	BUILDX?=false
+else ifeq ($(RESTY_IMAGE_BASE),alpine)
+	BUILDX?=false
 endif
 
 BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
@@ -67,9 +69,11 @@ ifneq ($(BUILDX_INFO),)
 endif
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build
+	UPDATE_CACHE=false
+	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64"
+	CACHE=false
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
 endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
@@ -197,7 +201,6 @@ actual-build-kong: build-openresty
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) || \
 	$(DOCKER_COMMAND) -f Dockerfile.kong \
-	--build-arg BUILDPLATFORM=x/amd64 \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -215,11 +218,21 @@ actual-build-kong: build-openresty
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) .
+ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
+else
+	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.scratch \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+	--build-arg KONG_SHA=$(KONG_SHA) .
+	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
+	rm -rf output/*/
+endif
 	-$(UPDATE_CACHE) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
 
 release-kong:
@@ -232,7 +245,7 @@ release-kong:
 	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
-ifneq ($(BUILDX),false)
+ifeq ($(BUILDX),true)
 	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \

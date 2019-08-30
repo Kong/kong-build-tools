@@ -10,7 +10,7 @@ COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
 
-FROM kong/fpm:0.0.2 as FPM
+FROM kong/fpm:0.0.1 as FPM
 
 COPY --from=KONG /tmp/build /tmp/build
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
