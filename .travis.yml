@@ -15,6 +15,11 @@ env:
     - DOCKER_MACHINE_ARM64_NAME=travis-ci-kong-build-tools-${TRAVIS_JOB_ID}
   matrix:
     - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial KONG_SOURCE=next
+    - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=next
+    - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=next
+    - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=xenial KONG_SOURCE=master
+    - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=bionic KONG_SOURCE=master
+    - CACHE=false PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=trusty KONG_SOURCE=master
 
 before_script:
   - make setup-ci
