@@ -58,7 +58,7 @@ COPY build-openresty.sh /tmp/build-openresty.sh
 
 RUN /tmp/build-openresty.sh
 
-ARG LYAML_VERSION=6.2.3
+ARG LYAML_VERSION=6.2.4
 ENV LYAML_VERSION $LYAML_VERSION
 
 RUN /tmp/install-lyaml.sh
