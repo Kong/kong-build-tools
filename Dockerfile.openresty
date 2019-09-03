@@ -58,6 +58,9 @@ COPY build-openresty.sh /tmp/build-openresty.sh
 
 RUN /tmp/build-openresty.sh
 
+ARG LYAML_VERSION=6.2.3
+ENV LYAML_VERSION $LYAML_VERSION
+
 RUN /tmp/install-lyaml.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
