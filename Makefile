@@ -44,7 +44,6 @@ RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
   --with-stream_realip_module \
   "
 LIBYAML_VERSION ?= 0.2.1
-LYAML_VERSION ?= 6.2.3
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 

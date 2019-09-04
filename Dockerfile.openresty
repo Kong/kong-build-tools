@@ -53,12 +53,9 @@ ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
 COPY openresty-build-tools /tmp/openresty-build-tools/
-COPY install-lyaml.sh /tmp/install-lyaml.sh
 COPY build-openresty.sh /tmp/build-openresty.sh
 
 RUN /tmp/build-openresty.sh
-
-RUN /tmp/install-lyaml.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 

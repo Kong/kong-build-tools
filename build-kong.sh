@@ -16,11 +16,6 @@ export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChec
 export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/usr/local/openresty/luajit/bin
-
-/usr/local/bin/luarocks install lyaml 6.2.3 \
-    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
-    YAML_INCDIR=/tmp/yaml-6.2.3 \
-    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
     
 cp -R /tmp/build/* /
 
@@ -64,7 +59,10 @@ pushd /kong
 
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
-    OPENSSL_DIR=/usr/local/kong
+    OPENSSL_DIR=/usr/local/kong \
+    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
+    YAML_INCDIR=/tmp/yaml \
+    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
