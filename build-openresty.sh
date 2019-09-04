@@ -37,7 +37,6 @@ OPENSSL_PREFIX=/usr/local/kong \
 OPENSSL_DESTDIR=/tmp/build \
 OPENRESTY_RPATH=/usr/local/kong/lib \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
---openresty-patches fix/old_c_for_lightuserdata_mapping \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
 --luarocks $RESTY_LUAROCKS_VERSION \
