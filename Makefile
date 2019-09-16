@@ -52,15 +52,9 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 	OPENSSL_EXTRA_OPTIONSs=" -no-async"
 endif
 
-BUILDX?=true
-ifeq ($(RESTY_IMAGE_BASE),src)
-	BUILDX?=false
-else ifeq ($(PACKAGE_TYPE),rpm)
-	BUILDX?=false
-else ifeq ($(RESTY_IMAGE_TAG),jessie)
-	BUILDX?=false
-else ifeq ($(RESTY_IMAGE_BASE),alpine)
-	BUILDX?=false
+BUILDX?=false
+ifeq ($(RESTY_IMAGE_TAG),xenial)
+	BUILDX=true
 endif
 
 BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
