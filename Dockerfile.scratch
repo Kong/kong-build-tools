@@ -1,0 +1,10 @@
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="xenial"
+ARG DOCKER_OPENRESTY_SUFFIX
+ARG KONG_SHA
+
+FROM --platform=$TARGETPLATFORM kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX}-${KONG_SHA} as FPM
+
+FROM  --platform=$TARGETPLATFORM scratch
+
+COPY --from=FPM /output /output

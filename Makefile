@@ -52,12 +52,8 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 endif
 
 BUILDX?=false
-ifeq ($(RESTY_IMAGE_BASE),src)
-	BUILDX?=false
-else ifeq ($(PACKAGE_TYPE),rpm)
-	BUILDX?=false
-else ifeq ($(RESTY_IMAGE_TAG),jessie)
-	BUILDX?=false
+ifeq ($(RESTY_IMAGE_TAG),xenial)
+	BUILDX=true
 endif
 
 BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
@@ -66,9 +62,11 @@ ifneq ($(BUILDX_INFO),)
 endif
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build
+	UPDATE_CACHE=false
+	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64"
+	CACHE=false
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
 endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
@@ -87,6 +85,15 @@ ifeq ($(CACHE),true)
 	CACHE_COMMAND?=docker pull
 else
     CACHE_COMMAND?=false
+endif
+
+UPDATE_CACHE?=$(CACHE)
+ifeq ($(RESTY_IMAGE_BASE),rhel)
+	UPDATE_CACHE_COMMAND?=false
+else ifeq ($(UPDATE_CACHE),true)
+	UPDATE_CACHE_COMMAND?=docker push
+else
+	UPDATE_CACHE_COMMAND?=false
 endif
 
 setup-ci:
@@ -142,7 +149,7 @@ else
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
-	-docker push kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
+	-$(UPDATE_CACHE) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
 endif
 
 build-openresty: build-base
@@ -170,9 +177,7 @@ else
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
-endif
-ifneq ($(RESTY_IMAGE_BASE),rhel)
-	-docker push kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+	-$(UPDATE_CACHE) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
 package-kong: build-kong
@@ -189,7 +194,6 @@ actual-build-kong: build-openresty
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) || \
 	$(DOCKER_COMMAND) -f Dockerfile.kong \
-	--build-arg BUILDPLATFORM=x/amd64 \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
@@ -207,14 +211,22 @@ actual-build-kong: build-openresty
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) .
+ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
-ifneq ($(RESTY_IMAGE_BASE),rhel)
-	-docker push kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
+else
+	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.scratch \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+	--build-arg KONG_SHA=$(KONG_SHA) .
+	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
+	rm -rf output/*/
 endif
+	-$(UPDATE_CACHE) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
 
 release-kong:
 	ARCHITECTURE=amd64 \
@@ -226,7 +238,7 @@ release-kong:
 	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
-ifneq ($(BUILDX),false)
+ifeq ($(BUILDX),true)
 	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -256,7 +268,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
 	cd test && \
 	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
-	-docker push kong/kong-build-tools:test-runner-$(TEST_SHA)
+	-$(UPDATE_CACHE) kong/kong-build-tools:test-runner-$(TEST_SHA)
 endif
 
 develop-tests:
