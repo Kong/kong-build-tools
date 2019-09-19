@@ -2,7 +2,9 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
 ARG DOCKER_BASE_SUFFIX
 
-FROM kong/kong-build-tools:ubuntu-bionic-${DOCKER_BASE_SUFFIX} AS prepare
+FROM tutum/curl AS prepare
+
+RUN apt-get update && apt-get install -y patch git
 
 ARG RESTY_VERSION=1.13.6.2
 ENV RESTY_VERSION="${RESTY_VERSION}"
