@@ -12,6 +12,7 @@ env:
     - KONG_CONFLICTS=kong-enterprise
     - KONG_LICENSE="ASL 2.0"
     - DOCKER_BUILDKIT=1
+    - CACHE=false
     - DOCKER_MACHINE_ARM64_NAME=travis-ci-kong-build-tools-${TRAVIS_JOB_ID}
   matrix:
     - RESTY_IMAGE_BASE=src KONG_SOURCE=master

@@ -2,7 +2,34 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
 ARG DOCKER_BASE_SUFFIX
 
+FROM kong/kong-build-tools:ubuntu-bionic-${DOCKER_BASE_SUFFIX} AS prepare
+
+ARG RESTY_VERSION=1.13.6.2
+ENV RESTY_VERSION="${RESTY_VERSION}"
+LABEL resty_version="${RESTY_VERSION}"
+
+ARG RESTY_OPENSSL_VERSION=1.1.1c
+ENV RESTY_OPENSSL_VERSION="${RESTY_OPENSSL_VERSION}"
+LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
+
+ARG RESTY_PCRE_VERSION=8.41
+ENV RESTY_PCRE_VERSION="${RESTY_PCRE_VERSION}"
+LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
+
+ARG RESTY_LUAROCKS_VERSION=2.4.3
+ENV RESTY_LUAROCKS_VERSION="${RESTY_LUAROCKS_VERSION}"
+LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
+
+COPY openresty-build-tools /tmp/openresty-build-tools/
+COPY build-openresty.sh /tmp/build-openresty.sh
+
+ENV PREPARATION_ONLY=1
+RUN /tmp/build-openresty.sh
+
 FROM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
+
+COPY --from=prepare /tmp/build /tmp/build
+COPY --from=prepare /work /work
 
 ARG LIBYAML_VERSION=0.2.1
 ENV LIBYAML_VERSION $LIBYAML_VERSION
@@ -41,15 +68,19 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTL
     && make -j${RESTY_J}; fi
 
 ARG RESTY_VERSION=1.13.6.2
+ENV RESTY_VERSION="${RESTY_VERSION}"
 LABEL resty_version="${RESTY_VERSION}"
 
 ARG RESTY_OPENSSL_VERSION=1.1.1c
+ENV RESTY_OPENSSL_VERSION="${RESTY_OPENSSL_VERSION}"
 LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
 
 ARG RESTY_PCRE_VERSION=8.41
+ENV RESTY_PCRE_VERSION="${RESTY_PCRE_VERSION}"
 LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 
 ARG RESTY_LUAROCKS_VERSION=2.4.3
+ENV RESTY_LUAROCKS_VERSION="${RESTY_LUAROCKS_VERSION}"
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
 COPY openresty-build-tools /tmp/openresty-build-tools/
