@@ -52,7 +52,9 @@ ifeq ($(RESTY_IMAGE_BASE),alpine)
 endif
 
 BUILDX?=false
-ifeq ($(RESTY_IMAGE_TAG),xenial)
+ifndef AWS_ACCESS_KEY
+	BUILDX=false
+else ifeq ($(RESTY_IMAGE_TAG),xenial)
 	BUILDX=true
 endif
 
