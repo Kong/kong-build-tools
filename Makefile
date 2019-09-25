@@ -105,11 +105,11 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	$(MAKE) setup-build
 endif
 
-setup-build:
+setup-build: cleanup_build
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
-	-docker buildx create --name multibuilder
+	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
 	--amazonec2-instance-type a1.medium \
 	--amazonec2-region us-east-1 \
