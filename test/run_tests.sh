@@ -7,9 +7,10 @@ if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
 fi
 
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
+test -t 1 && USE_TTY="-it"
+docker run -t --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
-docker run -it --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
 
 while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
   kubectl get pod --all-namespaces -o wide

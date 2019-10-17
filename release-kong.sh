@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -eo pipefail
+set -x
 
 CWD=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
