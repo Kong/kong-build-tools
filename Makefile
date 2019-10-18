@@ -90,9 +90,7 @@ else
 endif
 
 UPDATE_CACHE?=$(CACHE)
-ifeq ($(RESTY_IMAGE_BASE),rhel)
-	UPDATE_CACHE_COMMAND?=false
-else ifeq ($(UPDATE_CACHE),true)
+ifeq ($(UPDATE_CACHE),true)
 	UPDATE_CACHE_COMMAND?=docker push
 else
 	UPDATE_CACHE_COMMAND?=false
@@ -141,15 +139,14 @@ build-base:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(RESTY_IMAGE_BASE),rhel)
-	docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
-	docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
+
+	docker pull centos:${RESTY_IMAGE_TAG}
+	docker tag centos:${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
-	@$(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
-	--build-arg RHEL=true \
+	$(CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
+	$(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	--build-arg REDHAT_USERNAME=$(REDHAT_USERNAME) \
-	--build-arg REDHAT_PASSWORD=$(REDHAT_PASSWORD) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
 else
 	$(CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
