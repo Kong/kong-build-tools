@@ -110,7 +110,6 @@ debug:
 setup-ci:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	.ci/setup_ci.sh
-	$(MAKE) setup-tests
 	$(MAKE) setup-build
 endif
 
@@ -267,7 +266,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: build-test-container
+test: setup-tests build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \

@@ -16,7 +16,7 @@ fi
 K8S_VERSION="${K8S_VERSION:-v1.15.0}"
 kind create cluster --image "kindest/node:${K8S_VERSION}"
 if ! [ -x "$(command -v helm)" ]; then
-    curl -fsSLo get_helm.sh https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get
+    curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/v2.15.0/scripts/get
     chmod +x get_helm.sh
     sudo ./get_helm.sh
     rm -rf get_helm.sh

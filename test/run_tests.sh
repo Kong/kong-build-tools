@@ -8,7 +8,7 @@ fi
 
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 test -t 1 && USE_TTY="-it"
-docker run -t --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
 
