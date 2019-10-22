@@ -75,10 +75,14 @@ DOCKER_BASE_SUFFIX=$$(md5sum Dockerfile.${PACKAGE_TYPE} | cut -d' ' -f 1)${CACHE
 OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
+KONG_DOCKER_SHA=$$(md5sum Dockerfile.kong | cut -d' ' -f 1)$$(md5sum build-kong.sh | cut -d' ' -f 1)
 DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
+DOCKER_KONG_SUFFIX=${KONG_DOCKER_SHA}-${KONG_SHA}${CACHE_BUSTER}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
-KONG_SHA=$$(git --git-dir=$(ROOT_DIR)/kong/.git rev-parse --short HEAD)${CACHE_BUSTER}
+KONG_SHA=$$(git --git-dir=$(ROOT_DIR)/kong/.git rev-parse --short HEAD)
+DOCKER_TEST_SUFFIX=${DOCKER_KONG_SUFFIX}-$$(md5sum Dockerfile.test | cut -d' ' -f 1)
+
 CACHE?=true
 
 ifeq ($(CACHE),true)
@@ -177,6 +181,30 @@ else
 endif
 
 package-kong: build-kong
+	$(DOCKER_COMMAND) -f Dockerfile.package \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
+	--build-arg KONG_SHA=$(KONG_SHA) \
+	--build-arg EDITION=$(EDITION) \
+	--build-arg KONG_VERSION=$(KONG_VERSION) \
+	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
+	-t kong/kong-build-tools:kong-packaged-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) .
+ifeq ($(BUILDX),false)
+	docker run -d --rm --name output kong/kong-build-tools:kong-packaged-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
+	docker cp output:/output/ output
+	docker stop output
+	mv output/output/*.$(PACKAGE_TYPE)* output/
+	rm -rf output/*/
+else
+	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.scratch \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
+	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
+	rm -rf output/*/
+endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
 build-kong:
@@ -188,41 +216,29 @@ endif
 actual-build-kong: build-openresty
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
-	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) || \
+	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
 	$(DOCKER_COMMAND) -f Dockerfile.kong \
-	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
-	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
-	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
-	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
-	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
-	--build-arg EDITION=$(EDITION) \
-	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
-	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
-	--build-arg KONG_VERSION=$(KONG_VERSION) \
-	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
-	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) .
-ifeq ($(BUILDX),false)
-	docker run -d --rm --name output kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA) tail -f /dev/null
-	docker cp output:/output/ output
-	docker stop output
-	mv output/output/*.$(PACKAGE_TYPE)* output/
-	rm -rf output/*/
-else
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.scratch \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg KONG_SHA=$(KONG_SHA) .
-	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
-	rm -rf output/*/
+	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) .
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
+
+kong-test-container: build-kong
+ifneq ($(RESTY_IMAGE_BASE),src)
+	$(CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) || \
+	$(DOCKER_COMMAND) -f Dockerfile.test \
+	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
+	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
+	--build-arg KONG_SHA=${KONG_SHA} \
+	-t kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) .
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX)
+	docker tag kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) kong/kong-build-tools:test
 endif
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)-$(KONG_SHA)
+
+test-kong: kong-test-container
+	docker-compose up -d
+	docker-compose exec kong /kong/.ci/run_tests.sh
 
 release-kong:
 	ARCHITECTURE=amd64 \
@@ -284,25 +300,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	test/build_container.sh
-endif
-
-development:
-ifeq ($(RESTY_IMAGE_TAG),xenial)
-	$(MAKE) build-openresty
-	docker pull kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
-	docker tag kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) kong/kong-build-tools:openresty-development
-	docker build \
-	--build-arg KONG_UID=$$(id -u) \
-	--build-arg USER=$$USER \
-	--build-arg RUNAS_USER=$$USER \
-	-f Dockerfile.development \
-	-t kong/kong-build-tools:development .
-	- docker-compose stop
-	- docker-compose rm -f
-	USER=$$(id -u) docker-compose up -d && \
-	docker-compose exec kong make dev && \
-	docker-compose exec kong ln -s /usr/local/openresty/bin/resty /usr/local/bin/resty && \
-	docker-compose exec kong /bin/bash
 endif
 
 setup-tests: cleanup-tests

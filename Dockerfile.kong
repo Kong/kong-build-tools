@@ -2,27 +2,10 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="xenial"
 ARG DOCKER_OPENRESTY_SUFFIX
 
-FROM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX} as KONG
+FROM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX}
 
 WORKDIR /kong
 COPY kong /kong
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
-
-FROM kong/fpm:0.0.1 as FPM
-
-COPY --from=KONG /tmp/build /tmp/build
-COPY fpm-entrypoint.sh /fpm-entrypoint.sh
-
-ARG RESTY_IMAGE_BASE="ubuntu"
-ARG RESTY_IMAGE_TAG="xenial"
-ARG KONG_VERSION
-ARG KONG_PACKAGE_NAME
-ARG KONG_CONFLICTS
-ARG BUILDPLATFORM
-
-RUN /fpm-entrypoint.sh
-
-FROM alpine
-COPY --from=FPM /output /output
