@@ -58,10 +58,11 @@ else ifeq ($(RESTY_IMAGE_TAG),xenial)
 	BUILDX=true
 endif
 
-BUILDX_INFO := $(shell docker buildx 2>&1 >/dev/null; echo $?)
+BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 ifneq ($(BUILDX_INFO),)
 	BUILDX=false
 endif
+
 
 ifeq ($(BUILDX),false)
 	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
@@ -98,10 +99,18 @@ else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
+debug:
+	@echo ${CACHE}
+	@echo ${BUILDX}
+	@echo ${UPDATE_CACHE}
+	@echo ${CACHE_COMMAND}
+	@echo ${UPDATE_CACHE_COMMAND}
+	@echo ${DOCKER_COMMAND}
+	@echo ${BUILDX_INFO}
+
 setup-ci:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	.ci/setup_ci.sh
-	$(MAKE) setup-tests
 	$(MAKE) setup-build
 endif
 
@@ -240,7 +249,7 @@ test-kong: kong-test-container
 	docker-compose up -d
 	docker-compose exec kong /kong/.ci/run_tests.sh
 
-release-kong:
+release-kong: test
 	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -262,7 +271,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: build-test-container
+test: setup-tests build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -279,8 +288,8 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) kong/kong-build-tools:test-runner-$(TEST_SHA) || \
 	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
 	cd test && \
-	docker run -it --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
-	-$(UPDATE_CACHE) kong/kong-build-tools:test-runner-$(TEST_SHA)
+	docker run -t --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-runner-$(TEST_SHA)
 endif
 
 develop-tests:
