@@ -3,7 +3,7 @@ attrs==19.3.0
 backports.functools-lru-cache==1.5
 certifi==2019.9.11
 chardet==3.0.4
-contextlib2==0.5.5
+contextlib2==0.6.0.post1
 docopt==0.6.2
 future==0.18.1
 idna==2.8
