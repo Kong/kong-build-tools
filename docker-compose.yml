@@ -10,6 +10,7 @@ services:
     image: kong/kong-build-tools:test
     privileged: true
     network_mode: host
+    container_name: kong
     environment:
       TEST_SUITE: ${TEST_SUITE:-integration}
       KONG_DATABASE: ${TEST_DATABASE:-postgres}
@@ -26,22 +27,38 @@ services:
       KONG_TEST_PG_USER: ${KONG_PG_USER:-kong}
       KONG_ANONYMOUS_REPORTS: "false"
     network_mode: "host"
+    stdin_open: true
+    tty: true
     restart: on-failure
-  db:
-    image: ${KONG_TEST_DATABASE_IMAGE:-postgres:9.5}
+  cassandra:
+    image: cassandra:${CASSANDRA_VERSION:-3.9}
     environment:
-      POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
-      POSTGRES_USER: ${KONG_PG_USER:-kong}
       MAX_HEAP_SIZE: 256M
       HEAP_NEWSIZE: 128M
     ports:
       - '7000:7000'
       - '9042:9042'
-      - '5432:5432'
     expose:
       - 7000
       - 9042
-      - 5432
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
     restart: on-failure
-    stdin_open: true
-    tty: true
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-9.5}
+    environment:
+      POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
+      POSTGRES_USER: ${KONG_PG_USER:-kong}
+    ports:
+      - '5432:5432'
+    expose:
+      - 5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${KONG_PG_USER:-kong}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    restart: on-failure

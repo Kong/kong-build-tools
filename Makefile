@@ -233,10 +233,10 @@ actual-build-kong: build-openresty
 	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) .
 	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
 
-kong-test-container: build-kong
+kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) || \
-	$(DOCKER_COMMAND) -f Dockerfile.test \
+	$(MAKE) build-kong && $(DOCKER_COMMAND) -f Dockerfile.test \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg KONG_SHA=${KONG_SHA} \
@@ -247,7 +247,8 @@ endif
 
 test-kong: kong-test-container
 	docker-compose up -d
-	docker-compose exec kong /kong/.ci/run_tests.sh
+	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "2" ]]; do docker-compose ps && sleep 5; done'
+	docker exec kong /kong/.ci/run_tests.sh
 
 release-kong: test
 	ARCHITECTURE=amd64 \
