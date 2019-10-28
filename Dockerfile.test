@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y \
     vim \
     jq \
     httpie \
-    iputils-ping
+    iputils-ping \
+    net-tools
 
 
 COPY kong /kong

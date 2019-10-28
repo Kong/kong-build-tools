@@ -1,15 +1,23 @@
 version: '2.1'
 services:
+  grpcbin:
+    image: moul/grpcbin
+    container_name: grpcbin
+    ports:
+      - 15002:9000
+      - 15003:9001
   kong:
     image: kong/kong-build-tools:test
     privileged: true
     network_mode: host
     environment:
-      TEST_SUITE: ${TEST_SUITE:-unit}
-      KONG_DATABASE: postgres
-      KONG_TEST_DATABASE: postgres
+      TEST_SUITE: ${TEST_SUITE:-integration}
+      KONG_DATABASE: ${TEST_DATABASE:-postgres}
+      KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
       KONG_TEST_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_CASSANDRA_CONTACT_POINTS: 127.0.0.1
+      KONG_TEST_CASSANDRA_CONTACT_POINTS: 127.0.0.1
       KONG_PG_HOST: 127.0.0.1
       KONG_TEST_PG_HOST: 127.0.0.1
       KONG_PATH: /kong
@@ -20,11 +28,20 @@ services:
     network_mode: "host"
     restart: on-failure
   db:
-    image: postgres:${POSTGRES_VERSION:-9.5}
+    image: ${KONG_TEST_DATABASE_IMAGE:-postgres:9.5}
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
+      MAX_HEAP_SIZE: 256M
+      HEAP_NEWSIZE: 128M
+    ports:
+      - '7000:7000'
+      - '9042:9042'
+      - '5432:5432'
+    expose:
+      - 7000
+      - 9042
+      - 5432
     restart: on-failure
-    network_mode: "host"
     stdin_open: true
     tty: true
