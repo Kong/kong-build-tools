@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
 
 
 COPY kong /kong
+RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
 WORKDIR /kong
 RUN make dev

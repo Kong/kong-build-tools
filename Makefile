@@ -81,7 +81,7 @@ DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_
 DOCKER_KONG_SUFFIX=${KONG_DOCKER_SHA}-${KONG_SHA}${CACHE_BUSTER}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
-KONG_SHA=$$(git --git-dir=$(ROOT_DIR)/kong/.git rev-parse --short HEAD)
+KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/kong/.git rev-parse --short HEAD)
 DOCKER_TEST_SUFFIX=${DOCKER_KONG_SUFFIX}-$$(md5sum Dockerfile.test | cut -d' ' -f 1)
 
 CACHE?=true
@@ -247,7 +247,7 @@ endif
 
 test-kong: kong-test-container
 	docker-compose up -d
-	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "2" ]]; do docker-compose ps && sleep 5; done'
+	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh
 
 release-kong: test
