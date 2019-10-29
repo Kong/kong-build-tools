@@ -81,7 +81,7 @@ DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_
 DOCKER_KONG_SUFFIX=${KONG_DOCKER_SHA}-${KONG_SHA}${CACHE_BUSTER}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
-KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/kong/.git rev-parse --short HEAD)
+KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 DOCKER_TEST_SUFFIX=${DOCKER_KONG_SUFFIX}-$$(md5sum Dockerfile.test | cut -d' ' -f 1)
 
 CACHE?=true
@@ -211,6 +211,7 @@ else
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
+	--build-arg KONG_SHA=$(KONG_SHA) .
 	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 endif
@@ -236,11 +237,11 @@ actual-build-kong: build-openresty
 kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) || \
-	$(MAKE) build-kong && $(DOCKER_COMMAND) -f Dockerfile.test \
+	( $(MAKE) build-kong  && $(DOCKER_COMMAND) -f Dockerfile.test \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg KONG_SHA=${KONG_SHA} \
-	-t kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) .
+	-t kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) . )
 	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX)
 	docker tag kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) kong/kong-build-tools:test
 endif
