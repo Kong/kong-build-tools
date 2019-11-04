@@ -155,13 +155,13 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	PACKAGE_TYPE=rpm
 endif
 	$(CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
-	$(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
+	( $(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) .
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
+	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . ; \
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) )
 
-build-openresty: build-base
+build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
@@ -171,6 +171,7 @@ else
 	git fetch; \
 	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
 	$(CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
+	( $(MAKE) build-base ; \
 	$(DOCKER_COMMAND) -f Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
@@ -185,8 +186,8 @@ else
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
-	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) .
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . ; \
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) )
 endif
 
 package-kong: build-kong
@@ -223,16 +224,17 @@ else
 build-kong: actual-build-kong
 endif
 
-actual-build-kong: build-openresty
+actual-build-kong:
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
+	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f Dockerfile.kong \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) .
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
+	-t kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) . ; \
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) )
 
 kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
@@ -241,8 +243,8 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg KONG_SHA=${KONG_SHA} \
-	-t kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) . )
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX)
+	-t kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) . ; \
+	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) )
 	docker tag kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) kong/kong-build-tools:test
 endif
 
