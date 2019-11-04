@@ -190,7 +190,14 @@ else
 	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
-package-kong: build-kong
+ifeq ($(RESTY_IMAGE_BASE),src)
+package-kong:
+	@echo "nothing to be done"
+else
+package-kong: actual-package-kong
+endif
+
+actual-package-kong: build-kong
 	$(DOCKER_COMMAND) -f Dockerfile.package \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
