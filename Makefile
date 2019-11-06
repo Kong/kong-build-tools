@@ -260,8 +260,8 @@ test-kong: kong-test-container
 	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh
 
-release-kong: test
-	@ARCHITECTURE=amd64 \
+release-kong:
+	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
