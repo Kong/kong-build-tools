@@ -261,7 +261,7 @@ test-kong: kong-test-container
 	docker exec kong /kong/.ci/run_tests.sh
 
 release-kong: test
-	ARCHITECTURE=amd64 \
+	@ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -271,7 +271,7 @@ release-kong: test
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
-	ARCHITECTURE=arm64 \
+	@ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
