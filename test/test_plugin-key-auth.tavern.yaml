@@ -103,8 +103,6 @@ stages:
     response:
       strict: False
       status_code: 200
-      body:
-        url: http://randomapiname.com/request
       headers:
         Via: "kong/{tavern.env_vars.KONG_VERSION}"
     delay_after: 5
