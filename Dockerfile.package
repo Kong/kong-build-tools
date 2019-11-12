@@ -1,0 +1,23 @@
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="bionic"
+ARG DOCKER_KONG_SUFFIX
+ARG KONG_SHA
+
+FROM kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
+
+FROM kong/fpm:0.0.1 as FPM
+
+COPY --from=KONG /tmp/build /tmp/build
+COPY fpm-entrypoint.sh /fpm-entrypoint.sh
+
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="xenial"
+ARG KONG_VERSION
+ARG KONG_PACKAGE_NAME
+ARG KONG_CONFLICTS
+ARG BUILDPLATFORM
+
+RUN /fpm-entrypoint.sh
+
+FROM alpine
+COPY --from=FPM /output /output

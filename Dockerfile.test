@@ -1,0 +1,32 @@
+ARG RESTY_IMAGE_BASE="ubuntu"
+ARG RESTY_IMAGE_TAG="bionic"
+ARG DOCKER_KONG_SUFFIX
+ARG DOCKER_BASE_SUFFIX
+ARG KONG_SHA
+
+FROM kong/kong-build-tools:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
+
+FROM kong/kong-build-tools:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
+
+ENV PATH=$PATH:/kong/bin:/usr/local/openresty/bin/:/usr/local/kong/bin/:/usr/local/openresty/nginx/sbin/
+ENV LUA_PATH=/kong/?.lua;/kong/?/init.lua;/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua
+ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so
+
+COPY --from=KONG /tmp/build/ /tmp/build
+RUN cp -R /tmp/build/* /
+RUN rm -rf /usr/local/bin/kong
+RUN apt-get update && apt-get install -y \
+    vim \
+    jq \
+    httpie \
+    iputils-ping \
+    net-tools
+
+
+COPY kong /kong
+RUN mkdir -p /kong/servroot/logs
+RUN chmod -R 777 /kong
+WORKDIR /kong
+RUN make dev
+
+CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]

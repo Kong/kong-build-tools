@@ -1,40 +1,78 @@
 version: '2.1'
 services:
+  grpcbin:
+    image: moul/grpcbin
+    container_name: grpcbin
+    ports:
+      - 15002:9000
+      - 15003:9001
+  redis:
+    image: redis:5.0.4-alpine
+    ports:
+      - 6379:6379
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
   kong:
-    image: kong/kong-build-tools:development
-    entrypoint: tail -f /dev/null
-    user: ${USER:-root}
-    working_dir: /kong
-    volumes:
-      - ${KONG_SOURCE_LOCATION:-../kong}:/kong
-      - ./kong-plugin:/kong-plugin
-    depends_on:
-      db:
-        condition: service_healthy
+    image: kong/kong-build-tools:test
+    privileged: true
+    network_mode: host
+    container_name: kong
     environment:
-      KONG_PREFIX: /kong/servroot
-      KONG_PLUGINS: bundled,myplugin
-      KONG_ADMIN_LISTEN: '0.0.0.0:8001'
-      KONG_TEST_DATABASE: postgres
-      KONG_DATABASE: postgres
+      TEST_SUITE: ${TEST_SUITE:-integration}
+      KONG_DATABASE: ${TEST_DATABASE:-postgres}
+      KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_TEST_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_CASSANDRA_CONTACT_POINTS: 127.0.0.1
+      KONG_TEST_CASSANDRA_CONTACT_POINTS: 127.0.0.1
       KONG_PG_HOST: 127.0.0.1
       KONG_TEST_PG_HOST: 127.0.0.1
+      KONG_PATH: /kong
+      KONG_TEST_PATH: /kong
       KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_TEST_PG_USER: ${KONG_PG_USER:-kong}
       KONG_ANONYMOUS_REPORTS: "false"
+      KONG_REDIS_HOST: 127.0.0.1
+      KONG_SPEC_REDIS_HOST: 127.0.0.1
+      KONG_TEST_NGINX_USER: root
     network_mode: "host"
+    stdin_open: true
+    tty: true
     restart: on-failure
-  db:
+  cassandra:
+    image: cassandra:${CASSANDRA_VERSION:-3.9}
+    environment:
+      MAX_HEAP_SIZE: 256M
+      HEAP_NEWSIZE: 128M
+    ports:
+      - '7000:7000'
+      - '9042:9042'
+    expose:
+      - 7000
+      - 9042
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    restart: on-failure
+  postgres:
     image: postgres:${POSTGRES_VERSION:-9.5}
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
+    ports:
+      - '5432:5432'
+    expose:
+      - 5432
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${KONG_PG_USER:-kong}"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
+      interval: 5s
+      timeout: 10s
+      retries: 10
     restart: on-failure
-    network_mode: "host"
-    stdin_open: true
-    tty: true

@@ -41,7 +41,7 @@ before_script:
   - git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}
 
 script:
-  - make build-kong
+  - make package-kong
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   - make test
 
