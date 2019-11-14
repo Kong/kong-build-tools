@@ -13,7 +13,7 @@ if ! [ -x "$(command -v kubectl)" ]; then
     chmod +x ./kubectl
     mv kubectl $HOME/bin/
 fi
-K8S_VERSION="${K8S_VERSION:-v1.16.2}"
+K8S_VERSION="${K8S_VERSION:-v1.15.3}"
 kind create cluster --image "kindest/node:${K8S_VERSION}"
 if ! [ -x "$(command -v helm)" ]; then
     curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get
