@@ -4,7 +4,7 @@ set -e
 set -x
 
 if ! [ -x "$(command -v kind)" ]; then
-    curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+    curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64
     chmod +x ./kind
     mv kind $HOME/bin/
 fi
@@ -13,7 +13,7 @@ if ! [ -x "$(command -v kubectl)" ]; then
     chmod +x ./kubectl
     mv kubectl $HOME/bin/
 fi
-K8S_VERSION="${K8S_VERSION:-v1.15.0}"
+K8S_VERSION="${K8S_VERSION:-v1.16.2}"
 kind create cluster --image "kindest/node:${K8S_VERSION}"
 if ! [ -x "$(command -v helm)" ]; then
     curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/v2.15.0/scripts/get
