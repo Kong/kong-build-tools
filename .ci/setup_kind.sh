@@ -16,9 +16,9 @@ fi
 K8S_VERSION="${K8S_VERSION:-v1.15.0}"
 kind create cluster --image "kindest/node:${K8S_VERSION}"
 if ! [ -x "$(command -v helm)" ]; then
-    curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/v2.15.0/scripts/get
+    curl -fsSLo get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get
     chmod +x get_helm.sh
-    sudo ./get_helm.sh
+    sudo DESIRED_VERSION=v2.16.1 ./get_helm.sh
     rm -rf get_helm.sh
 fi
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
