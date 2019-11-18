@@ -31,6 +31,7 @@ RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.re
 RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+OPENRESTY_PATCHES ?= 1
 RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
   --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
   --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
@@ -76,7 +77,7 @@ OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
 KONG_DOCKER_SHA=$$(md5sum Dockerfile.kong | cut -d' ' -f 1)$$(md5sum build-kong.sh | cut -d' ' -f 1)-${KONG_VERSION}
-DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${CACHE_BUSTER}
+DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${CACHE_BUSTER}
 DOCKER_KONG_SUFFIX=${KONG_DOCKER_SHA}-${KONG_SHA}${CACHE_BUSTER}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
@@ -113,7 +114,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	$(MAKE) setup-build
 endif
 
-setup-build: cleanup_build
+setup-build: cleanup-build
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
@@ -135,7 +136,7 @@ else ifeq ($(BUILDX),true)
 	docker buildx use multibuilder
 endif
 
-cleanup_build:
+cleanup-build:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
@@ -180,8 +181,16 @@ else
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
+	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . )
 	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+endif
+ifeq ($(OPENRESTY_PATCHES),1)
+	docker run -it --rm kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
+	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied"
+else
+	docker run -it --rm kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
+	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied || exit 0"
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -276,7 +285,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: setup-tests build-test-container
+test: cleanup-build setup-tests build-test-container kong-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -284,6 +293,10 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+	RESTY_VERSION=$(RESTY_VERSION) \
+	RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
+	RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
+	RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	./test/run_tests.sh
 endif
 

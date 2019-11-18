@@ -10,8 +10,8 @@ OPENSSL_VER=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
-OPENRESTY_PATCHES=
-OPENRESTY_PATCHES_DIR=
+OPENRESTY_PATCHES=$OPENRESTY_PATCHES
+OPENRESTY_PATCHES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"/openresty-patches
 KONG_NGINX_MODULE=master
 DEBUG=0
 NPROC=
@@ -72,22 +72,6 @@ main() {
       --no-openresty-patches)
         OPENRESTY_PATCHES=0
         shift 1
-        ;;
-      --openresty-patches)
-        if [ ! -z "$OPENRESTY_PATCHES_DIR" ]; then
-          fatal "Can not specify --openresty-patches and --openresty-patches-dir at the same time"
-        fi
-
-        OPENRESTY_PATCHES=$2
-        shift 2
-        ;;
-      --openresty-patches-dir)
-        if [ ! -z "$OPENRESTY_PATCHES" ]; then
-          fatal "Can not specify --openresty-patches-dir and --openresty-patches at the same time"
-        fi
-
-        OPENRESTY_PATCHES_DIR=$2
-        shift 2
         ;;
       --kong-nginx-module)
         KONG_NGINX_MODULE=$2
@@ -284,21 +268,6 @@ main() {
     notice "Patching OpenResty..."
 
     if [[ $OPENRESTY_PATCHES != 0 ]]; then
-      if [[ -z "$OPENRESTY_PATCHES_DIR" ]]; then
-        pushd $DOWNLOAD_CACHE
-          if [[ ! -d "openresty-patches" ]]; then
-            warn "Kong OpenResty patches not found, cloning..."
-            git clone https://github.com/Kong/openresty-patches
-          fi
-
-          pushd openresty-patches
-            notice "Checking out branch '$OPENRESTY_PATCHES' of Kong's OpenResty patches..."
-            git fetch
-            git reset --hard origin/$OPENRESTY_PATCHES
-          popd
-        popd
-        OPENRESTY_PATCHES_DIR=$DOWNLOAD_CACHE/openresty-patches
-      fi
 
       if [[ ! -d "$OPENRESTY_PATCHES_DIR" ]]; then
         fatal "directory does not exist: $OPENRESTY_PATCHES_DIR"
