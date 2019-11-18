@@ -55,6 +55,8 @@ LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 COPY openresty-build-tools /tmp/openresty-build-tools/
 COPY build-openresty.sh /tmp/build-openresty.sh
 
+ARG OPENRESTY_PATCHES=1
+ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 RUN /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true

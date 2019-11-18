@@ -1,16 +1,32 @@
 #!/bin/bash
 
 set -e
+set -x
 
 if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
   exit 0
 fi
 
-export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+USE_TTY="-t"
 test -t 1 && USE_TTY="-it"
-docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 
+if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -v" | grep -q ${RESTY_VERSION}
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "/usr/local/kong/bin/openssl version" | grep -q ${RESTY_OPENSSL_VERSION}
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks --version" | grep -q ${RESTY_LUAROCKS_VERSION}
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/bin/luajit"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/include/luajit-2.1"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/lib"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/kong/lib/libssl.so.1.1"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/kong/lib/libcrypto.so.1.1"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -V" | grep "/work/pcre-${RESTY_PCRE_VERSION}"
+fi
+
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
+
+export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
 while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Completed | wc -l)" != 1 ]]; do
   kubectl get pod --all-namespaces -o wide
