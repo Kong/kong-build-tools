@@ -6,7 +6,6 @@ RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=bionic
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
-OPENRESTY_BUILD_TOOLS_VERSION?=0.0.8
 
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
@@ -165,11 +164,6 @@ build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
-	-rm -rf openresty-build-tools
-	git clone https://github.com/Kong/openresty-build-tools.git
-	cd openresty-build-tools; \
-	git fetch; \
-	git reset --hard $(OPENRESTY_BUILD_TOOLS_VERSION)
 	$(CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-base ; \
 	$(DOCKER_COMMAND) -f Dockerfile.openresty \
