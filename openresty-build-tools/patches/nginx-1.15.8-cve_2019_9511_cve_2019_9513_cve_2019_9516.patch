@@ -1,0 +1,196 @@
+From 6dfbc8b1c2116f362bb871efebbf9df576738e89 Mon Sep 17 00:00:00 2001
+From: Sergey Kandaurov <pluknet@nginx.com>
+Date: Tue, 13 Aug 2019 15:43:32 +0300
+Subject: [PATCH 1/3] HTTP/2: reject zero length headers with PROTOCOL_ERROR.
+
+Fixed uncontrolled memory growth if peer sends a stream of
+headers with a 0-length header name and 0-length header value.
+Fix is to reject headers with zero name length.
+---
+ src/http/v2/ngx_http_v2.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
+index 9571e710..72d5aa50 100644
+--- a/src/http/v2/ngx_http_v2.c
++++ b/src/http/v2/ngx_http_v2.c
+@@ -1546,6 +1546,14 @@ ngx_http_v2_state_process_header(ngx_http_v2_connection_t *h2c, u_char *pos,
+         header->name.len = h2c->state.field_end - h2c->state.field_start;
+         header->name.data = h2c->state.field_start;
+ 
++        if (header->name.len == 0) {
++            ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
++                          "client sent zero header name length");
++
++            return ngx_http_v2_connection_error(h2c,
++                                                NGX_HTTP_V2_PROTOCOL_ERROR);
++        }
++
+         return ngx_http_v2_state_field_len(h2c, pos, end);
+     }
+ 
+@@ -3249,10 +3257,6 @@ ngx_http_v2_validate_header(ngx_http_request_t *r, ngx_http_v2_header_t *header)
+     ngx_uint_t                 i;
+     ngx_http_core_srv_conf_t  *cscf;
+ 
+-    if (header->name.len == 0) {
+-        return NGX_ERROR;
+-    }
+-
+     r->invalid_header = 0;
+ 
+     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+-- 
+2.20.1
+
+
+From a987f81dd19210bc30b62591db331e31d3d74089 Mon Sep 17 00:00:00 2001
+From: Ruslan Ermilov <ru@nginx.com>
+Date: Tue, 13 Aug 2019 15:43:36 +0300
+Subject: [PATCH 2/3] HTTP/2: limited number of DATA frames.
+
+Fixed excessive memory growth and CPU usage if stream windows are
+manipulated in a way that results in generating many small DATA frames.
+Fix is to limit the number of simultaneously allocated DATA frames.
+---
+ src/http/v2/ngx_http_v2.c               |  2 ++
+ src/http/v2/ngx_http_v2.h               |  2 ++
+ src/http/v2/ngx_http_v2_filter_module.c | 22 +++++++++++++++++-----
+ 3 files changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
+index 72d5aa50..88e2bb9f 100644
+--- a/src/http/v2/ngx_http_v2.c
++++ b/src/http/v2/ngx_http_v2.c
+@@ -4369,6 +4369,8 @@ ngx_http_v2_close_stream(ngx_http_v2_stream_t *stream, ngx_int_t rc)
+      */
+     pool = stream->pool;
+ 
++    h2c->frames -= stream->frames;
++
+     ngx_http_free_request(stream->request, rc);
+ 
+     if (pool != h2c->state.pool) {
+diff --git a/src/http/v2/ngx_http_v2.h b/src/http/v2/ngx_http_v2.h
+index bec22160..715b7d30 100644
+--- a/src/http/v2/ngx_http_v2.h
++++ b/src/http/v2/ngx_http_v2.h
+@@ -192,6 +192,8 @@ struct ngx_http_v2_stream_s {
+ 
+     ngx_buf_t                       *preread;
+ 
++    ngx_uint_t                       frames;
++
+     ngx_http_v2_out_frame_t         *free_frames;
+     ngx_chain_t                     *free_frame_headers;
+     ngx_chain_t                     *free_bufs;
+diff --git a/src/http/v2/ngx_http_v2_filter_module.c b/src/http/v2/ngx_http_v2_filter_module.c
+index 81e6c513..96f55426 100644
+--- a/src/http/v2/ngx_http_v2_filter_module.c
++++ b/src/http/v2/ngx_http_v2_filter_module.c
+@@ -1669,22 +1669,34 @@ static ngx_http_v2_out_frame_t *
+ ngx_http_v2_filter_get_data_frame(ngx_http_v2_stream_t *stream,
+     size_t len, ngx_chain_t *first, ngx_chain_t *last)
+ {
+-    u_char                    flags;
+-    ngx_buf_t                *buf;
+-    ngx_chain_t              *cl;
+-    ngx_http_v2_out_frame_t  *frame;
++    u_char                     flags;
++    ngx_buf_t                 *buf;
++    ngx_chain_t               *cl;
++    ngx_http_v2_out_frame_t   *frame;
++    ngx_http_v2_connection_t  *h2c;
+ 
+     frame = stream->free_frames;
++    h2c = stream->connection;
+ 
+     if (frame) {
+         stream->free_frames = frame->next;
+ 
+-    } else {
++    } else if (h2c->frames < 10000) {
+         frame = ngx_palloc(stream->request->pool,
+                            sizeof(ngx_http_v2_out_frame_t));
+         if (frame == NULL) {
+             return NULL;
+         }
++
++        stream->frames++;
++        h2c->frames++;
++
++    } else {
++        ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
++                      "http2 flood detected");
++
++        h2c->connection->error = 1;
++        return NULL;
+     }
+ 
+     flags = last->buf->last_buf ? NGX_HTTP_V2_END_STREAM_FLAG : 0;
+-- 
+2.20.1
+
+
+From 5ae726912654da10a9a81b2c8436829f3e94f69f Mon Sep 17 00:00:00 2001
+From: Ruslan Ermilov <ru@nginx.com>
+Date: Tue, 13 Aug 2019 15:43:40 +0300
+Subject: [PATCH 3/3] HTTP/2: limited number of PRIORITY frames.
+
+Fixed excessive CPU usage caused by a peer that continuously shuffles
+priority of streams.  Fix is to limit the number of PRIORITY frames.
+---
+ src/http/v2/ngx_http_v2.c | 10 ++++++++++
+ src/http/v2/ngx_http_v2.h |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
+index 88e2bb9f..e55f9bab 100644
+--- a/src/http/v2/ngx_http_v2.c
++++ b/src/http/v2/ngx_http_v2.c
+@@ -273,6 +273,7 @@ ngx_http_v2_init(ngx_event_t *rev)
+     h2scf = ngx_http_get_module_srv_conf(hc->conf_ctx, ngx_http_v2_module);
+ 
+     h2c->concurrent_pushes = h2scf->concurrent_pushes;
++    h2c->priority_limit = h2scf->concurrent_streams;
+ 
+     h2c->pool = ngx_create_pool(h2scf->pool_size, h2c->connection->log);
+     if (h2c->pool == NULL) {
+@@ -1804,6 +1805,13 @@ ngx_http_v2_state_priority(ngx_http_v2_connection_t *h2c, u_char *pos,
+         return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_SIZE_ERROR);
+     }
+ 
++    if (--h2c->priority_limit == 0) {
++        ngx_log_error(NGX_LOG_INFO, h2c->connection->log, 0,
++                      "client sent too many PRIORITY frames");
++
++        return ngx_http_v2_connection_error(h2c, NGX_HTTP_V2_ENHANCE_YOUR_CALM);
++    }
++
+     if (end - pos < NGX_HTTP_V2_PRIORITY_SIZE) {
+         return ngx_http_v2_state_save(h2c, pos, end,
+                                       ngx_http_v2_state_priority);
+@@ -3120,6 +3128,8 @@ ngx_http_v2_create_stream(ngx_http_v2_connection_t *h2c, ngx_uint_t push)
+         h2c->processing++;
+     }
+ 
++    h2c->priority_limit += h2scf->concurrent_streams;
++
+     return stream;
+ }
+ 
+diff --git a/src/http/v2/ngx_http_v2.h b/src/http/v2/ngx_http_v2.h
+index 715b7d30..69d55d1c 100644
+--- a/src/http/v2/ngx_http_v2.h
++++ b/src/http/v2/ngx_http_v2.h
+@@ -122,6 +122,7 @@ struct ngx_http_v2_connection_s {
+     ngx_uint_t                       processing;
+     ngx_uint_t                       frames;
+     ngx_uint_t                       idle;
++    ngx_uint_t                       priority_limit;
+ 
+     ngx_uint_t                       pushing;
+     ngx_uint_t                       concurrent_pushes;
+-- 
+2.20.1
+

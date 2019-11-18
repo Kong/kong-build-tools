@@ -1,0 +1,47 @@
+diff --git a/config b/config
+index e1d5e354..b6270436 100644
+--- a/config
++++ b/config
+@@ -573,5 +573,42 @@ else
+     CORE_LIBS="$CORE_LIBS $ngx_module_libs"
+ fi
+ 
++if [ $USE_PCRE = YES -o $PCRE != NONE ] && [ $PCRE != NO -a $PCRE != YES ]; then
++    # force pcre_version symbol to be required when PCRE is statically linked
++    case "$NGX_PLATFORM" in
++        Darwin:*)
++            ngx_feature="require defined symbols (-u)"
++            ngx_feature_name=
++            ngx_feature_path=
++            ngx_feature_libs="-Wl,-u,_strerror"
++            ngx_feature_run=no
++            ngx_feature_incs="#include <stdio.h>"
++            ngx_feature_test='printf("hello");'
++
++            . auto/feature
++
++            if [ $ngx_found = yes ]; then
++                CORE_LIBS="-Wl,-u,_pcre_version $CORE_LIBS"
++            fi
++        ;;
++
++        *)
++            ngx_feature="require defined symbols (--undefined)"
++            ngx_feature_name=
++            ngx_feature_path=
++            ngx_feature_libs="-Wl,--undefined=strerror"
++            ngx_feature_run=no
++            ngx_feature_incs="#include <stdio.h>"
++            ngx_feature_test='printf("hello");'
++
++            . auto/feature
++
++            if [ $ngx_found = yes ]; then
++                CORE_LIBS="-Wl,--undefined=pcre_version $CORE_LIBS"
++            fi
++        ;;
++    esac
++fi
++
+ #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_PATH='\"/usr/local/openresty/lualib/?.lua\"'"
+ #CFLAGS=$"$CFLAGS -DLUA_DEFAULT_CPATH='\"/usr/local/openresty/lualib/?.so\"'"
