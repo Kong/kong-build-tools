@@ -52,7 +52,7 @@ LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
-COPY openresty-build-tools /tmp/openresty-build-tools/
+COPY openresty-build-tools /tmp/openresty-build-tools
 COPY build-openresty.sh /tmp/build-openresty.sh
 
 ARG OPENRESTY_PATCHES=1
