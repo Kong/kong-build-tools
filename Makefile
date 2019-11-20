@@ -185,6 +185,16 @@ else
 	-t kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . )
 	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
+ifeq ($(RESTY_IMAGE_TAG),'xenial')
+	exit 0
+endif
+ifeq ($(OPENRESTY_PATCHES),1)
+	docker run -it --rm kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
+	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied"
+else
+	docker run -it --rm kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
+	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied || exit 0"
+endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
 package-kong:
@@ -278,7 +288,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: cleanup-build setup-tests build-test-container kong-test-container
+test: setup-tests build-test-container kong-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \

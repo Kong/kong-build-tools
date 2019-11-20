@@ -1,0 +1,55 @@
+From 70f7e5b4b2da8334f21161d2ee13b432949ed837 Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Tue, 11 Sep 2018 14:48:23 -0700
+Subject: [PATCH] add stream_session->upstream_ssl to configure per-stream TLS
+
+---
+ nginx-1.15.8/src/stream/ngx_stream.h              | 1 +
+ nginx-1.15.8/src/stream/ngx_stream_proxy_module.c | 6 ++++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/nginx-1.15.8/src/stream/ngx_stream.h b/nginx-1.15.8/src/stream/ngx_stream.h
+index 09d24593..90bbe3cf 100644
+--- a/nginx-1.15.8/src/stream/ngx_stream.h
++++ b/nginx-1.15.8/src/stream/ngx_stream.h
+@@ -210,6 +210,7 @@ struct ngx_stream_session_s {
+     ngx_stream_upstream_t         *upstream;
+     ngx_array_t                   *upstream_states;
+                                            /* of ngx_stream_upstream_state_t */
++    ngx_ssl_t                     *upstream_ssl;
+     ngx_stream_variable_value_t   *variables;
+
+ #if (NGX_PCRE)
+diff --git a/nginx-1.15.8/src/stream/ngx_stream_proxy_module.c b/nginx-1.15.8/src/stream/ngx_stream_proxy_module.c
+index 9d4b075f..3b592534 100644
+--- a/nginx-1.15.8/src/stream/ngx_stream_proxy_module.c
++++ b/nginx-1.15.8/src/stream/ngx_stream_proxy_module.c
+@@ -405,6 +405,7 @@ ngx_stream_proxy_handler(ngx_stream_session_t *s)
+     }
+
+     s->upstream = u;
++    s->upstream_ssl = pscf->ssl;
+
+     s->log_handler = ngx_stream_proxy_log_error;
+
+@@ -799,7 +801,7 @@ ngx_stream_proxy_init_upstream(ngx_stream_session_t *s)
+
+ #if (NGX_STREAM_SSL)
+
+-    if (pc->type == SOCK_STREAM && pscf->ssl) {
++    if (pc->type == SOCK_STREAM && s->upstream_ssl) {
+
+         if (u->proxy_protocol) {
+             if (ngx_stream_proxy_send_proxy_protocol(s) != NGX_OK) {
+@@ -1041,7 +1043,7 @@ ngx_stream_proxy_ssl_init_connection(ngx_stream_session_t *s)
+
+     pscf = ngx_stream_get_module_srv_conf(s, ngx_stream_proxy_module);
+
+-    if (ngx_ssl_create_connection(pscf->ssl, pc, NGX_SSL_BUFFER|NGX_SSL_CLIENT)
++    if (ngx_ssl_create_connection(s->upstream_ssl, pc, NGX_SSL_BUFFER|NGX_SSL_CLIENT)
+         != NGX_OK)
+     {
+         ngx_stream_proxy_finalize(s, NGX_STREAM_INTERNAL_SERVER_ERROR);
+--
+2.19.0
+

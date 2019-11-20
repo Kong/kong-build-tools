@@ -1,0 +1,162 @@
+From a2c745a2c3b133b6c6c3b3a759f624a70af834ab Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Thu, 23 Aug 2018 12:57:07 +1000
+Subject: [PATCH 2/2] Use a chained BIO to return data from c->buffer
+
+---
+ nginx-1.13.6/src/event/ngx_event_openssl.c | 117 +++++++++++++++++++++++++++++++++-
+ nginx-1.13.6/src/event/ngx_event_openssl.h |   3 +
+ 2 files changed, 119 insertions(+), 1 deletion(-)
+
+diff --git a/nginx-1.13.6/src/event/ngx_event_openssl.c b/nginx-1.13.6/src/event/ngx_event_openssl.c
+index e90690d3..22d74dce 100644
+--- a/nginx-1.13.6/src/event/ngx_event_openssl.c
++++ b/nginx-1.13.6/src/event/ngx_event_openssl.c
+@@ -229,6 +229,96 @@ ngx_ssl_init(ngx_log_t *log)
+ }
+
+
++static int bio_read(BIO *bio, char *dst, int lim) {
++    ngx_buf_t  *buf;
++    BIO        *next_bio;
++    int         count;
++
++    if (dst == NULL)
++        return 0;
++
++    buf = BIO_get_data(bio);
++    count = ngx_buf_size(buf);
++
++    if (count > 0) {
++        BIO_clear_retry_flags(bio);
++
++        if (lim < count) {
++            count = lim;
++        }
++
++        memcpy(dst, buf->pos, count);
++        buf->pos += count;
++
++        return count;
++    }
++
++    next_bio = BIO_next(bio);
++    if (next_bio == NULL)
++        return 0;
++
++    count = BIO_read(next_bio, dst, lim);
++    BIO_clear_retry_flags(bio);
++    BIO_copy_next_retry(bio);
++
++    return count;
++}
++
++
++#if ((OPENSSL_VERSION_NUMBER < 0x10100001L && !defined LIBRESSL_VERSION_NUMBER))
++static BIO_METHOD bio_methods = {
++    BIO_TYPE_FILTER,
++    "ngx_buf",
++    nullf_write,
++    bio_read,
++    nullf_puts,
++    nullf_gets,
++    nullf_ctrl,
++    nullf_new,
++    nullf_free,
++    nullf_callback_ctrl,
++};
++
++BIO_METHOD *ngx_buf_bio_methods() {
++    return &bio_methods;
++} /* ngx_buf_bio_methods() */
++#else
++static BIO_METHOD *bio_methods = NULL;
++
++static CRYPTO_ONCE bio_methods_init_once = CRYPTO_ONCE_STATIC_INIT;
++
++static void bio_methods_init(void) {
++    BIO_METHOD  *null_methods;
++    int          type;
++
++    type = BIO_get_new_index();
++    if (type == -1)
++        return;
++
++    bio_methods = BIO_meth_new(type|BIO_TYPE_FILTER, "ngx_buf");
++    if (bio_methods == NULL)
++        return;
++
++    /* Same as null method but prepends when reading */
++    null_methods = BIO_s_null();
++    BIO_meth_set_write(bio_methods, BIO_meth_get_write(null_methods));
++    BIO_meth_set_read(bio_methods, bio_read);
++    BIO_meth_set_puts(bio_methods, BIO_meth_get_puts(null_methods));
++    BIO_meth_set_ctrl(bio_methods, BIO_meth_get_ctrl(null_methods));
++    BIO_meth_set_create(bio_methods, BIO_meth_get_create(null_methods));
++    BIO_meth_set_destroy(bio_methods, BIO_meth_get_destroy(null_methods));
++    BIO_meth_set_callback_ctrl(bio_methods, BIO_meth_get_callback_ctrl(null_methods));
++} /* bio_methods_init() */
++
++BIO_METHOD *ngx_buf_bio_methods() {
++    if (bio_methods == NULL) {
++        CRYPTO_THREAD_run_once(&bio_methods_init_once, bio_methods_init);
++    }
++    return bio_methods;
++} /* ngx_buf_bio_methods() */
++#endif
++
++
+ ngx_int_t
+ ngx_ssl_create(ngx_ssl_t *ssl, ngx_uint_t protocols, void *data)
+ {
+@@ -1190,7 +1280,32 @@ ngx_ssl_create_connection(ngx_ssl_t *ssl, ngx_connection_t *c, ngx_uint_t flags)
+     }
+
+     if (c->buffer && ngx_buf_size(c->buffer) != 0) {
+-        ngx_ssl_error(NGX_LOG_WARN, c->log, 0, "Ignoring %d bytes of buffered data", ngx_buf_size(c->buffer));
++        if (ngx_buf_in_memory_only(c->buffer)) {
++            BIO_METHOD  *bio_methods;
++            BIO         *bio, *oldbio;
++
++            bio_methods = ngx_buf_bio_methods();
++            if (bio_methods == NULL) {
++                ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "ngx_buf_bio_methods() failed");
++                return NGX_ERROR;
++            }
++
++            bio = BIO_new(bio_methods);
++            if (bio == NULL) {
++                ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "BIO_new() failed");
++                return NGX_ERROR;
++            }
++
++            BIO_set_data(bio, c->buffer);
++
++            /* need to increment as SSL_set0_rbio decrements */
++            oldbio = SSL_get_rbio(sc->connection);
++            BIO_up_ref(oldbio);
++            SSL_set0_rbio(sc->connection, BIO_push(bio, oldbio));
++
++        } else {
++            ngx_ssl_error(NGX_LOG_WARN, c->log, 0, "Ignoring %d bytes of buffered data", ngx_buf_size(c->buffer));
++        }
+     }
+
+     if (flags & NGX_SSL_CLIENT) {
+diff --git a/nginx-1.13.6/src/event/ngx_event_openssl.h b/nginx-1.13.6/src/event/ngx_event_openssl.h
+index b9a3a965..4f858048 100644
+--- a/nginx-1.13.6/src/event/ngx_event_openssl.h
++++ b/nginx-1.13.6/src/event/ngx_event_openssl.h
+@@ -59,6 +59,9 @@
+ #endif
+
+
++BIO_METHOD *ngx_buf_bio_methods();
++
++
+ struct ngx_ssl_s {
+     SSL_CTX                    *ctx;
+     ngx_log_t                  *log;
+--
+2.18.0
+

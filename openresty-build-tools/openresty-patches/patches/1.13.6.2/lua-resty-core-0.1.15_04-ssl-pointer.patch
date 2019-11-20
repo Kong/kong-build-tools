@@ -1,0 +1,47 @@
+From 7661e32e7e81b959dc579f8e1dccc6e1358c99ce Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Thu, 29 Mar 2018 15:02:35 +1100
+Subject: [PATCH] feature: Add ssl.get_ssl_pointer
+
+---
+ lua-resty-core-0.1.15/lib/ngx/ssl.lua | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/lua-resty-core-0.1.15/lib/ngx/ssl.lua b/lua-resty-core-0.1.15/lib/ngx/ssl.lua
+index 3484908..daf0de2 100644
+--- a/lua-resty-core-0.1.15/lib/ngx/ssl.lua
++++ b/lua-resty-core-0.1.15/lib/ngx/ssl.lua
+@@ -75,6 +75,8 @@ int ngx_http_lua_ffi_set_cert(void *r, void *cdata, char **err);
+
+     int ngx_http_lua_ffi_set_priv_key(void *r, void *cdata, char **err);
+
++void *ngx_http_lua_ffi_get_ssl_pointer(void *r);
++
+     void ngx_http_lua_ffi_free_cert(void *cdata);
+
+     void ngx_http_lua_ffi_free_priv_key(void *cdata);
+@@ -383,6 +385,21 @@ function _M.set_priv_key(priv_key)
+ end
+
+
++function _M.get_ssl_pointer()
++    local r = getfenv(0).__ngx_req
++    if not r then
++        error("no request found")
++    end
++
++    local ssl = C.ngx_http_lua_ffi_get_ssl_pointer(r)
++    if ssl == nil then
++        return nil, "no ssl object"
++    end
++
++    return ssl
++end
++
++
+ do
+     _M.SSL3_VERSION = 0x0300
+     _M.TLS1_VERSION = 0x0301
+--
+2.14.4
+

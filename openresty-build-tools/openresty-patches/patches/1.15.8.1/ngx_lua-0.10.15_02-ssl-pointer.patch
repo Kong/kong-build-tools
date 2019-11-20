@@ -1,0 +1,187 @@
+From 810f861270168a5a33ceb507776000f4ae556764 Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Thu, 22 Mar 2018 15:02:28 +1100
+Subject: [PATCH 1/2] feature: Add api to fetch raw nginx ssl pointer
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ src/ngx_http_lua_ssl_certby.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/ngx_lua-0.10.15/src/ngx_http_lua_ssl_certby.c b/ngx_lua-0.10.14/src/ngx_http_lua_ssl_certby.c
+index 453a5c78..310ca214 100644
+--- a/ngx_lua-0.10.15/src/ngx_http_lua_ssl_certby.c
++++ b/ngx_lua-0.10.15/src/ngx_http_lua_ssl_certby.c
+@@ -1321,6 +1321,17 @@ failed:
+ }
+
+
++ngx_ssl_conn_t *
++ngx_http_lua_ffi_get_ssl_pointer(ngx_http_request_t *r)
++{
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        return NULL;
++    }
++
++    return r->connection->ssl->connection;
++}
++
++
+ #endif  /* NGX_LUA_NO_FFI_API */
+
+
+--
+2.17.0
+
+
+From 705a2acc513f0f5021027024db08fad4f7349ea8 Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Thu, 29 Mar 2018 13:06:47 +1100
+Subject: [PATCH 2/2] tests: Add tests for ngx_http_lua_ffi_get_ssl_pointer
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ ngx_lua-0.10.15/t/140-ssl-c-api.t | 122 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
+
+diff --git a/ngx_lua-0.10.15/t/140-ssl-c-api.t b/t/140-ssl-c-api.t
+index 8734d147..b1d9d230 100644
+--- a/ngx_lua-0.10.15/t/140-ssl-c-api.t
++++ b/ngx_lua-0.10.15/t/140-ssl-c-api.t
+@@ -58,6 +58,8 @@ ffi.cdef[[
+     int ngx_http_lua_ffi_set_priv_key(void *r,
+         void *cdata, char **err);
+
++    void *ngx_http_lua_ffi_get_ssl_pointer(void *r);
++
+     void ngx_http_lua_ffi_free_cert(void *cdata);
+
+     void ngx_http_lua_ffi_free_priv_key(void *cdata);
+@@ -812,3 +814,123 @@ lua ssl server name: "test.com"
+ --- no_error_log
+ [error]
+ [alert]
++
++
++
++=== TEST 6: Raw SSL pointer
++--- http_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        server_name   test.com;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            local ffi = require "ffi"
++            local base = require "resty.core.base"
++            require "defines"
++
++            local r = base.get_request()
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            local ssl = ffi.C.ngx_http_lua_ffi_get_ssl_pointer(r);
++            if ssl == nil then
++                ngx.log(ngx.ERR, "failed to retrieve SSL*")
++                return
++            end
++
++            ffi.cdef[[
++                const char *SSL_get_servername(const void *, const int);
++            ]]
++            local libssl = ffi.load "ssl"
++            local TLSEXT_NAMETYPE_host_name = 0
++            local sni = ffi.string(libssl.SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))
++            ngx.log(ngx.INFO, "SNI is ", sni)
++        }
++
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        server_tokens off;
++        location /foo {
++            default_type 'text/plain';
++            content_by_lua_block { ngx.status = 201 ngx.say("foo") ngx.exit(201) }
++            more_clear_headers Date;
++        }
++    }
++--- config
++    server_tokens off;
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    location /t {
++        content_by_lua_block {
++            do
++                local sock = ngx.socket.tcp()
++
++                sock:settimeout(2000)
++
++                local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++                if not ok then
++                    ngx.say("failed to connect: ", err)
++                    return
++                end
++
++                ngx.say("connected: ", ok)
++
++                local sess, err = sock:sslhandshake(nil, "test.com", true)
++                if not sess then
++                    ngx.say("failed to do SSL handshake: ", err)
++                    return
++                end
++
++                ngx.say("ssl handshake: ", type(sess))
++
++                local req = "GET /foo HTTP/1.0\r\nHost: test.com\r\nConnection: close\r\n\r\n"
++                local bytes, err = sock:send(req)
++                if not bytes then
++                    ngx.say("failed to send http request: ", err)
++                    return
++                end
++
++                ngx.say("sent http request: ", bytes, " bytes.")
++
++                while true do
++                    local line, err = sock:receive()
++                    if not line then
++                        -- ngx.say("failed to receive response status line: ", err)
++                        break
++                    end
++
++                    ngx.say("received: ", line)
++                end
++
++                local ok, err = sock:close()
++                ngx.say("close: ", ok, " ", err)
++            end  -- do
++            -- collectgarbage()
++        }
++    }
++
++--- request
++GET /t
++--- response_body
++connected: 1
++ssl handshake: userdata
++sent http request: 56 bytes.
++received: HTTP/1.1 201 Created
++received: Server: nginx
++received: Content-Type: text/plain
++received: Content-Length: 4
++received: Connection: close
++received:
++received: foo
++close: 1 nil
++
++--- error_log
++SNI is test.com
++
++--- no_error_log
++[error]
++[alert]
+--
+2.17.0
+
