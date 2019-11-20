@@ -1,0 +1,624 @@
+From 274bf0747836a8715d62a33314b05b66c0a3aee1 Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Fri, 5 Oct 2018 20:32:09 -0700
+Subject: [PATCH 4/4] errlog: enabled FFI support.
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ ngx_stream_lua-0.0.5/config                           |   2 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h      |  10 +-
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c   |  74 ++++++++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h   |  10 ++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c         | 143 +++++++++++++++++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h         |  12 ++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.c | 236 +++++++++++++++++++++++++++++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.h |  39 +++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c      |  14 ++
+ 11 files changed, 555 insertions(+), 1 deletion(-)
+ create mode 100644 ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.c
+ create mode 100644 ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.h
+
+diff --git a/ngx_stream_lua-0.0.5/config b/ngx_stream_lua-0.0.5/config
+index 5563736..b1dd1f5 100644
+--- a/ngx_stream_lua-0.0.5/config
++++ b/ngx_stream_lua-0.0.5/config
+@@ -343,6 +343,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
+                 $ngx_addon_dir/src/ngx_stream_lua_prereadby.c \
+                 $ngx_addon_dir/src/ngx_stream_lua_semaphore.c \
+                 $ngx_addon_dir/src/ngx_stream_lua_ssl_certby.c \
++                $ngx_addon_dir/src/ngx_stream_lua_log_ringbuf.c \
+                 "
+
+ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+@@ -387,6 +388,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+                 $ngx_addon_dir/src/ngx_stream_lua_prereadby.h \
+                 $ngx_addon_dir/src/ngx_stream_lua_semaphore.h \
+                 $ngx_addon_dir/src/ngx_stream_lua_ssl_certby.h \
++                $ngx_addon_dir/src/ngx_stream_lua_log_ringbuf.h \
+                 "
+
+ ngx_feature="export symbols by default (-E)"
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
+index 8bb7503..4c3e164 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
+@@ -215,7 +223,7 @@ struct ngx_stream_lua_main_conf_s {
+
+     unsigned             requires_log:1;
+     unsigned             requires_shm:1;
+-
++    unsigned             requires_capture_log:1;
+ };
+
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
+index e8732ee..d32edea 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
+@@ -29,6 +37,8 @@
+ #include "ngx_stream_lua_initworkerby.h"
+ #include "ngx_stream_lua_shdict.h"
+ #include "ngx_stream_lua_lex.h"
++#include "ngx_stream_lua_log.h"
++#include "ngx_stream_lua_log_ringbuf.h"
+ #include "api/ngx_stream_lua_api.h"
+
+ #include "ngx_stream_lua_prereadby.h"
+@@ -1171,6 +1181,70 @@ ngx_stream_lua_conf_read_lua_token(ngx_conf_t *cf,
+ }
+
+
++char *
++ngx_stream_lua_capture_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf)
++{
++#ifndef HAVE_INTERCEPT_ERROR_LOG_PATCH
++    return "not found: missing the capture error log patch for nginx";
++#else
++    ngx_str_t                     *value;
++    ssize_t                        size;
++    u_char                        *data;
++    ngx_cycle_t                   *cycle;
++
++    ngx_stream_lua_main_conf_t            *lmcf = conf;
++    ngx_stream_lua_log_ringbuf_t          *ringbuf;
++
++    value = cf->args->elts;
++    cycle = cf->cycle;
++
++    if (lmcf->requires_capture_log) {
++        return "is duplicate";
++    }
++
++    if (value[1].len == 0) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                           "invalid capture error log size \"%V\"",
++                           &value[1]);
++        return NGX_CONF_ERROR;
++    }
++
++    size = ngx_parse_size(&value[1]);
++
++    if (size < NGX_MAX_ERROR_STR) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                           "invalid capture error log size \"%V\", "
++                           "minimum size is %d", &value[1],
++                           NGX_MAX_ERROR_STR);
++        return NGX_CONF_ERROR;
++    }
++
++    if (cycle->intercept_error_log_handler) {
++        return "capture error log handler has been hooked";
++    }
++
++    ringbuf = (ngx_stream_lua_log_ringbuf_t *)
++              ngx_palloc(cf->pool, sizeof(ngx_stream_lua_log_ringbuf_t));
++    if (ringbuf == NULL) {
++        return NGX_CONF_ERROR;
++    }
++
++    data = ngx_palloc(cf->pool, size);
++    if (data == NULL) {
++        return NGX_CONF_ERROR;
++    }
++
++    ngx_stream_lua_log_ringbuf_init(ringbuf, data, size);
++
++    lmcf->requires_capture_log = 1;
++    cycle->intercept_error_log_handler = (ngx_log_intercept_pt)
++                                         ngx_stream_lua_capture_log_handler;
++    cycle->intercept_error_log_data = ringbuf;
++
++    return NGX_CONF_OK;
++#endif
++}
+
+
+ /*
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
+index 6a1a2e2..f28b6b6 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
+@@ -60,6 +68,8 @@ char *ngx_stream_lua_conf_lua_block_parse(ngx_conf_t *cf,
+     ngx_command_t *cmd);
+
+
++char *ngx_stream_lua_capture_error_log(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf);
+
+ #endif /* _NGX_STREAM_LUA_DIRECTIVE_H_INCLUDED_ */
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
+index c112884..3929645 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
+@@ -22,6 +30,7 @@
+ #include "ngx_stream_lua_log.h"
+ #include "ngx_stream_lua_util.h"
+
++#include "ngx_stream_lua_log_ringbuf.h"
+
+
+ static int ngx_stream_lua_print(lua_State *L);
+@@ -323,5 +332,139 @@ ngx_stream_lua_inject_log_consts(lua_State *L)
+ }
+
+
++#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
++ngx_int_t
++ngx_stream_lua_capture_log_handler(ngx_log_t *log,
++    ngx_uint_t level, u_char *buf, size_t n)
++{
++    ngx_stream_lua_log_ringbuf_t        *ringbuf;
++
++    dd("enter");
++
++    ringbuf = (ngx_stream_lua_log_ringbuf_t  *)
++                    ngx_cycle->intercept_error_log_data;
++
++    if (level > ringbuf->filter_level) {
++        return NGX_OK;
++    }
++
++    ngx_stream_lua_log_ringbuf_write(ringbuf, level, buf, n);
++
++    dd("capture log: %s\n", buf);
++
++    return NGX_OK;
++}
++#endif
++
++
++int
++ngx_stream_lua_ffi_errlog_set_filter_level(int level, u_char *err, size_t *errlen)
++{
++#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
++    ngx_stream_lua_log_ringbuf_t           *ringbuf;
++
++    ringbuf = ngx_cycle->intercept_error_log_data;
++
++    if (ringbuf == NULL) {
++        *errlen = ngx_snprintf(err, *errlen,
++                               "directive \"lua_capture_error_log\" is not set")
++                  - err;
++        return NGX_ERROR;
++    }
++
++    if (level > NGX_LOG_DEBUG || level < NGX_LOG_STDERR) {
++        *errlen = ngx_snprintf(err, *errlen, "bad log level: %d", level)
++                  - err;
++        return NGX_ERROR;
++    }
++
++    ringbuf->filter_level = level;
++    return NGX_OK;
++#else
++    *errlen = ngx_snprintf(err, *errlen,
++                           "missing the capture error log patch for nginx")
++              - err;
++    return NGX_ERROR;
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_errlog_get_msg(char **log, int *loglevel, u_char *err,
++    size_t *errlen, double *log_time)
++{
++#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
++    ngx_uint_t           loglen;
++
++    ngx_stream_lua_log_ringbuf_t           *ringbuf;
++
++    ringbuf = ngx_cycle->intercept_error_log_data;
++
++    if (ringbuf == NULL) {
++        *errlen = ngx_snprintf(err, *errlen,
++                               "directive \"lua_capture_error_log\" is not set")
++                  - err;
++        return NGX_ERROR;
++    }
++
++    if (ringbuf->count == 0) {
++        return NGX_DONE;
++    }
++
++    ngx_stream_lua_log_ringbuf_read(ringbuf, loglevel, (void **) log, &loglen,
++                                    log_time);
++    return loglen;
++#else
++    *errlen = ngx_snprintf(err, *errlen,
++                           "missing the capture error log patch for nginx")
++              - err;
++    return NGX_ERROR;
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_errlog_get_sys_filter_level(ngx_stream_lua_request_t *r)
++{
++    ngx_log_t                   *log;
++    int                          log_level;
++
++    if (r && r->connection && r->connection->log) {
++        log = r->connection->log;
++
++    } else {
++        log = ngx_cycle->log;
++    }
++
++    log_level = log->log_level;
++    if (log_level == NGX_LOG_DEBUG_ALL) {
++        log_level = NGX_LOG_DEBUG;
++    }
++
++    return log_level;
++}
++
++
++int
++ngx_stream_lua_ffi_raw_log(ngx_stream_lua_request_t *r, int level, u_char *s,
++    size_t s_len)
++{
++    ngx_log_t           *log;
++
++    if (level > NGX_LOG_DEBUG || level < NGX_LOG_STDERR) {
++        return NGX_ERROR;
++    }
++
++    if (r && r->connection && r->connection->log) {
++        log = r->connection->log;
++
++    } else {
++        log = ngx_cycle->log;
++    }
++
++    ngx_log_error((unsigned) level, log, 0, "%*s", s_len, s);
++
++    return NGX_OK;
++}
+
+ /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
+index 0e2b990..9ad0234 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
+@@ -22,6 +30,10 @@
+
+ void ngx_stream_lua_inject_log_api(lua_State *L);
+
++#ifdef HAVE_INTERCEPT_ERROR_LOG_PATCH
++ngx_int_t ngx_stream_lua_capture_log_handler(ngx_log_t *log,
++    ngx_uint_t level, u_char *buf, size_t n);
++#endif
+
+
+ #endif /* _NGX_STREAM_LUA_LOG_H_INCLUDED_ */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.c
+new file mode 100644
+index 0000000..4a7ecc6
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.c
+@@ -0,0 +1,236 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_log_ringbuf.c.tt2
++ */
++
++
++#ifndef DDEBUG
++#define DDEBUG 0
++#endif
++#include "ddebug.h"
++
++
++#include "ngx_stream_lua_common.h"
++#include "ngx_stream_lua_log_ringbuf.h"
++
++
++typedef struct {
++    double      time;
++    unsigned    len;
++    unsigned    log_level;
++} ngx_stream_lua_log_ringbuf_header_t;
++
++
++enum {
++    HEADER_LEN = sizeof(ngx_stream_lua_log_ringbuf_header_t)
++};
++
++
++static void *ngx_stream_lua_log_ringbuf_next_header(
++    ngx_stream_lua_log_ringbuf_t *rb);
++static void ngx_stream_lua_log_ringbuf_append(
++    ngx_stream_lua_log_ringbuf_t *rb, int log_level, void *buf, int n);
++static size_t ngx_stream_lua_log_ringbuf_free_spaces(
++    ngx_stream_lua_log_ringbuf_t *rb);
++
++
++void
++ngx_stream_lua_log_ringbuf_init(ngx_stream_lua_log_ringbuf_t *rb, void *buf,
++    size_t len)
++{
++    rb->data = buf;
++    rb->size = len;
++
++    rb->tail = rb->data;
++    rb->head = rb->data;
++    rb->sentinel = rb->data + rb->size;
++    rb->count = 0;
++    rb->filter_level = NGX_LOG_DEBUG;
++
++    return;
++}
++
++
++void
++ngx_stream_lua_log_ringbuf_reset(ngx_stream_lua_log_ringbuf_t *rb)
++{
++    rb->tail = rb->data;
++    rb->head = rb->data;
++    rb->sentinel = rb->data + rb->size;
++    rb->count = 0;
++
++    return;
++}
++
++
++/*
++ * get the next data header, it'll skip the useless data space or
++ * placehold data
++ */
++static void *
++ngx_stream_lua_log_ringbuf_next_header(ngx_stream_lua_log_ringbuf_t *rb)
++{
++    /* useless data */
++    if (rb->size - (rb->head - rb->data) < HEADER_LEN)
++    {
++        return rb->data;
++    }
++
++    /* placehold data */
++    if (rb->head >= rb->sentinel) {
++        return rb->data;
++    }
++
++    return rb->head;
++}
++
++
++/* append data to ring buffer directly */
++static void
++ngx_stream_lua_log_ringbuf_append(ngx_stream_lua_log_ringbuf_t *rb,
++    int log_level, void *buf, int n)
++{
++    ngx_stream_lua_log_ringbuf_header_t              *head;
++    ngx_time_t                                       *tp;
++
++    head = (ngx_stream_lua_log_ringbuf_header_t *) rb->tail;
++    head->len = n;
++    head->log_level = log_level;
++
++    tp = ngx_timeofday();
++    head->time = tp->sec + tp->msec / 1000.0L;
++
++    rb->tail += HEADER_LEN;
++    ngx_memcpy(rb->tail, buf, n);
++    rb->tail += n;
++    rb->count++;
++
++    if (rb->tail > rb->sentinel) {
++        rb->sentinel = rb->tail;
++    }
++
++    return;
++}
++
++
++/* throw away data at head */
++static void
++ngx_stream_lua_log_ringbuf_throw_away(ngx_stream_lua_log_ringbuf_t *rb)
++{
++    ngx_stream_lua_log_ringbuf_header_t             *head;
++
++    if (rb->count == 0) {
++        return;
++    }
++
++    head = (ngx_stream_lua_log_ringbuf_header_t *) rb->head;
++
++    rb->head += HEADER_LEN + head->len;
++    rb->count--;
++
++    if (rb->count == 0) {
++        ngx_stream_lua_log_ringbuf_reset(rb);
++    }
++
++    rb->head = ngx_stream_lua_log_ringbuf_next_header(rb);
++
++    return;
++}
++
++
++/* size of free spaces */
++static size_t
++ngx_stream_lua_log_ringbuf_free_spaces(ngx_stream_lua_log_ringbuf_t *rb)
++{
++    if (rb->count == 0) {
++        return rb->size;
++    }
++
++    if (rb->tail > rb->head) {
++        return rb->data + rb->size - rb->tail;
++    }
++
++    return rb->head - rb->tail;
++}
++
++
++/*
++ * try to write log data to ring buffer, throw away old data
++ * if there was not enough free spaces.
++ */
++ngx_int_t
++ngx_stream_lua_log_ringbuf_write(ngx_stream_lua_log_ringbuf_t *rb, int log_level,
++    void *buf, size_t n)
++{
++    if (n + HEADER_LEN > rb->size) {
++        return NGX_ERROR;
++    }
++
++    if (ngx_stream_lua_log_ringbuf_free_spaces(rb) < n + HEADER_LEN) {
++        /* if the right space is not enough, mark it as placehold data */
++        if ((size_t)(rb->data + rb->size - rb->tail) < n + HEADER_LEN) {
++
++            while (rb->head >= rb->tail && rb->count) {
++                /* head is after tail, so we will throw away all data between
++                 * head and sentinel */
++                ngx_stream_lua_log_ringbuf_throw_away(rb);
++            }
++
++            rb->sentinel = rb->tail;
++            rb->tail = rb->data;
++        }
++
++        while (ngx_stream_lua_log_ringbuf_free_spaces(rb) < n + HEADER_LEN) {
++            ngx_stream_lua_log_ringbuf_throw_away(rb);
++        }
++    }
++
++    ngx_stream_lua_log_ringbuf_append(rb, log_level, buf, n);
++
++    return NGX_OK;
++}
++
++
++/* read log from ring buffer, do reset if all of the logs were readed. */
++ngx_int_t
++ngx_stream_lua_log_ringbuf_read(ngx_stream_lua_log_ringbuf_t *rb, int *log_level,
++    void **buf, size_t *n, double *log_time)
++{
++    ngx_stream_lua_log_ringbuf_header_t             *head;
++
++    if (rb->count == 0) {
++        return NGX_ERROR;
++    }
++
++    head = (ngx_stream_lua_log_ringbuf_header_t *) rb->head;
++
++    if (rb->head >= rb->sentinel) {
++        return NGX_ERROR;
++    }
++
++    *log_level = head->log_level;
++    *n = head->len;
++    rb->head += HEADER_LEN;
++    *buf = rb->head;
++    rb->head += head->len;
++
++    if (log_time) {
++        *log_time = head->time;
++    }
++
++    rb->count--;
++
++    if (rb->count == 0) {
++        ngx_stream_lua_log_ringbuf_reset(rb);
++    }
++
++    rb->head = ngx_stream_lua_log_ringbuf_next_header(rb);
++
++    return NGX_OK;
++}
++
++
++/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.h
+new file mode 100644
+index 0000000..32b33c8
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log_ringbuf.h
+@@ -0,0 +1,39 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_log_ringbuf.h.tt2
++ */
++
++
++#ifndef _NGX_STREAM_LUA_RINGBUF_H_INCLUDED_
++#define _NGX_STREAM_LUA_RINGBUF_H_INCLUDED_
++
++
++#include "ngx_stream_lua_common.h"
++
++
++typedef struct {
++    ngx_uint_t   filter_level;
++    char        *tail;              /* writed point */
++    char        *head;              /* readed point */
++    char        *data;              /* buffer */
++    char        *sentinel;
++    size_t       size;              /* buffer total size */
++    size_t       count;             /* count of logs */
++} ngx_stream_lua_log_ringbuf_t;
++
++
++void ngx_stream_lua_log_ringbuf_init(ngx_stream_lua_log_ringbuf_t *rb,
++    void *buf, size_t len);
++void ngx_stream_lua_log_ringbuf_reset(ngx_stream_lua_log_ringbuf_t *rb);
++ngx_int_t ngx_stream_lua_log_ringbuf_read(ngx_stream_lua_log_ringbuf_t *rb,
++    int *log_level, void **buf, size_t *n, double *log_time);
++ngx_int_t ngx_stream_lua_log_ringbuf_write(ngx_stream_lua_log_ringbuf_t *rb,
++    int log_level, void *buf, size_t n);
++
++
++#endif /* _NGX_STREAM_LUA_RINGBUF_H_INCLUDED_ */
++
++/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
+index a035d0a..c03c73a 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
+@@ -101,6 +109,12 @@ static ngx_command_t ngx_stream_lua_cmds[] = {
+       0,
+       NULL },
+
++    { ngx_string("lua_capture_error_log"),
++      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
++      ngx_stream_lua_capture_error_log,
++      0,
++      0,
++      NULL },
+
+ #if (NGX_PCRE)
+     { ngx_string("lua_regex_cache_max_entries"),
+--
+2.19.1
+

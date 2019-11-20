@@ -1,0 +1,41 @@
+--- a/ngx_lua-0.10.13/src/ngx_http_lua_util.c	2018-04-22 11:41:56.000000000 -0700
++++ b/ngx_lua-0.10.13/src/ngx_http_lua_util.c	2018-12-06 21:38:23.407566881 -0800
+@@ -4129,4 +4129,38 @@
+ }
+
+
++ngx_http_core_srv_conf_t*
++ngx_http_lua_get_server_block(ngx_uint_t i)
++{
++    ngx_http_core_main_conf_t *cmcf;
++
++    cmcf = ngx_http_cycle_get_module_main_conf(ngx_cycle, ngx_http_core_module);
++
++    if (i >= cmcf->servers.nelts)
++        return NULL;
++
++    return ((ngx_http_core_srv_conf_t**)cmcf->servers.elts)[i];
++}
++
++
++ngx_str_t*
++ngx_http_lua_server_block_server_name(ngx_http_core_srv_conf_t* http_srv_conf)
++{
++    return &http_srv_conf->server_name;
++}
++
++
++#if (NGX_HTTP_SSL)
++SSL_CTX*
++ngx_http_lua_ssl_get_SSL_CTX(ngx_http_core_srv_conf_t* http_srv_conf)
++{
++    ngx_http_ssl_srv_conf_t *ssl_srv_conf;
++
++    ssl_srv_conf = ngx_http_conf_get_module_srv_conf(http_srv_conf, ngx_http_ssl_module);
++
++    return ssl_srv_conf->ssl.ctx;
++}
++#endif /* NGX_HTTP_SSL */
++
++
+ /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

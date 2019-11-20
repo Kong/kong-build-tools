@@ -1,0 +1,108 @@
+From ca2cb9bfd42bf83a2d4a16fc22192367d28f7342 Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Tue, 11 Sep 2018 20:23:21 -0700
+Subject: [PATCH 8/9] add balancer.set_ssl_ctx
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c | 71 +++++++++++++++++++++++++++++++++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h     |  4 ++
+ 2 files changed, 75 insertions(+)
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
+index 6b18b59..b1e846f 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
+@@ -741,3 +741,74 @@ ngx_stream_lua_ffi_balancer_get_last_failure(ngx_stream_lua_request_t *r,
+     return bp->last_peer_state;
+ }
+
++
++#if NGX_HTTP_SSL
++
++int
++ngx_stream_lua_ffi_balancer_set_ssl_ctx(ngx_stream_lua_request_t *r,
++    SSL_CTX* ssl_ctx, char **err)
++{
++    ngx_stream_lua_ctx_t  *ctx;
++    ngx_stream_session_t  *s;
++    ngx_ssl_t             *ssl;
++    ngx_pool_cleanup_t    *cln;
++
++    if (r == NULL) {
++        *err = "no request found";
++        return NGX_ERROR;
++    }
++
++    ctx = ngx_stream_lua_get_module_ctx(r, ngx_stream_lua_module);
++    if (ctx == NULL) {
++        *err = "no ctx found";
++        return NGX_ERROR;
++    }
++
++    if ((ctx->context & NGX_STREAM_LUA_CONTEXT_BALANCER) == 0) {
++        *err = "API disabled in the current context";
++        return NGX_ERROR;
++    }
++
++    s = r->session;
++
++    ssl = s->upstream_ssl;
++
++    /* Early exit if SSL_CTX* is already correct value */
++    if (ssl != NULL && ssl->ctx == ssl_ctx) {
++        return NGX_OK;
++    }
++
++    if (!SSL_CTX_up_ref(ssl_ctx)) {
++        *err = "unable to take reference to SSL_CTX*";
++        return NGX_ERROR;
++    }
++
++    /* NOTE: each time this function is called it delays collection of
++       the old ngx_ssl_t until the connection is finished */
++    /* create new ssl object */
++    ssl = ngx_pcalloc(s->connection->pool, sizeof(ngx_ssl_t));
++    if (ssl == NULL) {
++        *err = "no memory";
++        SSL_CTX_free(ssl_ctx);
++        return NGX_ERROR;
++    }
++
++    cln = ngx_pool_cleanup_add(s->connection->pool, 0);
++    if (cln == NULL) {
++        *err = "no memory";
++        SSL_CTX_free(ssl_ctx);
++        return NGX_ERROR;
++    }
++
++    cln->handler = ngx_ssl_cleanup_ctx;
++    cln->data = ssl;
++
++    ssl->buffer_size = NGX_SSL_BUFSIZE;
++    s->upstream_ssl = ssl;
++    ssl->log = s->connection->log;
++    ssl->ctx = ssl_ctx;
++
++    return NGX_OK;
++}
++
++#endif /* NGX_HTTP_SSL */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
+index 49be95b..bcc4dde 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
+@@ -125,6 +125,10 @@ ngx_stream_lua_ffi_check_context(ngx_stream_lua_ctx_t *ctx,
+ #define ngx_stream_lua_ssl_get_ctx(ssl_conn)                                 \
+     SSL_get_ex_data(ssl_conn, ngx_stream_lua_ssl_ctx_index)
+
++#if (OPENSSL_VERSION_NUMBER < 0x10100001L)
++#define SSL_CTX_up_ref(ctx)                                                  \
++    CRYPTO_add(&(ctx)->references, 1, CRYPTO_LOCK_SSL_CTX)
++#endif
+
+ lua_State *ngx_stream_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
+     ngx_pool_t *pool, ngx_stream_lua_main_conf_t *lmcf, ngx_log_t *log,
+--
+2.19.1
+

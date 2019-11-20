@@ -1,0 +1,78 @@
+diff --git a/lua-resty-core-0.1.17/lib/ngx/balancer.lua b/lua-resty-core-0.1.16/lib/ngx/balancer.lua
+index 1c72e15..c196c4a 100644
+--- a/lua-resty-core-0.1.17/lib/ngx/balancer.lua
++++ b/lua-resty-core-0.1.17/lib/ngx/balancer.lua
+@@ -21,6 +21,7 @@ local subsystem = ngx.config.subsystem
+ local ngx_lua_ffi_balancer_set_current_peer
+ local ngx_lua_ffi_balancer_set_more_tries
+ local ngx_lua_ffi_balancer_get_last_failure
++local ngx_lua_ffi_balancer_set_ssl_ctx
+ local ngx_lua_ffi_balancer_set_timeouts -- used by both stream and http
+
+
+@@ -35,6 +36,9 @@ if subsystem == 'http' then
+     int ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
+         int *status, char **err);
+
++    int ngx_http_lua_ffi_balancer_set_ssl_ctx(ngx_http_request_t *r,
++        void* ssl_ctx, char **err);
++
+     int ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
+         long connect_timeout, long send_timeout,
+         long read_timeout, char **err);
+@@ -49,6 +53,9 @@ if subsystem == 'http' then
+     ngx_lua_ffi_balancer_get_last_failure =
+         C.ngx_http_lua_ffi_balancer_get_last_failure
+
++    ngx_lua_ffi_balancer_set_ssl_ctx =
++        C.ngx_http_lua_ffi_balancer_set_ssl_ctx
++
+     ngx_lua_ffi_balancer_set_timeouts =
+         C.ngx_http_lua_ffi_balancer_set_timeouts
+
+@@ -64,6 +71,9 @@ elseif subsystem == 'stream' then
+     int ngx_stream_lua_ffi_balancer_get_last_failure(
+         ngx_stream_lua_request_t *r, int *status, char **err);
+
++    int ngx_stream_lua_ffi_balancer_set_ssl_ctx(ngx_stream_lua_request_t *r,
++        void* ssl_ctx, char **err);
++
+     int ngx_stream_lua_ffi_balancer_set_timeouts(ngx_stream_lua_request_t *r,
+         long connect_timeout, long timeout, char **err);
+     ]]
+@@ -77,6 +87,9 @@ elseif subsystem == 'stream' then
+     ngx_lua_ffi_balancer_get_last_failure =
+         C.ngx_stream_lua_ffi_balancer_get_last_failure
+
++    ngx_lua_ffi_balancer_set_ssl_ctx =
++      C.ngx_stream_lua_ffi_balancer_set_ssl_ctx
++
+     local ngx_stream_lua_ffi_balancer_set_timeouts =
+         C.ngx_stream_lua_ffi_balancer_set_timeouts
+
+@@ -163,6 +176,25 @@ function _M.get_last_failure()
+ end
+
+
++function _M.set_ssl_ctx(ssl_ctx)
++    local r = get_request()
++    if not r then
++        error("no request found")
++    end
++
++    if type(ssl_ctx) ~= "cdata" then
++        error("ssl context must be an ffi pointer")
++    end
++
++    local state = ngx_lua_ffi_balancer_set_ssl_ctx(r, ssl_ctx, errmsg)
++
++    if state == FFI_ERROR then
++        return false, ffi_str(errmsg[0])
++    end
++    return true
++end
++
++
+ function _M.set_timeouts(connect_timeout, send_timeout, read_timeout)
+     local r = get_request()
+     if not r then

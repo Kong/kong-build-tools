@@ -1,0 +1,1477 @@
+From 0d5e6ce77b0f8a074eb404b4ff9d4ed39c2aacde Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Fri, 5 Oct 2018 17:53:28 -0700
+Subject: [PATCH 13/13] feature: errlog: enabled the FFI-based API for the
+ stream subsystem and ported tests
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ lua-resty-core-0.1.15/.travis.yml               |    2 +-
+ lua-resty-core-0.1.15/lib/ngx/errlog.lua        |   51 +-
+ lua-resty-core-0.1.15/t/errlog.t                |    2 +-
+ lua-resty-core-0.1.15/t/stream/errlog-raw-log.t |  204 +++++++
+ lua-resty-core-0.1.15/t/stream/errlog.t         | 1106 +++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1355 insertions(+), 10 deletions(-)
+ create mode 100644 lua-resty-core-0.1.15/t/stream/errlog-raw-log.t
+ create mode 100644 lua-resty-core-0.1.15/t/stream/errlog.t
+
+diff --git a/lua-resty-core-0.1.15/.travis.yml b/lua-resty-core-0.1.15/.travis.yml
+index 4d34708..08791e9 100644
+--- a/lua-resty-core-0.1.15/.travis.yml
++++ b/lua-resty-core-0.1.15/.travis.yml
+@@ -69,7 +69,7 @@ install:
+   - git clone -b v2.1-agentzh https://github.com/openresty/luajit2.git
+   - git clone https://github.com/openresty/mockeagain.git
+   - git clone https://github.com/openresty/test-nginx.git
+-  - git clone https://github.com/openresty/stream-lua-nginx-module.git ../stream-lua-nginx-module
++  - git clone -b feat/stream-errlog https://github.com/thibaultcha/stream-lua-nginx-module.git ../stream-lua-nginx-module
+
+ script:
+   - cd luajit2/
+diff --git a/lua-resty-core-0.1.15/lib/ngx/errlog.lua b/lua-resty-core-0.1.15/lib/ngx/errlog.lua
+index e8a5b9a..2a3d8fd 100644
+--- a/lua-resty-core-0.1.15/lib/ngx/errlog.lua
++++ b/lua-resty-core-0.1.15/lib/ngx/errlog.lua
+@@ -2,7 +2,6 @@
+
+
+ local base = require "resty.core.base"
+-base.allows_subsystem('http')
+
+
+ local ffi = require 'ffi'
+@@ -19,12 +18,20 @@ local getfenv = getfenv
+ local tonumber = tonumber
+ local type = type
+ local error = error
++local subsystem = ngx.config.subsystem
++
++
++local ngx_lua_ffi_errlog_set_filter_level
++local ngx_lua_ffi_errlog_get_msg
++local ngx_lua_ffi_errlog_get_sys_filter_level
++local ngx_lua_ffi_raw_log
+
+
+ local _M = { version = base.version }
+
+
+-ffi.cdef[[
++if subsystem == 'http' then
++    ffi.cdef[[
+ int ngx_http_lua_ffi_errlog_set_filter_level(int level, unsigned char *err,
+     size_t *errlen);
+ int ngx_http_lua_ffi_errlog_get_msg(char **log, int *loglevel,
+@@ -34,7 +41,35 @@ int ngx_http_lua_ffi_errlog_get_sys_filter_level(ngx_http_request_t *r);
+
+ int ngx_http_lua_ffi_raw_log(ngx_http_request_t *r, int level,
+     const unsigned char *s, size_t s_len);
+-]]
++    ]]
++
++    ngx_lua_ffi_errlog_set_filter_level =
++        C.ngx_http_lua_ffi_errlog_set_filter_level
++    ngx_lua_ffi_errlog_get_msg = C.ngx_http_lua_ffi_errlog_get_msg
++    ngx_lua_ffi_errlog_get_sys_filter_level =
++        C.ngx_http_lua_ffi_errlog_get_sys_filter_level
++    ngx_lua_ffi_raw_log = C.ngx_http_lua_ffi_raw_log
++
++elseif subsystem == 'stream' then
++    ffi.cdef[[
++int ngx_stream_lua_ffi_errlog_set_filter_level(int level, unsigned char *err,
++    size_t *errlen);
++int ngx_stream_lua_ffi_errlog_get_msg(char **log, int *loglevel,
++    unsigned char *err, size_t *errlen, double *log_time);
++
++int ngx_stream_lua_ffi_errlog_get_sys_filter_level(ngx_stream_lua_request_t *r);
++
++int ngx_stream_lua_ffi_raw_log(ngx_stream_lua_request_t *r, int level,
++    const unsigned char *s, size_t s_len);
++    ]]
++
++    ngx_lua_ffi_errlog_set_filter_level =
++        C.ngx_stream_lua_ffi_errlog_set_filter_level
++    ngx_lua_ffi_errlog_get_msg = C.ngx_stream_lua_ffi_errlog_get_msg
++    ngx_lua_ffi_errlog_get_sys_filter_level =
++        C.ngx_stream_lua_ffi_errlog_get_sys_filter_level
++    ngx_lua_ffi_raw_log = C.ngx_stream_lua_ffi_raw_log
++end
+
+
+ local ERR_BUF_SIZE = 128
+@@ -49,7 +84,7 @@ function _M.set_filter_level(level)
+     local err = get_string_buf(ERR_BUF_SIZE)
+     local errlen = get_size_ptr()
+     errlen[0] = ERR_BUF_SIZE
+-    local rc = C.ngx_http_lua_ffi_errlog_set_filter_level(level, err, errlen)
++    local rc = ngx_lua_ffi_errlog_set_filter_level(level, err, errlen)
+
+     if rc == FFI_ERROR then
+         return nil, ffi_string(err, errlen[0])
+@@ -77,8 +112,8 @@ function _M.get_logs(max, logs)
+     local count = 0
+
+     for i = 1, max do
+-        local loglen = C.ngx_http_lua_ffi_errlog_get_msg(log, loglevel, err,
+-                                                         errlen, log_time)
++        local loglen = ngx_lua_ffi_errlog_get_msg(log, loglevel, err, errlen,
++                                                  log_time)
+         if loglen == FFI_ERROR then
+             return nil, ffi_string(err, errlen[0])
+         end
+@@ -108,7 +143,7 @@ end
+
+ function _M.get_sys_filter_level()
+     local r = getfenv(0).__ngx_req
+-    return tonumber(C.ngx_http_lua_ffi_errlog_get_sys_filter_level(r))
++    return tonumber(ngx_lua_ffi_errlog_get_sys_filter_level(r))
+ end
+
+
+@@ -123,7 +158,7 @@ function _M.raw_log(level, msg)
+
+     local r = getfenv(0).__ngx_req
+
+-    local rc = C.ngx_http_lua_ffi_raw_log(r, level, msg, #msg)
++    local rc = ngx_lua_ffi_raw_log(r, level, msg, #msg)
+
+     if rc == FFI_ERROR then
+         error("bad log level")
+diff --git a/lua-resty-core-0.1.15/t/errlog.t b/lua-resty-core-0.1.15/t/errlog.t
+index 3a89ad5..37ec490 100644
+--- a/lua-resty-core-0.1.15/t/errlog.t
++++ b/lua-resty-core-0.1.15/t/errlog.t
+@@ -17,7 +17,7 @@ add_block_preprocessor(sub {
+     my $block = shift;
+
+     my $http_config = $block->http_config || '';
+-    my $init_by_lua_block = $block->init_by_lua_block || 'require "resty.core"';
++    my $init_by_lua_block = $block->init_by_lua_block || '';
+
+     $http_config .= <<_EOC_;
+
+diff --git a/lua-resty-core-0.1.15/t/stream/errlog-raw-log.t b/lua-resty-core-0.1.15/t/stream/errlog-raw-log.t
+new file mode 100644
+index 0000000..79064af
+--- /dev/null
++++ b/lua-resty-core-0.1.15/t/stream/errlog-raw-log.t
+@@ -0,0 +1,204 @@
++# vim:set ft= ts=4 sw=4 et fdm=marker:
++
++use Test::Nginx::Socket::Lua::Stream;
++use Cwd qw(cwd);
++
++log_level('error');
++
++repeat_each(1);
++
++plan tests => repeat_each() * (blocks() * 2 + 5);
++
++my $pwd = cwd();
++
++add_block_preprocessor(sub {
++    my $block = shift;
++
++    my $stream_config = $block->stream_config || '';
++    my $init_by_lua_block = $block->init_by_lua_block || '';
++
++    $stream_config .= <<_EOC_;
++
++    lua_package_path "$pwd/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
++    init_by_lua_block {
++        $init_by_lua_block
++    }
++_EOC_
++
++    $block->set_value("stream_config", $stream_config);
++});
++
++no_long_string();
++run_tests();
++
++__DATA__
++
++=== TEST 1: errlog.raw_log with bad log level (ngx.ERROR, -1)
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++
++        local pok, err = pcall(errlog.raw_log, ngx.ERROR, "hello, log")
++        if not pok then
++            ngx.say("not ok: ", err)
++            return
++        end
++
++        ngx.say("ok")
++    }
++--- stream_response_like
++not ok: .*? bad log level
++--- no_error_log
++[error]
++
++
++
++=== TEST 2: errlog.raw_log with bad levels (9)
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++
++        local pok, err = pcall(errlog.raw_log, 9, "hello, log")
++        if not pok then
++            ngx.say("not ok: ", err)
++            return
++        end
++
++        ngx.say("ok")
++    }
++--- stream_response_like
++not ok: .*? bad log level
++--- no_error_log
++[error]
++
++
++
++=== TEST 3: errlog.raw_log with bad log message
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++
++        local pok, err = pcall(errlog.raw_log, ngx.ERR, 123)
++        if not pok then
++            ngx.say("not ok: ", err)
++            return
++        end
++
++        ngx.say("ok")
++    }
++--- stream_response
++not ok: bad argument #2 to 'raw_log' (must be a string)
++--- no_error_log
++[error]
++
++
++
++=== TEST 4: errlog.raw_log test log-level ERR
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++
++        errlog.raw_log(ngx.ERR, "hello world")
++    }
++--- error_log eval
++qr/\[error\] \S+: \S+ hello world/
++
++
++
++=== TEST 5: errlog.raw_log JITs
++--- init_by_lua_block
++    -- local verbose = true
++    local verbose = false
++    local outfile = errlog_file
++    -- local outfile = "/tmp/v.log"
++    if verbose then
++        local dump = require "jit.dump"
++        dump.on(nil, outfile)
++    else
++        local v = require "jit.v"
++        v.on(outfile)
++    end
++
++    require "resty.core"
++    -- jit.opt.start("hotloop=1")
++    -- jit.opt.start("loopunroll=1000000")
++    -- jit.off()
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++
++        for i = 1, 100 do
++            errlog.raw_log(ngx.ERR, "hello world")
++        end
++    }
++--- error_log eval
++qr/\[TRACE\s+\d+ content_by_lua\(nginx.conf:\d+\):4 loop\]/
++
++
++
++=== TEST 6: errlog.raw_log in init_by_lua
++--- init_by_lua_block
++    local errlog = require "ngx.errlog"
++    errlog.raw_log(ngx.ERR, "hello world from init_by_lua")
++--- stream_server_config
++    content_by_lua_block {
++        ngx.say("ok")
++    }
++--- grep_error_log chop
++hello world from init_by_lua
++--- grep_error_log_out eval
++["hello world from init_by_lua\n", ""]
++
++
++
++=== TEST 7: errlog.raw_log in init_worker_by_lua
++--- stream_config
++    init_worker_by_lua_block {
++        local errlog = require "ngx.errlog"
++        errlog.raw_log(ngx.ERR, "hello world from init_worker_by_lua")
++    }
++--- stream_server_config
++    content_by_lua_block {
++        ngx.say("ok")
++    }
++--- grep_error_log chop
++hello world from init_worker_by_lua
++--- grep_error_log_out eval
++["hello world from init_worker_by_lua\n", ""]
++
++
++
++=== TEST 8: errlog.raw_log with \0 in the log message
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        errlog.raw_log(ngx.ERR, "hello\0world")
++        ngx.say("ok")
++    }
++--- stream_response
++ok
++--- error_log eval
++"hello\0world, client: "
++
++
++
++=== TEST 9: errlog.raw_log is captured by errlog.get_logs()
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        errlog.raw_log(ngx.ERR, "hello from raw_log()")
++
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++
++        ngx.say("log lines: ", #res / 3)
++    }
++--- stream_response
++log lines: 1
++--- error_log eval
++qr/\[error\] .*? hello from raw_log\(\)/
++--- skip_nginx: 3: <1.11.2
+diff --git a/lua-resty-core-0.1.15/t/stream/errlog.t b/lua-resty-core-0.1.15/t/stream/errlog.t
+new file mode 100644
+index 0000000..e9ed539
+--- /dev/null
++++ b/lua-resty-core-0.1.15/t/stream/errlog.t
+@@ -0,0 +1,1106 @@
++# vim:set ft= ts=4 sw=4 et fdm=marker:
++
++use Test::Nginx::Socket::Lua::Stream;
++use Cwd qw(cwd);
++
++#worker_connections(1014);
++#master_process_enabled(1);
++log_level('error');
++
++repeat_each(2);
++
++plan tests => repeat_each() * (blocks() * 2 + 10);
++
++my $pwd = cwd();
++
++add_block_preprocessor(sub {
++    my $block = shift;
++
++    my $stream_config = $block->stream_config || '';
++
++    $stream_config .= <<_EOC_;
++
++    lua_package_path "$pwd/lib/?.lua;../lua-resty-lrucache/lib/?.lua;;";
++_EOC_
++
++    $block->set_value("stream_config", $stream_config);
++});
++
++#no_diff();
++no_long_string();
++#check_accum_error_log();
++run_tests();
++
++__DATA__
++
++=== TEST 1: sanity
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++        content_by_lua_block {
++            ngx.log(ngx.ERR, "enter 1")
++            ngx.log(ngx.ERR, "enter 11")
++
++            local errlog = require "ngx.errlog"
++            local res, err = errlog.get_logs()
++            if not res then
++                error("FAILED " .. err)
++            end
++            ngx.say("log lines:", #res / 3)
++        }
++--- stream_response
++log lines:2
++--- grep_error_log eval
++qr/enter \d+/
++--- grep_error_log_out eval
++[
++"enter 1
++enter 11
++",
++"enter 1
++enter 11
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 2: overflow captured error logs
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        ngx.log(ngx.ERR, "enter 1")
++        ngx.log(ngx.ERR, "enter 22" .. string.rep("a", 4096))
++
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines:", #res / 3)
++    }
++--- stream_response
++log lines:1
++--- grep_error_log eval
++qr/enter \d+/
++--- grep_error_log_out eval
++[
++"enter 1
++enter 22
++",
++"enter 1
++enter 22
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 3: client connected info
++--- log_level: info
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.log(ngx.ERR, "capture log line:", #res / 3)
++    }
++--- grep_error_log eval
++qr/capture log line:\d+|client .*? connected to .*?/
++--- grep_error_log_out eval
++[
++qr/^client .*? connected to .*?
++capture log line:1
++$/,
++qr/^client .*? connected to .*?
++capture log line:2
++$/
++]
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 4: 500 error
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local t = {}/4
++    }
++    log_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.log(ngx.ERR, "capture log line:", #res / 3)
++    }
++--- grep_error_log eval
++qr/capture log line:\d+|attempt to perform arithmetic on a table value/
++--- grep_error_log_out eval
++[
++qr/^attempt to perform arithmetic on a table value
++capture log line:1
++$/,
++qr/^attempt to perform arithmetic on a table value
++capture log line:2
++$/
++]
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 5: no error log
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        ngx.say("hello")
++    }
++    log_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.log(ngx.ERR, "capture log line:", #res / 3)
++    }
++--- stream_response
++hello
++--- grep_error_log eval
++qr/capture log line:\d+/
++--- grep_error_log_out eval
++[
++qr/^capture log line:0
++$/,
++qr/^capture log line:1
++$/
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 6: customize the log path
++--- stream_config
++    lua_capture_error_log 4m;
++    error_log logs/error_stream.log error;
++--- stream_server_config
++    error_log logs/error.log error;
++    content_by_lua_block {
++        ngx.log(ngx.ERR, "enter access /t")
++        ngx.say("hello")
++    }
++    log_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.log(ngx.ERR, "capture log line:", #res / 3)
++
++    }
++--- stream_response
++hello
++--- grep_error_log eval
++qr/capture log line:\d+|enter access/
++--- grep_error_log_out eval
++[
++qr/^enter access
++capture log line:1
++$/,
++qr/^enter access
++capture log line:2
++$/
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 7: invalid size (< 4k)
++--- stream_config
++    lua_capture_error_log 3k;
++--- stream_server_config
++    content_by_lua_block {
++        ngx.say("hello")
++    }
++--- must_die
++--- error_log
++invalid capture error log size "3k", minimum size is 4096
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 8: invalid size (no argu)
++--- stream_config
++    lua_capture_error_log;
++--- stream_server_config
++    content_by_lua_block {
++        ngx.say("hello")
++    }
++--- must_die
++--- error_log
++invalid number of arguments in "lua_capture_error_log" directive
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 9: without directive + ngx.errlog
++--- stream_server_config
++    content_by_lua_block {
++        ngx.log(ngx.ERR, "enter 1")
++
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs()
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines:", #res / 3)
++    }
++--- error_log
++directive "lua_capture_error_log" is not set
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 10: without directive + ngx.set_filter_level
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.ERR)
++        if not status then
++            error(err)
++        end
++    }
++--- error_log
++directive "lua_capture_error_log" is not set
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 11: filter log by level(ngx.INFO)
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.INFO)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.NOTICE, "-->1")
++        ngx.log(ngx.WARN, "-->2")
++        ngx.log(ngx.ERR, "-->3")
++
++        local res = errlog.get_logs()
++        ngx.say("log lines:", #res / 3)
++    }
++--- log_level: notice
++--- stream_response
++log lines:3
++--- grep_error_log eval
++qr/-->\d+/
++--- grep_error_log_out eval
++[
++"-->1
++-->2
++-->3
++",
++"-->1
++-->2
++-->3
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 12: filter log by level(ngx.WARN)
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.NOTICE, "-->1")
++        ngx.log(ngx.WARN, "-->2")
++        ngx.log(ngx.ERR, "-->3")
++
++        local res = errlog.get_logs()
++        ngx.say("log lines:", #res / 3)
++    }
++--- log_level: notice
++--- stream_response
++log lines:2
++--- grep_error_log eval
++qr/-->\d+/
++--- grep_error_log_out eval
++[
++"-->1
++-->2
++-->3
++",
++"-->1
++-->2
++-->3
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 13: filter log by level(ngx.CRIT)
++--- stream_config
++    lua_capture_error_log 4m;
++--- log_level: notice
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.CRIT)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.NOTICE, "-->1")
++        ngx.log(ngx.WARN, "-->2")
++        ngx.log(ngx.ERR, "-->3")
++
++        local res = errlog.get_logs()
++        ngx.say("log lines:", #res / 3)
++    }
++--- stream_response
++log lines:0
++--- grep_error_log eval
++qr/-->\d+/
++--- grep_error_log_out eval
++[
++"-->1
++-->2
++-->3
++",
++"-->1
++-->2
++-->3
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 14: set max count and reuse table
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        tab_clear = require "table.clear"
++        ngx.log(ngx.ERR, "enter 1")
++        ngx.log(ngx.ERR, "enter 22")
++        ngx.log(ngx.ERR, "enter 333")
++
++        local errlog = require "ngx.errlog"
++        local res = {}
++        local err
++        res, err = errlog.get_logs(2, res)
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines:", #res / 3)
++
++        tab_clear(res)
++        res, err = errlog.get_logs(2, res)
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines:", #res / 3)
++    }
++--- stream_response
++log lines:2
++log lines:1
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 15: wrong argument
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level()
++        if not status then
++            error(err)
++        end
++    }
++--- grep_error_log eval
++qr/missing \"level\" argument/
++--- grep_error_log_out eval
++[
++"missing \"level\" argument
++",
++"missing \"level\" argument
++",
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 16: check the captured error log body
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.NOTICE, "-->1")
++        ngx.log(ngx.WARN, "-->2")
++        ngx.log(ngx.ERR, "-->3")
++
++        local res = errlog.get_logs()
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: -->2, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: -->3, client: 127.0.0.1, server: 0.0.0.0:\d+
++--- grep_error_log eval
++qr/-->\d+/
++--- grep_error_log_out eval
++[
++"-->1
++-->2
++-->3
++",
++"-->1
++-->2
++-->3
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 17: flood the capturing buffer (4k)
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        for i = 1, 100 do
++            ngx.log(ngx.NOTICE, "--> ", i)
++            ngx.log(ngx.WARN, "--> ", i)
++            ngx.log(ngx.ERR, "--> ", i)
++        end
++
++        local res = errlog.get_logs(1000)
++        ngx.say("log lines: #", #res / 3)
++
++        -- first 3 logs
++        for i = 1, 3 * 3, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:", res[i + 2])
++        end
++
++        -- last 3 logs
++        for i = #res - 8, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:", res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\A(?:log lines: #26
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 88, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 88, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 89, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 99, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 100, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 100, client: 127.0.0.1, server: 0.0.0.0:\d+
++)\z
++--- skip_nginx: 2: <1.11.2
++--- wait: 0.1
++
++
++
++=== TEST 18: flood the capturing buffer (5k)
++--- stream_config
++    lua_capture_error_log 5k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        for i = 1, 100 do
++            ngx.log(ngx.NOTICE, "--> ", i)
++            ngx.log(ngx.WARN, "--> ", i)
++            ngx.log(ngx.ERR, "--> ", i)
++        end
++
++        local res = errlog.get_logs(1000)
++        ngx.say("log lines: #", #res / 3)
++
++        -- first 3 logs
++        for i = 1, 3 * 3, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:", res[i + 2])
++        end
++
++        -- last 3 logs
++        for i = #res - 8, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:", res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\A(?:log lines: #33
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 84, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 99, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 100, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: --> 100, client: 127.0.0.1, server: 0.0.0.0:\d+
++)\z
++--- skip_nginx: 2: <1.11.2
++--- wait: 0.1
++
++
++
++=== TEST 19: fetch a few and generate a few, then fetch again (overflown again)
++--- stream_config
++    lua_capture_error_log 5k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        for i = 1, 100 do
++            ngx.log(ngx.NOTICE, "--> ", i)
++            ngx.log(ngx.WARN, "--> ", i)
++            ngx.log(ngx.ERR, "--> ", i)
++        end
++
++        local res = errlog.get_logs(3)
++        ngx.say("msg count: ", #res / 3)
++
++        -- first 3 logs
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++
++        ngx.log(ngx.ERR, "--> 101")
++        ngx.log(ngx.ERR, "--> 102")
++        ngx.log(ngx.ERR, "--> 103")
++        ngx.log(ngx.ERR, "--> 104")
++
++        local res = errlog.get_logs(3)
++        ngx.say("msg count: ", #res / 3)
++
++        -- first 3 logs
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++
++        local res = errlog.get_logs(1000)
++        -- last 3 logs
++        for i = #res - 8, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\Amsg count: 3
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 84, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++msg count: 3
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 86, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 86, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 87, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 102, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 103, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 104, client: 127.0.0.1, server: 0.0.0.0:\d+
++|msg count: 3
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 84, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++msg count: 3
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 87, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 87, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 88, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 102, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 103, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 104, client: 127.0.0.1, server: 0.0.0.0:\d+
++\z
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 20: fetch a few and generate a few, then fetch again (not overflown again)
++--- stream_config
++    lua_capture_error_log 5k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        for i = 1, 100 do
++            ngx.log(ngx.NOTICE, "--> ", i)
++            ngx.log(ngx.WARN, "--> ", i)
++            ngx.log(ngx.ERR, "--> ", i)
++        end
++
++        local res = errlog.get_logs(3)
++        ngx.say("msg count: ", #res / 3)
++
++        -- first 3 logs
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++
++        ngx.log(ngx.ERR, "howdy, something new!")
++        ngx.log(ngx.ERR, "howdy, something even newer!")
++
++        local res = errlog.get_logs(3)
++        ngx.say("msg count: ", #res / 3)
++
++        -- first 3 logs
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++
++        local res = errlog.get_logs(1000)
++        -- last 3 logs
++        for i = #res - 8, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\Amsg count: 3
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 84, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 85, client: 127.0.0.1, server: 0.0.0.0:\d+
++msg count: 3
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 86, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 86, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:5
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[warn\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 87, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: --> 100, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: howdy, something new!, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: howdy, something even newer!, client: 127.0.0.1, server: 0.0.0.0:\d+
++\z
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 21: multi-line error log
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.ERR, "-->\n", "new line")
++
++        local res = errlog.get_logs()
++        ngx.say("log lines: #", #res / 3)
++
++        for i = 1, #res, 3 do
++            ngx.say("log level:", res[i])
++            ngx.say("log body:",  res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\Alog lines: #1
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: -->
++new line, client: 127.0.0.1, server: 0.0.0.0:\d+
++\z
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 22: user-supplied Lua table to hold the result (get one log + no log)
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local status, err = errlog.set_filter_level(ngx.WARN)
++        if not status then
++            error(err)
++        end
++
++        ngx.log(ngx.ERR, "-->\n", "new line")
++
++        local t = {}
++
++        for i = 1, 2 do
++            local res = errlog.get_logs(10, t)
++            ngx.say("maybe log lines: #", #res / 3)
++            for j = 1, #res, 3 do
++                local level, msg = res[j], res[j + 2]
++                if not level then
++                    break
++                end
++                ngx.say("log level:", level)
++                ngx.say("log body:",  msg)
++            end
++            ngx.say("end")
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\Amaybe log lines: #1
++log level:4
++log body:\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*content_by_lua\(nginx.conf:\d+\):\d+: -->
++new line, client: 127.0.0.1, server: 0.0.0.0:\d+
++end
++maybe log lines: #1
++end
++\z
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 23: the system default filter level is "debug"
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        ngx.print('Is "debug" the system default filter level? ',
++                  errlog.get_sys_filter_level() == ngx.DEBUG)
++    }
++--- log_level: debug
++--- stream_response chomp
++Is "debug" the system default filter level? true
++
++
++
++=== TEST 24: the system default filter level is "emerg"
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        ngx.print('Is "emerg" the system default filter level? ',
++                  errlog.get_sys_filter_level() == ngx.EMERG)
++    }
++--- log_level: emerg
++--- stream_response chomp
++Is "emerg" the system default filter level? true
++
++
++
++=== TEST 25: get system default filter level during Nginx starts (init)
++--- SKIP
++--- init_by_lua_block
++    require "resty.core"
++    local errlog = require "ngx.errlog"
++    package.loaded.log_level = errlog.get_sys_filter_level()
++
++--- stream_server_config
++    content_by_lua_block {
++        local log_level = package.loaded.log_level
++
++        if log_level >= ngx.WARN then
++            ngx.log(ngx.WARN, "log a warning event")
++        else
++            ngx.log(ngx.WARN, "do not log another warning event")
++        end
++    }
++--- log_level: warn
++--- error_log
++log a warning event
++--- no_error_log
++do not log another warning event
++
++
++
++=== TEST 26: get system default filter level during Nginx worker starts (init worker)
++--- SKIP
++--- stream_config
++    init_worker_by_lua_block {
++        local errlog = require "ngx.errlog"
++        package.loaded.log_level = errlog.get_sys_filter_level()
++    }
++--- stream_server_config
++    content_by_lua_block {
++        local log_level = package.loaded.log_level
++
++        if log_level >= ngx.WARN then
++            ngx.log(ngx.WARN, "log a warning event")
++        else
++            ngx.log(ngx.WARN, "do not log another warning event")
++        end
++    }
++--- log_level: warn
++--- error_log
++log a warning event
++--- no_error_log
++do not log another warning event
++
++
++
++=== TEST 27: sanity (with log time)
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        ngx.log(ngx.ERR, "enter 1")
++        ngx.log(ngx.ERR, "enter 11")
++
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs(nil, nil, {fetch_time = true})
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines:", #res / 3)
++    }
++--- stream_response
++log lines:2
++--- grep_error_log eval
++qr/enter \d+/
++--- grep_error_log_out eval
++[
++"enter 1
++enter 11
++",
++"enter 1
++enter 11
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 28: log time eq ngx.now
++--- stream_config
++    lua_capture_error_log 4m;
++--- stream_server_config
++    content_by_lua_block {
++        local now = ngx.now()
++        ngx.log(ngx.CRIT, "enter 1")
++        ngx.log(ngx.ERR, "enter 11")
++
++        local errlog = require "ngx.errlog"
++        local res, err = errlog.get_logs(nil, nil, {fetch_time = true})
++        if not res then
++            error("FAILED " .. err)
++        end
++        ngx.say("log lines: ", #res / 3)
++
++        for i = 1, #res, 3 do
++            ngx.say("log level: ", res[i])
++            ngx.say("log time: ",  res[i + 1])
++            ngx.say("log body: ",  res[i + 2])
++            ngx.say("same with now: ",  res[i + 1] == now)
++        end
++    }
++--- stream_response_like chomp
++\Alog lines: 2
++log level: 3
++log time: \d+(?:\.\d+)?
++log body: \d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[crit\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: enter 1, client: 127.0.0.1, server: 0.0.0.0:\d+
++same with now: true
++log level: 4
++log time: \d{10}(?:\.\d+)?
++log body: \d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: enter 11, client: 127.0.0.1, server: 0.0.0.0:\d+
++same with now: true
++--- grep_error_log eval
++qr/enter \d+/
++--- grep_error_log_out eval
++[
++"enter 1
++enter 11
++",
++"enter 1
++enter 11
++"
++]
++--- skip_nginx: 3: <1.11.2
++
++
++
++=== TEST 29: ringbuf overflow bug
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local msg = string.rep("*", 10)
++
++        for i = 1, 2 do
++            ngx.log(ngx.ERR, msg .. i)
++        end
++
++        for i = 1, 40 do
++            local res = errlog.get_logs(1)
++            if res and #res then
++                ngx.log(ngx.ERR, msg .. i)
++            end
++        end
++
++        local res = errlog.get_logs()
++        for i = 1, #res, 3 do
++            ngx.say("log level: ", res[i])
++            ngx.say("log time: ",  res[i + 1])
++            ngx.say("log body: ",  res[i + 2])
++        end
++    }
++--- log_level: notice
++--- stream_response_like chomp
++log level: 4
++log time: \d+(?:\.\d+)?
++log body: \d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: \*\*\*\*\*\*\*\*\*\*39, client: 127.0.0.1, server: 0.0.0.0:\d+
++log level: 4
++log time: \d{10}(?:\.\d+)?
++log body: \d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} \[error\] (\d+).*?content_by_lua\(nginx.conf:\d+\):\d+: \*\*\*\*\*\*\*\*\*\*40, client: 127.0.0.1, server: 0.0.0.0:\d+
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 30: ringbuf sentinel bug1
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local msg = string.rep("a", 20)
++        local bigmsg = string.rep("A", 3000)
++
++        for i = 1, 10 do
++            ngx.log(ngx.ERR, msg)
++        end
++        ngx.log(ngx.ERR, bigmsg)
++        ngx.log(ngx.ERR, msg)
++
++        local res = errlog.get_logs(2)
++        ngx.say("log lines: #", #res / 3)
++
++        for i = 1, #res, 3 do
++            ngx.say(string.gsub(res[i + 2], "^.*([Aa][Aa][Aa]).*$", "%1"), "")
++        end
++    }
++--- log_level: notice
++--- stream_response
++log lines: #2
++AAA
++aaa
++--- skip_nginx: 2: <1.11.2
++
++
++
++=== TEST 31: ringbuf sentinel bug2
++--- stream_config
++    lua_capture_error_log 4k;
++--- stream_server_config
++    content_by_lua_block {
++        local errlog = require "ngx.errlog"
++        local msg = string.rep("a", 20)
++
++        for i = 1, 20 do
++            ngx.log(ngx.ERR, msg)
++        end
++
++        local res = errlog.get_logs(18)
++        ngx.say("log lines: #", #res / 3)
++        ngx.flush(true)
++
++        for i = 1, 18 do
++            ngx.log(ngx.ERR, msg)
++        end
++
++        local bigmsg = string.rep("A", 2000)
++        ngx.log(ngx.ERR, bigmsg)
++
++        local res = errlog.get_logs()
++        ngx.say("log lines: #", #res / 3)
++        ngx.flush(true)
++    }
++--- log_level: notice
++--- stream_response_like chomp
++\A(?:log lines: #18
++log lines: #1
++|log lines: #18
++log lines: #2
++)\z
++--- skip_nginx: 2: <1.11.2
+--
+2.19.1
+

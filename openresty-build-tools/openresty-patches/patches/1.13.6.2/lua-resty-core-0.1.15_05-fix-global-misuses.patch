@@ -1,0 +1,52 @@
+From 870ec959b8e7a9dd1879d5950124523692c21eae Mon Sep 17 00:00:00 2001
+From: "Yichun Zhang (agentzh)" <agentzh@gmail.com>
+Date: Fri, 8 Jun 2018 17:47:56 -0700
+Subject: [PATCH 09/13] optimize: fixed misuses of Lua global variables in our
+ Lua code (caught by the new version of the lj-releng tool).
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ lua-resty-core-0.1.15/lib/ngx/errlog.lua       | 1 +
+ lua-resty-core-0.1.15/lib/resty/core/base.lua  | 1 +
+ lua-resty-core-0.1.15/lib/resty/core/phase.lua | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/lua-resty-core-0.1.15/lib/ngx/errlog.lua b/lua-resty-core-0.1.15/lib/ngx/errlog.lua
+index 94dc41d..e8a5b9a 100644
+--- a/lua-resty-core-0.1.15/lib/ngx/errlog.lua
++++ b/lua-resty-core-0.1.15/lib/ngx/errlog.lua
+@@ -18,6 +18,7 @@ local num_value = ffi_new("double[1]")
+ local getfenv = getfenv
+ local tonumber = tonumber
+ local type = type
++local error = error
+
+
+ local _M = { version = base.version }
+diff --git a/lib/resty/core/base.lua b/lua-resty-core-0.1.15/lib/resty/core/base.lua
+index 81eb29e..d45079d 100644
+--- a/lua-resty-core-0.1.15/lib/resty/core/base.lua
++++ b/lua-resty-core-0.1.15/lib/resty/core/base.lua
+@@ -52,6 +52,7 @@ end
+ local clear_tab
+ ok, clear_tab = pcall(require, "table.clear")
+ if not ok then
++    local pairs = pairs
+     clear_tab = function (tab)
+                     for k, _ in pairs(tab) do
+                         tab[k] = nil
+diff --git a/lua-resty-core-0.1.15/lib/resty/core/phase.lua b/lua-resty-core-0.1.15/lib/resty/core/phase.lua
+index d83d0f3..edb1380 100644
+--- a/lua-resty-core-0.1.15/lib/resty/core/phase.lua
++++ b/lua-resty-core-0.1.15/lib/resty/core/phase.lua
+@@ -5,6 +5,7 @@ local C = ffi.C
+ local FFI_ERROR = base.FFI_ERROR
+ local error = error
+ local tostring = tostring
++local getfenv = getfenv
+
+
+ ffi.cdef[[
+--
+2.19.1
+

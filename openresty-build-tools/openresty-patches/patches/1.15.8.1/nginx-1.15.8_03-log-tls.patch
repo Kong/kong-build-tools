@@ -1,0 +1,28 @@
+From 1f59199f303e560b2df8c8a6ba22ebe1ff6b8f5a Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Thu, 23 Aug 2018 11:35:36 +1000
+Subject: [PATCH 1/2] Log ignored data sitting in connection buffer when
+ starting TLS
+
+---
+ nginx-1.15.8/src/event/ngx_event_openssl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/nginx-1.15.8/src/event/ngx_event_openssl.c b/nginx-1.15.8/src/event/ngx_event_openssl.c
+index 88a6dbed..e90690d3 100644
+--- a/nginx-1.15.8/src/event/ngx_event_openssl.c
++++ b/nginx-1.15.8/src/event/ngx_event_openssl.c
+@@ -1293,6 +1293,10 @@ ngx_ssl_create_connection(ngx_ssl_t *ssl, ngx_connection_t *c, ngx_uint_t flags)
+         return NGX_ERROR;
+     }
+
++    if (c->buffer && ngx_buf_size(c->buffer) != 0) {
++        ngx_ssl_error(NGX_LOG_WARN, c->log, 0, "Ignoring %d bytes of buffered data", ngx_buf_size(c->buffer));
++    }
++
+     if (flags & NGX_SSL_CLIENT) {
+         SSL_set_connect_state(sc->connection);
+
+--
+2.18.0
+

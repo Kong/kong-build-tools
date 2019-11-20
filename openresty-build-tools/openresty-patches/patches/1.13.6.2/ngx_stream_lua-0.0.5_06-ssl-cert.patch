@@ -1,0 +1,5286 @@
+From b038276c8c93b04863eccb4de3e4219fee8d5821 Mon Sep 17 00:00:00 2001
+From: "Yichun Zhang (agentzh)" <agentzh@gmail.com>
+Date: Thu, 11 Oct 2018 11:28:54 +0300
+Subject: [PATCH 4/4] added ssl_certificate_by_lua*
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ ngx_stream_lua-0.0.5/config                            |    2 +
+ ngx_stream_lua-0.0.5/src/api/ngx_stream_lua_api.h      |    8 +
+ ngx_stream_lua-0.0.5/src/ddebug.h                      |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_api.c          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.c         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.h         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c     |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.h     |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.c        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.c    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h       |   15 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.c    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.c      |   30 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.h      |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.c    |   12 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.c          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.h          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.c    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.c |   16 +-
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.h |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.c          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.h          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.c        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.c         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.h         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c       |   68 ++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.c      |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.h      |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.c        |   12 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_probe.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.c        |    9 +-
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.c    |    9 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.h    |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_shdict.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.c        |    9 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.c   |   10 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.h   |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.c   |   10 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.h   |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.c          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.h          |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.c   | 1328 +++++++++++++++++++++++++++
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.h   |   45 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.h       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.c         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.h         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.c        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.h        |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.c      |   10 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.h      |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.c         |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h         |    9 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.c     |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.h     |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.c       |    8 +
+ ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.h       |    8 +
+ ngx_stream_lua-0.0.5/t/139-ssl-cert-by.t               | 1426 +++++++++++++++++++++++++++++
+ ngx_stream_lua-0.0.5/t/140-ssl-c-api.t                 |  677 ++++++++++++++
+ ngx_stream_lua-0.0.5/t/cert/test2.crt                  |   16 +
+ ngx_stream_lua-0.0.5/t/cert/test2.key                  |   15 +
+ ngx_stream_lua-0.0.5/t/cert/test_ecdsa.crt             |   12 +
+ ngx_stream_lua-0.0.5/t/cert/test_ecdsa.key             |    5 +
+ 86 files changed, 4251 insertions(+), 6 deletions(-)
+ create mode 100644 ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.c
+ create mode 100644 ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.h
+ create mode 100644 ngx_stream_lua-0.0.5/t/139-ssl-cert-by.t
+ create mode 100644 ngx_stream_lua-0.0.5/t/140-ssl-c-api.t
+ create mode 100644 ngx_stream_lua-0.0.5/t/cert/test2.crt
+ create mode 100644 ngx_stream_lua-0.0.5/t/cert/test2.key
+ create mode 100644 ngx_stream_lua-0.0.5/t/cert/test_ecdsa.crt
+ create mode 100644 ngx_stream_lua-0.0.5/t/cert/test_ecdsa.key
+
+diff --git a/ngx_stream_lua-0.0.5/config b/ngx_stream_lua-0.0.5/config
+index 5563736..717034b 100644
+--- a/ngx_stream_lua-0.0.5/config
++++ b/ngx_stream_lua-0.0.5/config
+@@ -342,6 +342,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
+                 $ngx_addon_dir/src/ngx_stream_lua_logby.c \
+                 $ngx_addon_dir/src/ngx_stream_lua_prereadby.c \
+                 $ngx_addon_dir/src/ngx_stream_lua_semaphore.c \
++                $ngx_addon_dir/src/ngx_stream_lua_ssl_certby.c \
+                 "
+
+ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+@@ -385,6 +386,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+                 $ngx_addon_dir/src/ngx_stream_lua_logby.h \
+                 $ngx_addon_dir/src/ngx_stream_lua_prereadby.h \
+                 $ngx_addon_dir/src/ngx_stream_lua_semaphore.h \
++                $ngx_addon_dir/src/ngx_stream_lua_ssl_certby.h \
+                 "
+
+ ngx_feature="export symbols by default (-E)"
+diff --git a/ngx_stream_lua-0.0.5/src/api/ngx_stream_lua_api.h b/ngx_stream_lua-0.0.5/src/api/ngx_stream_lua_api.h
+index c7c304e..73f2e7b 100644
+--- a/ngx_stream_lua-0.0.5/src/api/ngx_stream_lua_api.h
++++ b/ngx_stream_lua-0.0.5/src/api/ngx_stream_lua_api.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/api/ngx_subsys_lua_api.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ddebug.h b/ngx_stream_lua-0.0.5/src/ddebug.h
+index 7f01608..6ee0cb5 100644
+--- a/ngx_stream_lua-0.0.5/src/ddebug.h
++++ b/ngx_stream_lua-0.0.5/src/ddebug.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ddebug.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_api.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_api.c
+index 4a70e6c..fc929d1 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_api.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_api.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_api.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.c
+index b56f1d4..0950e0c 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_args.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.h
+index 7319163..8620836 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_args.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_args.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
+index 6b18b59..1b5a262 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_balancer.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.h
+index 958c25e..fde8766 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_balancer.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_balancer.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.c
+index 5ed6ee2..a7ca760 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_cache.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.h
+index e37ea03..5c3c73b 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_cache.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_cache.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.c
+index b5c19b1..1706127 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_clfactory.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.h
+index 323f97a..8be7b17 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_clfactory.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_clfactory.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
+index 8bb7503..25ba775 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_common.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_common.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -113,6 +121,7 @@
+ #define NGX_STREAM_LUA_CONTEXT_INIT_WORKER                          0x0008
+ #define NGX_STREAM_LUA_CONTEXT_BALANCER                             0x0010
+ #define NGX_STREAM_LUA_CONTEXT_PREREAD                              0x0020
++#define NGX_STREAM_LUA_CONTEXT_SSL_CERT                             0x0040
+
+
+ #ifndef NGX_LUA_NO_FFI_API
+@@ -220,6 +229,12 @@ struct ngx_stream_lua_srv_conf_s {
+     ngx_uint_t              ssl_verify_depth;
+     ngx_str_t               ssl_trusted_certificate;
+     ngx_str_t               ssl_crl;
++
++    struct {
++        ngx_stream_lua_srv_conf_handler_pt           ssl_cert_handler;
++        ngx_str_t                                    ssl_cert_src;
++        u_char                                      *ssl_cert_src_key;
++    } srv;
+ #endif
+
+     ngx_flag_t              enable_code_cache; /* whether to enable
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.c
+index c0d6df2..36dbfbe 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_config.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.h
+index 394b83d..025f4a6 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_config.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_config.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.c
+index 2be4273..ea19f90 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_consts.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.h
+index ab6816c..355f8aa 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_consts.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_consts.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.c
+index 38004ce..7eafacb 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_contentby.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.h
+index 3c5a685..59766fb 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_contentby.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_contentby.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.c
+index 8c7df78..6f6fc61 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_control.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -64,11 +72,33 @@ ngx_stream_lua_ngx_exit(lua_State *L)
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER
+                                  | NGX_STREAM_LUA_CONTEXT_BALANCER
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
+                                  );
+
+     rc = (ngx_int_t) luaL_checkinteger(L, 1);
+
++    if (ctx->context & NGX_STREAM_LUA_CONTEXT_SSL_CERT)
++    {
++
++#if (NGX_STREAM_SSL)
++
++        ctx->exit_code = rc;
++        ctx->exited = 1;
++
++        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, r->connection->log, 0,
++                       "lua exit with code %i", rc);
++
++
++        return lua_yield(L, 0);
++
++#else
++
++        return luaL_error(L, "no SSL support");
++
++#endif
++    }
++
+
+     dd("setting exit code: %d", (int) rc);
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.h
+index 69c07de..0533314 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_control.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_control.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.c
+index 493783b..b68d130 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_coroutine.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -78,6 +86,7 @@ ngx_stream_lua_coroutine_create_helper(lua_State *L,
+
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
+                                  );
+
+@@ -153,6 +162,7 @@ ngx_stream_lua_coroutine_resume(lua_State *L)
+
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
+                                  );
+
+@@ -212,6 +222,7 @@ ngx_stream_lua_coroutine_yield(lua_State *L)
+
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
+                                  );
+
+@@ -361,6 +372,7 @@ ngx_stream_lua_coroutine_status(lua_State *L)
+
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
+                                  );
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.h
+index 5fea812..cad9693 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_coroutine.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_coroutine.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.c
+index a1607ec..4d360a4 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ctx.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.h
+index b736682..9f751e7 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ctx.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ctx.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
+index e8732ee..8e46c94 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_directive.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
+index 6a1a2e2..c4dc5e8 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_directive.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_directive.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.c
+index a09bc7e..c1aaed3 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_exception.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.h
+index ba52e75..2e90863 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_exception.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_exception.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.c
+index d07526a..c6bbf0d 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_initby.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.h
+index f135e60..f2e2c40 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initby.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_initby.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.c
+index 8c7a7d4..0908a1e 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_initworkerby.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -53,13 +61,12 @@ ngx_stream_lua_init_worker(ngx_cycle_t *cycle)
+
+     /* lmcf != NULL && lmcf->lua != NULL */
+
+-#if !(NGX_WIN32)
+     /* disable init_worker_by_lua* and destroy lua VM in cache processes */
+     if (ngx_process == NGX_PROCESS_HELPER
+-#   ifdef HAVE_PRIVILEGED_PROCESS_PATCH
++#if defined(HAVE_PRIVILEGED_PROCESS_PATCH) && !NGX_WIN32
+         && !ngx_is_privileged_agent
+-#   endif
+-        )
++#endif
++       )
+     {
+         ngx_log_debug2(NGX_LOG_DEBUG_STREAM, ngx_cycle->log, 0,
+                        "lua close the global Lua VM %p in the "
+@@ -70,7 +77,6 @@ ngx_stream_lua_init_worker(ngx_cycle_t *cycle)
+
+         return NGX_OK;
+     }
+-#endif  /* NGX_WIN32 */
+
+     if (lmcf->init_worker_handler == NULL) {
+         return NGX_OK;
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.h
+index 45ac37b..43f6de3 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_initworkerby.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_initworkerby.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.c
+index 1f9d390..cb1fbc0 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.c
+@@ -1,3 +1,11 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_lex.c.tt2
++ */
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  *
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.h
+index 0bf955e..4155da7 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_lex.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_lex.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
+index c112884..5302548 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_log.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
+index 0e2b990..564bc21 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_log.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_log.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.c
+index 9213135..eb1a42d 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_logby.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.h
+index 7bb6762..713e7e3 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_logby.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_logby.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.c
+index daafa65..46cf682 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_misc.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.h
+index a4208b7..d7a772d 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_misc.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_misc.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
+index a035d0a..d312984 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_module.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_module.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -20,6 +28,7 @@
+ #include "ngx_stream_lua_balancer.h"
+ #include "ngx_stream_lua_logby.h"
+ #include "ngx_stream_lua_semaphore.h"
++#include "ngx_stream_lua_ssl_certby.h"
+
+
+ #include "ngx_stream_lua_prereadby.h"
+@@ -351,6 +360,20 @@ static ngx_command_t ngx_stream_lua_cmds[] = {
+       offsetof(ngx_stream_lua_srv_conf_t, ssl_ciphers),
+       NULL },
+
++    { ngx_string("ssl_certificate_by_lua_block"),
++      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
++      ngx_stream_lua_ssl_cert_by_lua_block,
++      NGX_STREAM_SRV_CONF_OFFSET,
++      0,
++      (void *) ngx_stream_lua_ssl_cert_handler_inline },
++
++    { ngx_string("ssl_certificate_by_lua_file"),
++      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
++      ngx_stream_lua_ssl_cert_by_lua,
++      NGX_STREAM_SRV_CONF_OFFSET,
++      0,
++      (void *) ngx_stream_lua_ssl_cert_handler_file },
++
+
+     { ngx_string("lua_ssl_verify_depth"),
+       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+@@ -704,6 +727,51 @@ ngx_stream_lua_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
+ {
+     ngx_stream_lua_srv_conf_t       *prev = parent;
+     ngx_stream_lua_srv_conf_t       *conf = child;
++#if (NGX_STREAM_SSL)
++    ngx_stream_ssl_conf_t           *sscf;
++
++    dd("merge srv conf");
++
++    if (conf->srv.ssl_cert_src.len == 0) {
++        conf->srv.ssl_cert_src = prev->srv.ssl_cert_src;
++        conf->srv.ssl_cert_src_key = prev->srv.ssl_cert_src_key;
++        conf->srv.ssl_cert_handler = prev->srv.ssl_cert_handler;
++    }
++
++    if (conf->srv.ssl_cert_src.len) {
++        sscf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_ssl_module);
++        if (sscf == NULL || sscf->ssl.ctx == NULL) {
++            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
++                          "no ssl configured for the server");
++
++            return NGX_CONF_ERROR;
++        }
++
++#ifdef LIBRESSL_VERSION_NUMBER
++
++        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
++                      "LibreSSL is not supported by ssl_certificate_by_lua*");
++        return NGX_CONF_ERROR;
++
++#else
++
++#   if OPENSSL_VERSION_NUMBER >= 0x1000205fL
++
++        SSL_CTX_set_cert_cb(sscf->ssl.ctx, ngx_stream_lua_ssl_cert_handler, NULL);
++
++#   else
++
++        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
++                      "OpenSSL too old to support ssl_certificate_by_lua*");
++        return NGX_CONF_ERROR;
++
++#   endif
++
++#endif
++    }
++
++
++#endif  /* NGX_STREAM_SSL */
+
+ #if (NGX_STREAM_SSL)
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.c
+index 3f5f324..cfb33cb 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.c
+@@ -1,3 +1,11 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_output.c.tt2
++ */
++
+ #ifndef DDEBUG
+ #define DDEBUG 0
+ #endif
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.h
+index 29a2c12..6cf941d 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_output.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_output.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.c
+index d004231..37118a9 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_pcrefix.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.h
+index d4729a0..daff4c9 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_pcrefix.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_pcrefix.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.c
+index 8914d23..c39c3f2 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_phase.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -44,6 +52,10 @@ ngx_stream_lua_ngx_get_phase(lua_State *L)
+         lua_pushliteral(L, "init_worker");
+         break;
+
++    case NGX_STREAM_LUA_CONTEXT_SSL_CERT:
++        lua_pushliteral(L, "ssl_cert");
++        break;
++
+     case NGX_STREAM_LUA_CONTEXT_PREREAD:
+         lua_pushliteral(L, "preread");
+         break;
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.h
+index be1ad89..f31cb89 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_phase.h
+@@ -1,3 +1,11 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_phase.h.tt2
++ */
++
+ #ifndef _NGX_STREAM_LUA_PHASE_H_INCLUDED_
+ #define _NGX_STREAM_LUA_PHASE_H_INCLUDED_
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_probe.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_probe.h
+index b379002..47eabd4 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_probe.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_probe.h
+@@ -1,3 +1,11 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_probe.h.tt2
++ */
++
+ /*
+  * automatically generated from the file dtrace/ngx_lua_provider.d by the
+  *  gen-dtrace-probe-header tool in the nginx-devel-utils project:
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.c
+index cebe7d8..37cd4c4 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_regex.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -15,7 +23,6 @@
+ #include "ngx_stream_lua_regex.h"
+ #include "ngx_stream_lua_pcrefix.h"
+ #include "ngx_stream_lua_script.h"
+-#include "ngx_stream_lua_pcrefix.h"
+ #include "ngx_stream_lua_util.h"
+
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.h
+index cdb8494..707a067 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_regex.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_regex.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.c
+index a79cc3f..425ab05 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_script.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.h
+index ace2592..a43da06 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_script.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_script.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.c
+index 207015b..c9b1ecd 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_semaphore.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  * Copyright (C) cuiweixie
+@@ -379,6 +387,7 @@ ngx_stream_lua_ffi_sema_wait(ngx_stream_lua_request_t *r,
+
+     rc = ngx_stream_lua_ffi_check_context(ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                           | NGX_STREAM_LUA_CONTEXT_PREREAD
++                                          | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                           | NGX_STREAM_LUA_CONTEXT_TIMER,
+                                           err, errlen);
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.h
+index 6841950..a4a2e54 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_semaphore.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_semaphore.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  * Copyright (C) cuiweixie
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_shdict.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_shdict.h
+index 2850c13..630c5b6 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_shdict.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_shdict.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_shdict.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.c
+index 8bc7aa7..b05767f 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_sleep.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -57,6 +65,7 @@ ngx_stream_lua_ngx_sleep(lua_State *L)
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
+
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     coctx = ctx->cur_co_ctx;
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.h
+index e16a4b9..cea10bd 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_sleep.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_sleep.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.c
+index add7b5c..a34a1ed 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_socket_tcp.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -390,6 +398,7 @@ ngx_stream_lua_socket_tcp(lua_State *L)
+
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                  | NGX_STREAM_LUA_CONTEXT_PREREAD
++                                 | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                  | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     lua_createtable(L, 5 /* narr */, 1 /* nrec */);
+@@ -450,6 +459,7 @@ ngx_stream_lua_socket_tcp_connect(lua_State *L)
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
+
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     luaL_checktype(L, 1, LUA_TTABLE);
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.h
+index 134f18c..385e200 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_tcp.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_socket_tcp.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.c
+index ad38424..6643450 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_socket_udp.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -173,6 +181,7 @@ ngx_stream_lua_socket_udp(lua_State *L)
+     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
+@@ -234,6 +243,7 @@ ngx_stream_lua_socket_udp_setpeername(lua_State *L)
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
+
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     luaL_checktype(L, 1, LUA_TTABLE);
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.h
+index 7fd385d..79481ae 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_socket_udp.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_socket_udp.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.c
+index 0919706..2a6a951 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ssl.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.h
+index 25fced9..485ccbc 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ssl.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.c
+new file mode 100644
+index 0000000..60fa9f9
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.c
+@@ -0,0 +1,1328 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ssl_certby.c.tt2
++ */
++
++
++/*
++ * Copyright (C) Yichun Zhang (agentzh)
++ */
++
++
++#ifndef DDEBUG
++#define DDEBUG 0
++#endif
++#include "ddebug.h"
++
++
++#if (NGX_STREAM_SSL)
++
++
++#include "ngx_stream_lua_cache.h"
++#include "ngx_stream_lua_initworkerby.h"
++#include "ngx_stream_lua_util.h"
++#include "ngx_stream_ssl_module.h"
++#include "ngx_stream_lua_contentby.h"
++#include "ngx_stream_lua_ssl_certby.h"
++#include "ngx_stream_lua_directive.h"
++#include "ngx_stream_lua_ssl.h"
++
++
++enum {
++    NGX_STREAM_LUA_ADDR_TYPE_UNIX  = 0,
++    NGX_STREAM_LUA_ADDR_TYPE_INET  = 1,
++    NGX_STREAM_LUA_ADDR_TYPE_INET6 = 2
++};
++
++
++static void ngx_stream_lua_ssl_cert_done(void *data);
++static void ngx_stream_lua_ssl_cert_aborted(void *data);
++static u_char *ngx_stream_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf,
++    size_t len);
++static ngx_int_t ngx_stream_lua_ssl_cert_by_chunk(lua_State *L,
++    ngx_stream_lua_request_t *r);
++
++
++ngx_int_t
++ngx_stream_lua_ssl_cert_handler_file(ngx_stream_lua_request_t *r,
++    ngx_stream_lua_srv_conf_t *lscf, lua_State *L)
++{
++    ngx_int_t           rc;
++
++    rc = ngx_stream_lua_cache_loadfile(r->connection->log, L,
++                                       lscf->srv.ssl_cert_src.data,
++                                       lscf->srv.ssl_cert_src_key);
++    if (rc != NGX_OK) {
++        return rc;
++    }
++
++    /*  make sure we have a valid code chunk */
++    ngx_stream_lua_assert(lua_isfunction(L, -1));
++
++    return ngx_stream_lua_ssl_cert_by_chunk(L, r);
++}
++
++
++ngx_int_t
++ngx_stream_lua_ssl_cert_handler_inline(ngx_stream_lua_request_t *r,
++    ngx_stream_lua_srv_conf_t *lscf, lua_State *L)
++{
++    ngx_int_t           rc;
++
++    rc = ngx_stream_lua_cache_loadbuffer(r->connection->log, L,
++                                         lscf->srv.ssl_cert_src.data,
++                                         lscf->srv.ssl_cert_src.len,
++                                         lscf->srv.ssl_cert_src_key,
++                                         "=ssl_certificate_by_lua");
++    if (rc != NGX_OK) {
++        return rc;
++    }
++
++    /*  make sure we have a valid code chunk */
++    ngx_stream_lua_assert(lua_isfunction(L, -1));
++
++    return ngx_stream_lua_ssl_cert_by_chunk(L, r);
++}
++
++
++char *
++ngx_stream_lua_ssl_cert_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf)
++{
++    char        *rv;
++    ngx_conf_t   save;
++
++    save = *cf;
++    cf->handler = ngx_stream_lua_ssl_cert_by_lua;
++    cf->handler_conf = conf;
++
++    rv = ngx_stream_lua_conf_lua_block_parse(cf, cmd);
++
++    *cf = save;
++
++    return rv;
++}
++
++
++char *
++ngx_stream_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf)
++{
++#if OPENSSL_VERSION_NUMBER < 0x1000205fL
++
++    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
++                  "at least OpenSSL 1.0.2e required but found "
++                  OPENSSL_VERSION_TEXT);
++
++    return NGX_CONF_ERROR;
++
++#else
++
++    u_char                           *p;
++    u_char                           *name;
++    ngx_str_t                        *value;
++    ngx_stream_lua_srv_conf_t        *lscf = conf;
++
++    /*  must specify a concrete handler */
++    if (cmd->post == NULL) {
++        return NGX_CONF_ERROR;
++    }
++
++    if (lscf->srv.ssl_cert_handler) {
++        return "is duplicate";
++    }
++
++    if (ngx_stream_lua_ssl_init(cf->log) != NGX_OK) {
++        return NGX_CONF_ERROR;
++    }
++
++    value = cf->args->elts;
++
++    lscf->srv.ssl_cert_handler = (ngx_stream_lua_srv_conf_handler_pt) cmd->post;
++
++    if (cmd->post == ngx_stream_lua_ssl_cert_handler_file) {
++        /* Lua code in an external file */
++
++        name = ngx_stream_lua_rebase_path(cf->pool, value[1].data,
++                                          value[1].len);
++        if (name == NULL) {
++            return NGX_CONF_ERROR;
++        }
++
++        lscf->srv.ssl_cert_src.data = name;
++        lscf->srv.ssl_cert_src.len = ngx_strlen(name);
++
++        p = ngx_palloc(cf->pool, NGX_STREAM_LUA_FILE_KEY_LEN + 1);
++        if (p == NULL) {
++            return NGX_CONF_ERROR;
++        }
++
++        lscf->srv.ssl_cert_src_key = p;
++
++        p = ngx_copy(p, NGX_STREAM_LUA_FILE_TAG, NGX_STREAM_LUA_FILE_TAG_LEN);
++        p = ngx_stream_lua_digest_hex(p, value[1].data, value[1].len);
++        *p = '\0';
++
++    } else {
++        /* inlined Lua code */
++
++        lscf->srv.ssl_cert_src = value[1];
++
++        p = ngx_palloc(cf->pool,
++                       sizeof("ssl_certificate_by_lua") +
++                       NGX_STREAM_LUA_INLINE_KEY_LEN);
++        if (p == NULL) {
++            return NGX_CONF_ERROR;
++        }
++
++        lscf->srv.ssl_cert_src_key = p;
++
++        p = ngx_copy(p, "ssl_certificate_by_lua",
++                     sizeof("ssl_certificate_by_lua") - 1);
++        p = ngx_copy(p, NGX_STREAM_LUA_INLINE_TAG, NGX_STREAM_LUA_INLINE_TAG_LEN);
++        p = ngx_stream_lua_digest_hex(p, value[1].data, value[1].len);
++        *p = '\0';
++    }
++
++    return NGX_CONF_OK;
++
++#endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
++}
++
++
++int
++ngx_stream_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data)
++{
++    lua_State                          *L;
++    ngx_int_t                           rc;
++    ngx_connection_t                   *c, *fc;
++    ngx_stream_lua_request_t           *r = NULL;
++    ngx_pool_cleanup_t                 *cln;
++    ngx_stream_lua_srv_conf_t          *lscf;
++    ngx_stream_lua_ssl_ctx_t           *cctx;
++    ngx_stream_core_srv_conf_t         *cscf;
++    ngx_stream_session_t               *s, *fs;
++
++    c = ngx_ssl_get_connection(ssl_conn);
++
++    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
++                   "ssl cert: connection reusable: %ud", c->reusable);
++
++    cctx = ngx_stream_lua_ssl_get_ctx(c->ssl->connection);
++
++    dd("ssl cert handler, cert-ctx=%p", cctx);
++
++    if (cctx && cctx->entered_cert_handler) {
++        /* not the first time */
++
++        if (cctx->done) {
++            ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
++                           "lua_certificate_by_lua: cert cb exit code: %d",
++                           cctx->exit_code);
++
++            dd("lua ssl cert done, finally");
++            return cctx->exit_code;
++        }
++
++        return -1;
++    }
++
++    dd("first time");
++
++    ngx_reusable_connection(c, 0);
++
++    s = c->data;
++
++    fc = ngx_stream_lua_create_fake_connection(NULL);
++    if (fc == NULL) {
++        goto failed;
++    }
++
++    fc->log->handler = ngx_stream_lua_log_ssl_cert_error;
++    fc->log->data = fc;
++
++    fc->addr_text = c->addr_text;
++    fc->listening = c->listening;
++
++    fs = ngx_stream_lua_create_fake_session(fc);
++    if (fs == NULL) {
++        goto failed;
++    }
++
++    fs->main_conf = s->main_conf;
++    fs->srv_conf = s->srv_conf;
++
++    r = ngx_stream_lua_create_fake_request(fs);
++    if (r == NULL) {
++        goto failed;
++    }
++
++    fc->log->file = c->log->file;
++    fc->log->log_level = c->log->log_level;
++    fc->ssl = c->ssl;
++
++    cscf = ngx_stream_get_module_srv_conf(fs, ngx_stream_core_module);
++
++#if defined(nginx_version) && nginx_version >= 1003014
++
++#   if nginx_version >= 1009000
++
++    ngx_set_connection_log(fc, cscf->error_log);
++
++#   else
++
++#   error "stream ssl_cery_by_lua only supports nginx >= 1.13.0"
++
++#   endif
++
++#else
++
++#   error "stream ssl_cery_by_lua only supports nginx >= 1.13.0"
++
++#endif
++
++    if (cctx == NULL) {
++        cctx = ngx_pcalloc(c->pool, sizeof(ngx_stream_lua_ssl_ctx_t));
++        if (cctx == NULL) {
++            goto failed;  /* error */
++        }
++    }
++
++    cctx->exit_code = 1;  /* successful by default */
++    cctx->connection = c;
++    cctx->request = r;
++    cctx->entered_cert_handler = 1;
++    cctx->done = 0;
++
++    dd("setting cctx");
++
++    if (SSL_set_ex_data(c->ssl->connection, ngx_stream_lua_ssl_ctx_index,
++                        cctx) == 0)
++    {
++        ngx_ssl_error(NGX_LOG_ALERT, c->log, 0, "SSL_set_ex_data() failed");
++        goto failed;
++    }
++
++    lscf = ngx_stream_lua_get_module_srv_conf(r, ngx_stream_lua_module);
++
++    /* TODO honor lua_code_cache off */
++    L = ngx_stream_lua_get_lua_vm(r, NULL);
++
++    c->log->action = "loading SSL certificate by lua";
++
++    if (lscf->srv.ssl_cert_handler == NULL) {
++
++        ngx_log_error(NGX_LOG_ALERT, c->log, 0,
++                      "no ssl_certificate_by_lua* defined in "
++                      "server %s:%ui", &cscf->file_name, &cscf->line);
++
++        goto failed;
++    }
++
++    rc = lscf->srv.ssl_cert_handler(r, lscf, L);
++
++    if (rc >= NGX_OK || rc == NGX_ERROR) {
++        cctx->done = 1;
++
++        if (cctx->cleanup) {
++            *cctx->cleanup = NULL;
++        }
++
++        ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0,
++                       "lua_certificate_by_lua: handler return value: %i, "
++                       "cert cb exit code: %d", rc, cctx->exit_code);
++
++        c->log->action = "SSL handshaking";
++        return cctx->exit_code;
++    }
++
++    /* rc == NGX_DONE */
++
++    cln = ngx_pool_cleanup_add(fc->pool, 0);
++    if (cln == NULL) {
++        goto failed;
++    }
++
++    cln->handler = ngx_stream_lua_ssl_cert_done;
++    cln->data = cctx;
++
++    if (cctx->cleanup == NULL) {
++        cln = ngx_pool_cleanup_add(c->pool, 0);
++        if (cln == NULL) {
++            goto failed;
++        }
++
++        cln->data = cctx;
++        cctx->cleanup = &cln->handler;
++    }
++
++    *cctx->cleanup = ngx_stream_lua_ssl_cert_aborted;
++
++    return -1;
++
++#if 1
++failed:
++
++    if (r && r->pool) {
++        ngx_stream_lua_free_fake_request(r);
++    }
++
++    if (fc) {
++        ngx_stream_lua_close_fake_connection(fc);
++    }
++
++    return 0;
++#endif
++}
++
++
++static void
++ngx_stream_lua_ssl_cert_done(void *data)
++{
++    ngx_connection_t                *c;
++    ngx_stream_lua_ssl_ctx_t        *cctx = data;
++
++    dd("lua ssl cert done");
++
++    if (cctx->aborted) {
++        return;
++    }
++
++    ngx_stream_lua_assert(cctx->done == 0);
++
++    cctx->done = 1;
++
++    if (cctx->cleanup) {
++        *cctx->cleanup = NULL;
++    }
++
++    c = cctx->connection;
++
++    c->log->action = "SSL handshaking";
++
++    ngx_post_event(c->write, &ngx_posted_events);
++}
++
++
++static void
++ngx_stream_lua_ssl_cert_aborted(void *data)
++{
++    ngx_stream_lua_ssl_ctx_t            *cctx = data;
++
++    dd("lua ssl cert done");
++
++    if (cctx->done) {
++        /* completed successfully already */
++        return;
++    }
++
++    ngx_log_debug0(NGX_LOG_DEBUG_STREAM, cctx->connection->log, 0,
++                   "lua_certificate_by_lua: cert cb aborted");
++
++    cctx->aborted = 1;
++    cctx->request->connection->ssl = NULL;
++
++    ngx_stream_lua_finalize_fake_request(cctx->request, NGX_ERROR);
++}
++
++
++static u_char *
++ngx_stream_lua_log_ssl_cert_error(ngx_log_t *log, u_char *buf, size_t len)
++{
++    u_char              *p;
++    ngx_connection_t    *c;
++
++    if (log->action) {
++        p = ngx_snprintf(buf, len, " while %s", log->action);
++        len -= p - buf;
++        buf = p;
++    }
++
++    p = ngx_snprintf(buf, len, ", context: ssl_certificate_by_lua*");
++    len -= p - buf;
++    buf = p;
++
++    c = log->data;
++
++    if (c->addr_text.len) {
++        p = ngx_snprintf(buf, len, ", client: %V", &c->addr_text);
++        len -= p - buf;
++        buf = p;
++    }
++
++    if (c && c->listening && c->listening->addr_text.len) {
++        p = ngx_snprintf(buf, len, ", server: %V", &c->listening->addr_text);
++        /* len -= p - buf; */
++        buf = p;
++    }
++
++    return buf;
++}
++
++
++static ngx_int_t
++ngx_stream_lua_ssl_cert_by_chunk(lua_State *L, ngx_stream_lua_request_t *r)
++{
++    int                              co_ref;
++    ngx_int_t                        rc;
++    lua_State                       *co;
++    ngx_stream_lua_ctx_t            *ctx;
++    ngx_stream_lua_cleanup_t        *cln;
++
++    ctx = ngx_stream_lua_get_module_ctx(r, ngx_stream_lua_module);
++
++    if (ctx == NULL) {
++        ctx = ngx_stream_lua_create_ctx(r->session);
++        if (ctx == NULL) {
++            rc = NGX_ERROR;
++            ngx_stream_lua_finalize_request(r, rc);
++            return rc;
++        }
++
++    } else {
++        dd("reset ctx");
++        ngx_stream_lua_reset_ctx(r, L, ctx);
++    }
++
++    ctx->entered_content_phase = 1;
++
++    /*  {{{ new coroutine to handle request */
++    co = ngx_stream_lua_new_thread(r, L, &co_ref);
++
++    if (co == NULL) {
++        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
++                      "stream lua: failed to create new coroutine to handle "
++                      "request");
++
++        rc = NGX_ERROR;
++        ngx_stream_lua_finalize_request(r, rc);
++        return rc;
++    }
++
++    /*  move code closure to new coroutine */
++    lua_xmove(L, co, 1);
++
++    /*  set closure's env table to new coroutine's globals table */
++    ngx_stream_lua_get_globals_table(co);
++    lua_setfenv(co, -2);
++
++    /* save nginx request in coroutine globals table */
++    ngx_stream_lua_set_req(co, r);
++
++    ctx->cur_co_ctx = &ctx->entry_co_ctx;
++    ctx->cur_co_ctx->co = co;
++    ctx->cur_co_ctx->co_ref = co_ref;
++#ifdef NGX_LUA_USE_ASSERT
++    ctx->cur_co_ctx->co_top = 1;
++#endif
++
++    /* register request cleanup hooks */
++    if (ctx->cleanup == NULL) {
++        cln = ngx_stream_lua_cleanup_add(r, 0);
++        if (cln == NULL) {
++            rc = NGX_ERROR;
++            ngx_stream_lua_finalize_request(r, rc);
++            return rc;
++        }
++
++        cln->handler = ngx_stream_lua_request_cleanup_handler;
++        cln->data = ctx;
++        ctx->cleanup = &cln->handler;
++    }
++
++    ctx->context = NGX_STREAM_LUA_CONTEXT_SSL_CERT;
++
++    rc = ngx_stream_lua_run_thread(L, r, ctx, 0);
++
++    if (rc == NGX_ERROR || rc >= NGX_OK) {
++        /* do nothing */
++
++    } else if (rc == NGX_AGAIN) {
++        rc = ngx_stream_lua_content_run_posted_threads(L, r, ctx, 0);
++
++    } else if (rc == NGX_DONE) {
++        rc = ngx_stream_lua_content_run_posted_threads(L, r, ctx, 1);
++
++    } else {
++        rc = NGX_OK;
++    }
++
++    ngx_stream_lua_finalize_request(r, rc);
++    return rc;
++}
++
++
++
++int
++ngx_stream_lua_ffi_ssl_get_tls1_version(ngx_stream_lua_request_t *r, char **err)
++{
++    ngx_ssl_conn_t    *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    dd("tls1 ver: %d", SSL_version(ssl_conn));
++
++    return SSL_version(ssl_conn);
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_clear_certs(ngx_stream_lua_request_t *r, char **err)
++{
++#ifdef LIBRESSL_VERSION_NUMBER
++
++    *err = "LibreSSL not supported";
++    return NGX_ERROR;
++
++#else
++
++#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
++
++    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
++    return NGX_ERROR;
++
++#   else
++
++    ngx_ssl_conn_t    *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    SSL_certs_clear(ssl_conn);
++    return NGX_OK;
++
++#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_set_der_certificate(ngx_stream_lua_request_t *r,
++    const char *data, size_t len, char **err)
++{
++#ifdef LIBRESSL_VERSION_NUMBER
++
++    *err = "LibreSSL not supported";
++    return NGX_ERROR;
++
++#else
++
++#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
++
++    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
++    return NGX_ERROR;
++
++#   else
++
++    BIO               *bio = NULL;
++    X509              *x509 = NULL;
++    ngx_ssl_conn_t    *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    bio = BIO_new_mem_buf((char *) data, len);
++    if (bio == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        goto failed;
++    }
++
++    x509 = d2i_X509_bio(bio, NULL);
++    if (x509 == NULL) {
++        *err = "d2i_X509_bio() failed";
++        goto failed;
++    }
++
++    if (SSL_use_certificate(ssl_conn, x509) == 0) {
++        *err = "SSL_use_certificate() failed";
++        goto failed;
++    }
++
++#if 0
++    if (SSL_set_ex_data(ssl_conn, ngx_ssl_certificate_index, x509) == 0) {
++        *err = "SSL_set_ex_data() failed";
++        goto failed;
++    }
++#endif
++
++    X509_free(x509);
++    x509 = NULL;
++
++    /* read rest of the chain */
++
++    while (!BIO_eof(bio)) {
++
++        x509 = d2i_X509_bio(bio, NULL);
++        if (x509 == NULL) {
++            *err = "d2i_X509_bio() failed";
++            goto failed;
++        }
++
++        if (SSL_add0_chain_cert(ssl_conn, x509) == 0) {
++            *err = "SSL_add0_chain_cert() failed";
++            goto failed;
++        }
++    }
++
++    BIO_free(bio);
++
++    *err = NULL;
++    return NGX_OK;
++
++failed:
++
++    if (bio) {
++        BIO_free(bio);
++    }
++
++    if (x509) {
++        X509_free(x509);
++    }
++
++    ERR_clear_error();
++
++    return NGX_ERROR;
++
++#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_set_der_private_key(ngx_stream_lua_request_t *r,
++    const char *data, size_t len, char **err)
++{
++    BIO               *bio = NULL;
++    EVP_PKEY          *pkey = NULL;
++    ngx_ssl_conn_t    *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    bio = BIO_new_mem_buf((char *) data, len);
++    if (bio == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        goto failed;
++    }
++
++    pkey = d2i_PrivateKey_bio(bio, NULL);
++    if (pkey == NULL) {
++        *err = "d2i_PrivateKey_bio() failed";
++        goto failed;
++    }
++
++    if (SSL_use_PrivateKey(ssl_conn, pkey) == 0) {
++        *err = "SSL_use_PrivateKey() failed";
++        goto failed;
++    }
++
++    EVP_PKEY_free(pkey);
++    BIO_free(bio);
++
++    return NGX_OK;
++
++failed:
++
++    if (pkey) {
++        EVP_PKEY_free(pkey);
++    }
++
++    if (bio) {
++        BIO_free(bio);
++    }
++
++    ERR_clear_error();
++
++    return NGX_ERROR;
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_raw_server_addr(ngx_stream_lua_request_t *r, char **addr,
++    size_t *addrlen, int *addrtype, char **err)
++{
++#if (NGX_HAVE_UNIX_DOMAIN)
++    struct sockaddr_un   *saun;
++#endif
++    ngx_ssl_conn_t       *ssl_conn;
++    ngx_connection_t     *c;
++    struct sockaddr_in   *sin;
++#if (NGX_HAVE_INET6)
++    struct sockaddr_in6  *sin6;
++#endif
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    c = ngx_ssl_get_connection(ssl_conn);
++
++    if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {
++        return 0;
++    }
++
++    switch (c->local_sockaddr->sa_family) {
++
++#if (NGX_HAVE_INET6)
++    case AF_INET6:
++        sin6 = (struct sockaddr_in6 *) c->local_sockaddr;
++        *addrlen = 16;
++        *addr = (char *) &sin6->sin6_addr.s6_addr;
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_INET6;
++
++        break;
++#endif
++
++#if (NGX_HAVE_UNIX_DOMAIN)
++    case AF_UNIX:
++        saun = (struct sockaddr_un *) c->local_sockaddr;
++
++        /* on Linux sockaddr might not include sun_path at all */
++        if (c->local_socklen <= (socklen_t)
++            offsetof(struct sockaddr_un, sun_path))
++        {
++            *addr = "";
++            *addrlen = 0;
++
++        } else {
++            *addr = saun->sun_path;
++            *addrlen = ngx_strlen(saun->sun_path);
++        }
++
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_UNIX;
++        break;
++#endif
++
++    default: /* AF_INET */
++        sin = (struct sockaddr_in *) c->local_sockaddr;
++        *addr = (char *) &sin->sin_addr.s_addr;
++        *addrlen = 4;
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_INET;
++        break;
++    }
++
++    return NGX_OK;
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_server_name(ngx_stream_lua_request_t *r, char **name,
++    size_t *namelen, char **err)
++{
++    ngx_ssl_conn_t          *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
++
++    *name = (char *) SSL_get_servername(ssl_conn, TLSEXT_NAMETYPE_host_name);
++
++    if (*name) {
++        *namelen = ngx_strlen(*name);
++        return NGX_OK;
++    }
++
++    return NGX_DECLINED;
++
++#else
++
++    *err = "no TLS extension support";
++    return NGX_ERROR;
++
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_ssl_raw_client_addr(ngx_stream_lua_request_t *r, char **addr,
++    size_t *addrlen, int *addrtype, char **err)
++{
++#if (NGX_HAVE_UNIX_DOMAIN)
++    struct sockaddr_un  *saun;
++#endif
++    ngx_ssl_conn_t      *ssl_conn;
++    ngx_connection_t    *c;
++    struct sockaddr_in  *sin;
++#if (NGX_HAVE_INET6)
++    struct sockaddr_in6 *sin6;
++#endif
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    c = ngx_ssl_get_connection(ssl_conn);
++
++    switch (c->sockaddr->sa_family) {
++
++#if (NGX_HAVE_INET6)
++    case AF_INET6:
++        sin6 = (struct sockaddr_in6 *) c->sockaddr;
++        *addrlen = 16;
++        *addr = (char *) &sin6->sin6_addr.s6_addr;
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_INET6;
++
++        break;
++#endif
++
++# if (NGX_HAVE_UNIX_DOMAIN)
++    case AF_UNIX:
++        saun = (struct sockaddr_un *)c->sockaddr;
++        /* on Linux sockaddr might not include sun_path at all */
++        if (c->socklen <= (socklen_t) offsetof(struct sockaddr_un, sun_path)) {
++            *addr = "";
++            *addrlen = 0;
++
++        } else {
++            *addr = saun->sun_path;
++            *addrlen = ngx_strlen(saun->sun_path);
++        }
++
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_UNIX;
++        break;
++#endif
++
++    default: /* AF_INET */
++        sin = (struct sockaddr_in *) c->sockaddr;
++        *addr = (char *) &sin->sin_addr.s_addr;
++        *addrlen = 4;
++        *addrtype = NGX_STREAM_LUA_ADDR_TYPE_INET;
++        break;
++    }
++
++    return NGX_OK;
++}
++
++
++int
++ngx_stream_lua_ffi_cert_pem_to_der(const u_char *pem, size_t pem_len, u_char *der,
++    char **err)
++{
++    int       total, len;
++    BIO      *bio;
++    X509     *x509;
++    u_long    n;
++
++    bio = BIO_new_mem_buf((char *) pem, (int) pem_len);
++    if (bio == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    x509 = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
++    if (x509 == NULL) {
++        *err = "PEM_read_bio_X509_AUX() failed";
++        BIO_free(bio);
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    total = i2d_X509(x509, &der);
++    if (total < 0) {
++        *err = "i2d_X509() failed";
++        X509_free(x509);
++        BIO_free(bio);
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    X509_free(x509);
++
++    /* read rest of the chain */
++
++    for ( ;; ) {
++
++        x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
++        if (x509 == NULL) {
++            n = ERR_peek_last_error();
++
++            if (ERR_GET_LIB(n) == ERR_LIB_PEM
++                && ERR_GET_REASON(n) == PEM_R_NO_START_LINE)
++            {
++                /* end of file */
++                ERR_clear_error();
++                break;
++            }
++
++            /* some real error */
++
++            *err = "PEM_read_bio_X509() failed";
++            BIO_free(bio);
++            ERR_clear_error();
++            return NGX_ERROR;
++        }
++
++        len = i2d_X509(x509, &der);
++        if (len < 0) {
++            *err = "i2d_X509() failed";
++            X509_free(x509);
++            BIO_free(bio);
++            ERR_clear_error();
++            return NGX_ERROR;
++        }
++
++        total += len;
++
++        X509_free(x509);
++    }
++
++    BIO_free(bio);
++
++    return total;
++}
++
++
++int
++ngx_stream_lua_ffi_priv_key_pem_to_der(const u_char *pem, size_t pem_len,
++    u_char *der, char **err)
++{
++    int          len;
++    BIO         *in;
++    EVP_PKEY    *pkey;
++
++    in = BIO_new_mem_buf((char *) pem, (int) pem_len);
++    if (in == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, NULL);
++    if (pkey == NULL) {
++        BIO_free(in);
++        *err = "PEM_read_bio_PrivateKey() failed";
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    BIO_free(in);
++
++    len = i2d_PrivateKey(pkey, &der);
++    if (len < 0) {
++        EVP_PKEY_free(pkey);
++        *err = "i2d_PrivateKey() failed";
++        ERR_clear_error();
++        return NGX_ERROR;
++    }
++
++    EVP_PKEY_free(pkey);
++
++    return len;
++}
++
++
++void *
++ngx_stream_lua_ffi_parse_pem_cert(const u_char *pem, size_t pem_len,
++    char **err)
++{
++    BIO             *bio;
++    X509            *x509;
++    u_long           n;
++    STACK_OF(X509)  *chain;
++
++    bio = BIO_new_mem_buf((char *) pem, (int) pem_len);
++    if (bio == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        ERR_clear_error();
++        return NULL;
++    }
++
++    x509 = PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
++    if (x509 == NULL) {
++        *err = "PEM_read_bio_X509_AUX() failed";
++        BIO_free(bio);
++        ERR_clear_error();
++        return NULL;
++    }
++
++    chain = sk_X509_new_null();
++    if (chain == NULL) {
++        *err = "sk_X509_new_null() failed";
++        X509_free(x509);
++        BIO_free(bio);
++        ERR_clear_error();
++        return NULL;
++    }
++
++    if (sk_X509_push(chain, x509) == 0) {
++        *err = "sk_X509_push() failed";
++        sk_X509_free(chain);
++        X509_free(x509);
++        BIO_free(bio);
++        ERR_clear_error();
++        return NULL;
++    }
++
++    /* read rest of the chain */
++
++    for ( ;; ) {
++
++        x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
++        if (x509 == NULL) {
++            n = ERR_peek_last_error();
++
++            if (ERR_GET_LIB(n) == ERR_LIB_PEM
++                && ERR_GET_REASON(n) == PEM_R_NO_START_LINE)
++            {
++                /* end of file */
++                ERR_clear_error();
++                break;
++            }
++
++            /* some real error */
++
++            *err = "PEM_read_bio_X509() failed";
++            sk_X509_pop_free(chain, X509_free);
++            BIO_free(bio);
++            ERR_clear_error();
++            return NULL;
++        }
++
++        if (sk_X509_push(chain, x509) == 0) {
++            *err = "sk_X509_push() failed";
++            sk_X509_pop_free(chain, X509_free);
++            X509_free(x509);
++            BIO_free(bio);
++            ERR_clear_error();
++            return NULL;
++        }
++    }
++
++    BIO_free(bio);
++
++    return chain;
++}
++
++
++void
++ngx_stream_lua_ffi_free_cert(void *cdata)
++{
++    STACK_OF(X509)  *chain = cdata;
++
++    sk_X509_pop_free(chain, X509_free);
++}
++
++
++void *
++ngx_stream_lua_ffi_parse_pem_priv_key(const u_char *pem, size_t pem_len,
++    char **err)
++{
++    BIO         *in;
++    EVP_PKEY    *pkey;
++
++    in = BIO_new_mem_buf((char *) pem, (int) pem_len);
++    if (in == NULL) {
++        *err = "BIO_new_mem_buf() failed";
++        ERR_clear_error();
++        return NULL;
++    }
++
++    pkey = PEM_read_bio_PrivateKey(in, NULL, NULL, NULL);
++    if (pkey == NULL) {
++        *err = "PEM_read_bio_PrivateKey() failed";
++        BIO_free(in);
++        ERR_clear_error();
++        return NULL;
++    }
++
++    BIO_free(in);
++
++    return pkey;
++}
++
++
++void
++ngx_stream_lua_ffi_free_priv_key(void *cdata)
++{
++    EVP_PKEY *pkey = cdata;
++
++    EVP_PKEY_free(pkey);
++}
++
++
++int
++ngx_stream_lua_ffi_set_cert(ngx_stream_lua_request_t *r,
++    void *cdata, char **err)
++{
++#ifdef LIBRESSL_VERSION_NUMBER
++
++    *err = "LibreSSL not supported";
++    return NGX_ERROR;
++
++#else
++
++#   if OPENSSL_VERSION_NUMBER < 0x1000205fL
++
++    *err = "at least OpenSSL 1.0.2e required but found " OPENSSL_VERSION_TEXT;
++    return NGX_ERROR;
++
++#   else
++
++#ifdef OPENSSL_IS_BORINGSSL
++    size_t             i;
++#else
++    int                i;
++#endif
++    X509              *x509 = NULL;
++    ngx_ssl_conn_t    *ssl_conn;
++    STACK_OF(X509)    *chain = cdata;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    if (sk_X509_num(chain) < 1) {
++        *err = "invalid certificate chain";
++        goto failed;
++    }
++
++    x509 = sk_X509_value(chain, 0);
++    if (x509 == NULL) {
++        *err = "sk_X509_value() failed";
++        goto failed;
++    }
++
++    if (SSL_use_certificate(ssl_conn, x509) == 0) {
++        *err = "SSL_use_certificate() failed";
++        goto failed;
++    }
++
++    x509 = NULL;
++
++    /* read rest of the chain */
++
++    for (i = 1; i < sk_X509_num(chain); i++) {
++
++        x509 = sk_X509_value(chain, i);
++        if (x509 == NULL) {
++            *err = "sk_X509_value() failed";
++            goto failed;
++        }
++
++        if (SSL_add1_chain_cert(ssl_conn, x509) == 0) {
++            *err = "SSL_add1_chain_cert() failed";
++            goto failed;
++        }
++    }
++
++    *err = NULL;
++    return NGX_OK;
++
++failed:
++
++    ERR_clear_error();
++
++    return NGX_ERROR;
++
++#   endif  /* OPENSSL_VERSION_NUMBER < 0x1000205fL */
++#endif
++}
++
++
++int
++ngx_stream_lua_ffi_set_priv_key(ngx_stream_lua_request_t *r,
++    void *cdata, char **err)
++{
++    EVP_PKEY          *pkey = NULL;
++    ngx_ssl_conn_t    *ssl_conn;
++
++    if (r->connection == NULL || r->connection->ssl == NULL) {
++        *err = "bad request";
++        return NGX_ERROR;
++    }
++
++    ssl_conn = r->connection->ssl->connection;
++    if (ssl_conn == NULL) {
++        *err = "bad ssl conn";
++        return NGX_ERROR;
++    }
++
++    pkey = cdata;
++    if (pkey == NULL) {
++        *err = "invalid private key failed";
++        goto failed;
++    }
++
++    if (SSL_use_PrivateKey(ssl_conn, pkey) == 0) {
++        *err = "SSL_use_PrivateKey() failed";
++        goto failed;
++    }
++
++    return NGX_OK;
++
++failed:
++
++    ERR_clear_error();
++
++    return NGX_ERROR;
++}
++
++
++#endif /* NGX_STREAM_SSL */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.h
+new file mode 100644
+index 0000000..9762341
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_ssl_certby.h
+@@ -0,0 +1,45 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_ssl_certby.h.tt2
++ */
++
++
++/*
++ * Copyright (C) Yichun Zhang (agentzh)
++ */
++
++
++#ifndef _NGX_STREAM_LUA_SSL_CERTBY_H_INCLUDED_
++#define _NGX_STREAM_LUA_SSL_CERTBY_H_INCLUDED_
++
++
++#include "ngx_stream_lua_common.h"
++
++
++#if (NGX_STREAM_SSL)
++
++
++ngx_int_t ngx_stream_lua_ssl_cert_handler_inline(ngx_stream_lua_request_t *r,
++    ngx_stream_lua_srv_conf_t *lscf, lua_State *L);
++
++ngx_int_t ngx_stream_lua_ssl_cert_handler_file(ngx_stream_lua_request_t *r,
++    ngx_stream_lua_srv_conf_t *lscf, lua_State *L);
++
++char *ngx_stream_lua_ssl_cert_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf);
++
++char *ngx_stream_lua_ssl_cert_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
++    void *conf);
++
++int ngx_stream_lua_ssl_cert_handler(ngx_ssl_conn_t *ssl_conn, void *data);
++
++
++#endif  /* NGX_STREAM_SSL */
++
++
++#endif /* _NGX_STREAM_LUA_SSL_CERTBY_H_INCLUDED_ */
++
++/* vi:set ft=c ts=4 sw=4 et fdm=marker: */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.c
+index f5f4c58..31f54a4 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.c
+@@ -1,3 +1,11 @@
++
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_string.c.tt2
++ */
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.h
+index 18550d0..ef08788 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_string.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_string.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.c
+index 3e04d63..ca4abbf 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_time.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.h
+index 1f8e1fe..41892cc 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_time.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_time.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.c
+index 2367c23..fcfb8e5 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_timer.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.h
+index 98af1a1..3472b5e 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_timer.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_timer.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.c
+index ff6f583..50083e2 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_uthread.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+@@ -128,6 +136,7 @@ ngx_stream_lua_uthread_wait(lua_State *L)
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
+
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     coctx = ctx->cur_co_ctx;
+@@ -227,6 +236,7 @@ ngx_stream_lua_uthread_kill(lua_State *L)
+
+                                | NGX_STREAM_LUA_CONTEXT_PREREAD
+
++                               | NGX_STREAM_LUA_CONTEXT_SSL_CERT
+                                | NGX_STREAM_LUA_CONTEXT_TIMER);
+
+     coctx = ctx->cur_co_ctx;
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.h
+index d85860b..6e8b54e 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_uthread.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_uthread.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.c
+index 313a8f4..16a804a 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_util.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
+index 49be95b..d72c55e 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_util.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_util.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+@@ -79,6 +87,7 @@ extern char ngx_stream_lua_headers_metatable_key;
+      : (c) == NGX_STREAM_LUA_CONTEXT_INIT_WORKER ? "init_worker_by_lua*"     \
+      : (c) == NGX_STREAM_LUA_CONTEXT_BALANCER ? "balancer_by_lua*"           \
+      : (c) == NGX_STREAM_LUA_CONTEXT_PREREAD ? "preread_by_lua*"             \
++     : (c) == NGX_STREAM_LUA_CONTEXT_SSL_CERT ? "ssl_certificate_by_lua*"    \
+      : "(unknown)")
+
+
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.c
+index 817d2aa..a9750bb 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_variable.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.h
+index e54eb38..17f61b0 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_variable.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_variable.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Xiaozhe Wang (chaoslawful)
+  * Copyright (C) Yichun Zhang (agentzh)
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.c b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.c
+index b9829d9..2ea0df2 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.c
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.c
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_worker.c.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.h b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.h
+index 8d8b8a6..8cd88c5 100644
+--- a/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.h
++++ b/ngx_stream_lua-0.0.5/src/ngx_stream_lua_worker.h
+@@ -1,4 +1,12 @@
+
++/*
++ * !!! DO NOT EDIT DIRECTLY !!!
++ * This file was automatically generated from the following template:
++ *
++ * src/subsys/ngx_subsys_lua_worker.h.tt2
++ */
++
++
+ /*
+  * Copyright (C) Yichun Zhang (agentzh)
+  */
+diff --git a/ngx_stream_lua-0.0.5/t/139-ssl-cert-by.t b/ngx_stream_lua-0.0.5/t/139-ssl-cert-by.t
+new file mode 100644
+index 0000000..9e1e9b1
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/139-ssl-cert-by.t
+@@ -0,0 +1,1426 @@
++# vim:set ft= ts=4 sw=4 et fdm=marker:
++
++use Test::Nginx::Socket::Lua::Stream;
++repeat_each(3);
++
++# All these tests need to have new openssl
++my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
++my $openssl_version = eval { `$NginxBinary -V 2>&1` };
++
++if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
++    plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
++} else {
++    plan tests => repeat_each() * (blocks() * 6 + 8);
++}
++
++$ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
++$ENV{TEST_NGINX_MEMCACHED_PORT} ||= 11211;
++
++#log_level 'warn';
++log_level 'debug';
++
++no_long_string();
++#no_diff();
++
++run_tests();
++
++__DATA__
++
++=== TEST 1: simple logging
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
++--- grep_error_log eval: qr/ssl_certificate_by_lua:.*?,|\bssl cert: connection reusable: \d+|\breusable connection: \d+/
++--- grep_error_log_out eval
++qr/reusable connection: 1
++reusable connection: 0
++ssl cert: connection reusable: 0
++reusable connection: 0
++ssl_certificate_by_lua:1: ssl cert by lua is running!,
++reusable connection: 0
++reusable connection: 0
++reusable connection: 0
++reusable connection: 0
++reusable connection: 0
++/
++
++
++
++=== TEST 2: sleep
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            local begin = ngx.now()
++            ngx.sleep(0.1)
++            print("elapsed in ssl cert by lua: ", ngx.now() - begin)
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log eval
++[
++'lua ssl server name: "test.com"',
++qr/elapsed in ssl cert by lua: 0.(?:09|1[01])\d+,/,
++]
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 3: timer
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            local function f()
++                print("my timer run!")
++            end
++            local ok, err = ngx.timer.at(0, f)
++            if not ok then
++                ngx.log(ngx.ERR, "failed to create timer: ", err)
++                return
++            end
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++my timer run!
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 4: cosocket
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.1", $TEST_NGINX_MEMCACHED_PORT)
++            if not ok then
++                ngx.log(ngx.ERR, "failed to connect to memc: ", err)
++                return
++            end
++
++            local bytes, err = sock:send("flush_all\r\n")
++            if not bytes then
++                ngx.log(ngx.ERR, "failed to send flush_all command: ", err)
++                return
++            end
++
++            local res, err = sock:receive()
++            if not res then
++                ngx.log(ngx.ERR, "failed to receive memc reply: ", err)
++                return
++            end
++
++            print("received memc reply: ", res)
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++received memc reply: OK
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 5: ngx.exit(0) - no yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            ngx.exit(0)
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: boolean
++
++--- error_log
++lua exit with code 0
++
++--- no_error_log
++should never reached here
++[error]
++[alert]
++[emerg]
++
++
++
++=== TEST 6: ngx.exit(ngx.ERROR) - no yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            ngx.exit(ngx.ERROR)
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++failed to do SSL handshake: handshake failed
++
++--- error_log eval
++[
++'lua_certificate_by_lua: handler return value: -1, cert cb exit code: 0',
++qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
++'lua exit with code -1',
++]
++
++--- no_error_log
++should never reached here
++[alert]
++[emerg]
++
++
++
++=== TEST 7: ngx.exit(0) -  yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            ngx.sleep(0.001)
++            ngx.exit(0)
++
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: boolean
++
++--- error_log
++lua exit with code 0
++
++--- no_error_log
++should never reached here
++[error]
++[alert]
++[emerg]
++
++
++
++=== TEST 8: ngx.exit(ngx.ERROR) - yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            ngx.sleep(0.001)
++            ngx.exit(ngx.ERROR)
++
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++failed to do SSL handshake: handshake failed
++
++--- error_log eval
++[
++'lua_certificate_by_lua: cert cb exit code: 0',
++qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
++'lua exit with code -1',
++]
++
++--- no_error_log
++should never reached here
++[alert]
++[emerg]
++
++
++
++=== TEST 9: lua exception - no yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            error("bad bad bad")
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++failed to do SSL handshake: handshake failed
++
++--- error_log eval
++[
++'runtime error: ssl_certificate_by_lua:2: bad bad bad',
++'lua_certificate_by_lua: handler return value: 500, cert cb exit code: 0',
++qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
++qr/context: ssl_certificate_by_lua\*, client: \d+\.\d+\.\d+\.\d+, server: \d+\.\d+\.\d+\.\d+:\d+/,
++]
++
++--- no_error_log
++should never reached here
++[alert]
++[emerg]
++
++
++
++=== TEST 10: lua exception - yield
++--- stream_config
++    server {
++        listen 127.0.0.2:8080 ssl;
++        ssl_certificate_by_lua_block {
++            ngx.sleep(0.001)
++            error("bad bad bad")
++            ngx.log(ngx.ERR, "should never reached here...")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++    lua_ssl_verify_depth 3;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.2", 8080)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, nil, true, false)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++    }
++
++--- stream_response
++connected: 1
++failed to do SSL handshake: handshake failed
++
++--- error_log eval
++[
++'runtime error: ssl_certificate_by_lua:3: bad bad bad',
++'lua_certificate_by_lua: cert cb exit code: 0',
++qr/\[crit\] .*? SSL_do_handshake\(\) failed .*?cert cb error/,
++]
++
++--- no_error_log
++should never reached here
++[alert]
++[emerg]
++
++
++
++=== TEST 11: get phase
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {print("get_phase: ", ngx.get_phase())}
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end
++        collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++
++--- error_log
++lua ssl server name: "test.com"
++get_phase: ssl_cert
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 12: connection aborted prematurely
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            ngx.sleep(0.3)
++            -- local ssl = require "ngx.ssl"
++            -- ssl.clear_certs()
++            print("ssl-cert-by-lua: after sleeping")
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(150)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(false, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++failed to do SSL handshake: timeout
++
++--- error_log
++lua ssl server name: "test.com"
++ssl-cert-by-lua: after sleeping
++
++--- no_error_log
++[error]
++[alert]
++--- wait: 0.6
++
++
++
++=== TEST 14: simple logging (by_lua_file)
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_file html/a.lua;
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++
++--- user_files
++>>> a.lua
++print("ssl cert by lua is running!")
++
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++a.lua:1: ssl cert by lua is running!
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 15: coroutine API
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            local cc, cr, cy = coroutine.create, coroutine.resume, coroutine.yield
++
++            local function f()
++                local cnt = 0
++                for i = 1, 20 do
++                    print("co yield: ", cnt)
++                    cy()
++                    cnt = cnt + 1
++                end
++            end
++
++            local c = cc(f)
++            for i = 1, 3 do
++                print("co resume, status: ", coroutine.status(c))
++                cr(c)
++            end
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- grep_error_log eval: qr/co (?:yield: \d+|resume, status: \w+)/
++--- grep_error_log_out
++co resume, status: suspended
++co yield: 0
++co resume, status: suspended
++co yield: 1
++co resume, status: suspended
++co yield: 2
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 16: simple user thread wait with yielding
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        ssl_certificate_by_lua_block {
++            function f()
++                ngx.sleep(0.01)
++                print("uthread: hello in thread")
++                return "done"
++            end
++
++            local t, err = ngx.thread.spawn(f)
++            if not t then
++                ngx.log(ngx.ERR, "uthread: failed to spawn thread: ", err)
++                return ngx.exit(ngx.ERROR)
++            end
++
++            print("uthread: thread created: ", coroutine.status(t))
++
++            local ok, res = ngx.thread.wait(t)
++            if not ok then
++                print("uthread: failed to wait thread: ", res)
++                return
++            end
++
++            print("uthread: ", res)
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- no_error_log
++[error]
++[alert]
++--- grep_error_log eval: qr/uthread: [^.,]+/
++--- grep_error_log_out
++uthread: thread created: suspended
++uthread: hello in thread
++uthread: done
++
++
++
++=== TEST 17: simple logging - use ssl_certificate_by_lua* on the http {} level
++GitHub openresty/lua-resty-core#42
++--- stream_config
++    ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
++    ssl_certificate ../../cert/test.crt;
++    ssl_certificate_key ../../cert/test.key;
++
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++ssl_certificate_by_lua:1: ssl cert by lua is running!
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 18: simple logging (syslog)
++github issue #723
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        error_log syslog:server=127.0.0.1:12345 debug;
++
++        ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log eval
++[
++qr/\[error\] .*? send\(\) failed/,
++'lua ssl server name: "test.com"',
++]
++--- no_error_log
++[alert]
++ssl_certificate_by_lua:1: ssl cert by lua is running!
++
++
++
++=== TEST 19: check the count of running timers
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block { print("ssl cert by lua is running!") }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        content_by_lua_block {
++            ngx.timer.at(0.1, function() ngx.sleep(0.3) end)
++            ngx.timer.at(0.11, function() ngx.sleep(0.3) end)
++            ngx.timer.at(0.09, function() ngx.sleep(0.3) end)
++            ngx.sleep(0.2)
++            ngx.say(ngx.timer.running_count())
++        }
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: 3
++close: 1 nil
++
++--- error_log eval
++[
++'ssl_certificate_by_lua:1: ssl cert by lua is running!',
++'lua ssl server name: "test.com"',
++]
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 22: get raw_client_addr - IPv4
++--- stream_config
++    lua_package_path "../lua-resty-core/lib/?.lua;;";
++
++    server {
++        listen 127.0.0.1:12345 ssl;
++
++        ssl_certificate_by_lua_block {
++            local ssl = require "ngx.ssl"
++            local byte = string.byte
++            local addr, addrtype, err = ssl.raw_client_addr()
++            local ip = string.format("%d.%d.%d.%d", byte(addr, 1), byte(addr, 2),
++                       byte(addr, 3), byte(addr, 4))
++            print("client ip: ", ip)
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("127.0.0.1", 12345)
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++client ip: 127.0.0.1
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 23: get raw_client_addr - unix domain socket
++--- stream_config
++    lua_package_path "../lua-resty-core/lib/?.lua;;";
++
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            local ssl = require "ngx.ssl"
++            local addr, addrtyp, err = ssl.raw_client_addr()
++            print("client socket file: ", addr)
++        }
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++client socket file:
++
++--- no_error_log
++[error]
++[alert]
+diff --git a/ngx_stream_lua-0.0.5/t/140-ssl-c-api.t b/ngx_stream_lua-0.0.5/t/140-ssl-c-api.t
+new file mode 100644
+index 0000000..f5ad166
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/140-ssl-c-api.t
+@@ -0,0 +1,677 @@
++# vim:set ft= ts=4 sw=4 et fdm=marker:
++
++use Test::Nginx::Socket::Lua::Stream;
++repeat_each(3);
++
++# All these tests need to have new openssl
++my $NginxBinary = $ENV{'TEST_NGINX_BINARY'} || 'nginx';
++my $openssl_version = eval { `$NginxBinary -V 2>&1` };
++
++if ($openssl_version =~ m/built with OpenSSL (0|1\.0\.(?:0|1[^\d]|2[a-d]).*)/) {
++    plan(skip_all => "too old OpenSSL, need 1.0.2e, was $1");
++} else {
++    plan tests => repeat_each() * (blocks() * 5 + 1);
++}
++
++$ENV{TEST_NGINX_HTML_DIR} ||= html_dir();
++
++#log_level 'warn';
++log_level 'debug';
++
++no_long_string();
++#no_diff();
++
++add_block_preprocessor(sub {
++    my $block = shift;
++
++    if (!defined $block->user_files) {
++        $block->set_value("user_files", <<'_EOC_');
++>>> defines.lua
++local ffi = require "ffi"
++
++ffi.cdef[[
++    int ngx_stream_lua_ffi_cert_pem_to_der(const unsigned char *pem,
++        size_t pem_len, unsigned char *der, char **err);
++
++    int ngx_stream_lua_ffi_priv_key_pem_to_der(const unsigned char *pem,
++        size_t pem_len, unsigned char *der, char **err);
++
++    int ngx_stream_lua_ffi_ssl_set_der_certificate(void *r,
++        const char *data, size_t len, char **err);
++
++    int ngx_stream_lua_ffi_ssl_set_der_private_key(void *r,
++        const char *data, size_t len, char **err);
++
++    int ngx_stream_lua_ffi_ssl_clear_certs(void *r, char **err);
++
++    void *ngx_stream_lua_ffi_parse_pem_cert(const unsigned char *pem,
++        size_t pem_len, char **err);
++
++    void *ngx_stream_lua_ffi_parse_pem_priv_key(const unsigned char *pem,
++        size_t pem_len, char **err);
++
++    int ngx_stream_lua_ffi_set_cert(void *r,
++        void *cdata, char **err);
++
++    int ngx_stream_lua_ffi_set_priv_key(void *r,
++        void *cdata, char **err);
++
++    void ngx_stream_lua_ffi_free_cert(void *cdata);
++
++    void ngx_stream_lua_ffi_free_priv_key(void *cdata);
++
++    int ngx_stream_lua_ffi_ssl_clear_certs(void *r, char **err);
++]]
++_EOC_
++    }
++
++    my $stream_config = $block->stream_config || '';
++    $stream_config .= <<'_EOC_';
++lua_package_path "$prefix/html/?.lua;;";
++_EOC_
++    $block->set_value("stream_config", $stream_config);
++});
++
++run_tests();
++
++__DATA__
++
++=== TEST 1: simple cert + private key
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            require "defines"
++            local ffi = require "ffi"
++
++            local errmsg = ffi.new("char *[1]")
++
++            local r = getfenv(0).__ngx_req
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_ssl_clear_certs(r, errmsg)
++
++            local f = assert(io.open("t/cert/test.crt", "rb"))
++            local cert = f:read("*all")
++            f:close()
++
++            local out = ffi.new("char [?]", #cert)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_cert_pem_to_der(cert, #cert, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local cert_der = ffi.string(out, rc)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_ssl_set_der_certificate(r, cert_der, #cert_der, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set DER cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            f = assert(io.open("t/cert/test.key", "rb"))
++            local pkey = f:read("*all")
++            f:close()
++
++            out = ffi.new("char [?]", #pkey)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_priv_key_pem_to_der(pkey, #pkey, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local pkey_der = ffi.string(out, rc)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_ssl_set_der_private_key(r, pkey_der, #pkey_der, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set DER priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++        }
++
++        ssl_certificate ../../cert/test2.crt;
++        ssl_certificate_key ../../cert/test2.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 2: ECDSA cert + private key
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            local ffi = require "ffi"
++            require "defines"
++
++            local errmsg = ffi.new("char *[1]")
++
++            local r = getfenv(0).__ngx_req
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_ssl_clear_certs(r, errmsg)
++
++            local f = assert(io.open("t/cert/test_ecdsa.crt", "rb"))
++            local cert = f:read("*all")
++            f:close()
++
++            local out = ffi.new("char [?]", #cert)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_cert_pem_to_der(cert, #cert, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local cert_der = ffi.string(out, rc)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_ssl_set_der_certificate(r, cert_der, #cert_der, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set DER cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            f = assert(io.open("t/cert/test_ecdsa.key", "rb"))
++            local pkey = f:read("*all")
++            f:close()
++
++            out = ffi.new("char [?]", #pkey)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_priv_key_pem_to_der(pkey, #pkey, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local pkey_der = ffi.string(out, rc)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_ssl_set_der_private_key(r, pkey_der, #pkey_der, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set DER priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++        }
++
++        ssl_certificate ../../cert/test2.crt;
++        ssl_certificate_key ../../cert/test2.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test_ecdsa.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 3: Handshake continue when cert_pem_to_der errors
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            local ffi = require "ffi"
++            require "defines"
++
++            local errmsg = ffi.new("char *[1]")
++
++            local r = getfenv(0).__ngx_req
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            local cert = "garbage data"
++
++            local out = ffi.new("char [?]", #cert)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_cert_pem_to_der(cert, #cert, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
++                        ffi.string(errmsg[0]))
++            end
++
++            local pkey = "garbage key data"
++
++            out = ffi.new("char [?]", #pkey)
++
++            local rc = ffi.C.ngx_stream_lua_ffi_priv_key_pem_to_der(pkey, #pkey, out, errmsg)
++            if rc < 1 then
++                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
++                        ffi.string(errmsg[0]))
++            end
++        }
++
++        ssl_certificate ../../cert/test.crt;
++        ssl_certificate_key ../../cert/test.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++failed to parse PEM cert: PEM_read_bio_X509_AUX()
++failed to parse PEM priv key: PEM_read_bio_PrivateKey() failed
++
++--- no_error_log
++[alert]
++
++
++
++=== TEST 4: simple cert + private key cdata
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            local ffi = require "ffi"
++            require "defines"
++
++            local errmsg = ffi.new("char *[1]")
++
++            local r = getfenv(0).__ngx_req
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_ssl_clear_certs(r, errmsg)
++
++            local f = assert(io.open("t/cert/test.crt", "rb"))
++            local cert_data = f:read("*all")
++            f:close()
++
++            local cert = ffi.C.ngx_stream_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
++            if not cert then
++                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local rc = ffi.C.ngx_stream_lua_ffi_set_cert(r, cert, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set cdata cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_free_cert(cert)
++
++            f = assert(io.open("t/cert/test.key", "rb"))
++            local pkey_data = f:read("*all")
++            f:close()
++
++            local pkey = ffi.C.ngx_stream_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
++            if pkey == nil then
++                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local rc = ffi.C.ngx_stream_lua_ffi_set_priv_key(r, pkey, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set cdata priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_free_priv_key(pkey)
++        }
++
++        ssl_certificate ../../cert/test2.crt;
++        ssl_certificate_key ../../cert/test2.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
++
++
++
++=== TEST 5: ECDSA cert + private key cdata
++--- stream_config
++    server {
++        listen unix:$TEST_NGINX_HTML_DIR/nginx.sock ssl;
++
++        ssl_certificate_by_lua_block {
++            collectgarbage()
++
++            local ffi = require "ffi"
++            require "defines"
++
++            local errmsg = ffi.new("char *[1]")
++
++            local r = getfenv(0).__ngx_req
++            if not r then
++                ngx.log(ngx.ERR, "no request found")
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_ssl_clear_certs(r, errmsg)
++
++            local f = assert(io.open("t/cert/test_ecdsa.crt", "rb"))
++            local cert_data = f:read("*all")
++            f:close()
++
++            local cert = ffi.C.ngx_stream_lua_ffi_parse_pem_cert(cert_data, #cert_data, errmsg)
++            if not cert then
++                ngx.log(ngx.ERR, "failed to parse PEM cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local rc = ffi.C.ngx_stream_lua_ffi_set_cert(r, cert, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set cdata cert: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_free_cert(cert)
++
++            f = assert(io.open("t/cert/test_ecdsa.key", "rb"))
++            local pkey_data = f:read("*all")
++            f:close()
++
++            local pkey = ffi.C.ngx_stream_lua_ffi_parse_pem_priv_key(pkey_data, #pkey_data, errmsg)
++            if pkey == nil then
++                ngx.log(ngx.ERR, "failed to parse PEM priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            local rc = ffi.C.ngx_stream_lua_ffi_set_priv_key(r, pkey, errmsg)
++            if rc ~= 0 then
++                ngx.log(ngx.ERR, "failed to set cdata priv key: ",
++                        ffi.string(errmsg[0]))
++                return
++            end
++
++            ffi.C.ngx_stream_lua_ffi_free_priv_key(pkey)
++        }
++
++        ssl_certificate ../../cert/test2.crt;
++        ssl_certificate_key ../../cert/test2.key;
++
++        return 'it works!\n';
++    }
++--- stream_server_config
++    lua_ssl_trusted_certificate ../../cert/test_ecdsa.crt;
++
++    content_by_lua_block {
++        do
++            local sock = ngx.socket.tcp()
++
++            sock:settimeout(2000)
++
++            local ok, err = sock:connect("unix:$TEST_NGINX_HTML_DIR/nginx.sock")
++            if not ok then
++                ngx.say("failed to connect: ", err)
++                return
++            end
++
++            ngx.say("connected: ", ok)
++
++            local sess, err = sock:sslhandshake(nil, "test.com", true)
++            if not sess then
++                ngx.say("failed to do SSL handshake: ", err)
++                return
++            end
++
++            ngx.say("ssl handshake: ", type(sess))
++
++            while true do
++                local line, err = sock:receive()
++                if not line then
++                    -- ngx.say("failed to receive response status line: ", err)
++                    break
++                end
++
++                ngx.say("received: ", line)
++            end
++
++            local ok, err = sock:close()
++            ngx.say("close: ", ok, " ", err)
++        end  -- do
++        -- collectgarbage()
++    }
++
++--- stream_response
++connected: 1
++ssl handshake: userdata
++received: it works!
++close: 1 nil
++
++--- error_log
++lua ssl server name: "test.com"
++
++--- no_error_log
++[error]
++[alert]
+diff --git a/ngx_stream_lua-0.0.5/t/cert/test2.crt b/ngx_stream_lua-0.0.5/t/cert/test2.crt
+new file mode 100644
+index 0000000..edc3b0d
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/cert/test2.crt
+@@ -0,0 +1,16 @@
++-----BEGIN CERTIFICATE-----
++MIIChzCCAfACCQDjCkJpJUtZmjANBgkqhkiG9w0BAQUFADCBhjELMAkGA1UEBhMC
++VVMxEzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28x
++EjAQBgNVBAoMCU9wZW5SZXN0eTESMBAGA1UEAwwJdGVzdDIuY29tMSIwIAYJKoZI
++hvcNAQkBFhNvcGVucmVzdHlAZ21haWwuY29tMCAXDTE0MDkxMzAwMTgxMFoYDzIx
++MTQwODIwMDAxODEwWjCBhjELMAkGA1UEBhMCVVMxEzARBgNVBAgMCkNhbGlmb3Ju
++aWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xEjAQBgNVBAoMCU9wZW5SZXN0eTES
++MBAGA1UEAwwJdGVzdDIuY29tMSIwIAYJKoZIhvcNAQkBFhNvcGVucmVzdHlAZ21h
++aWwuY29tMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDy+OVI2u5NBOeB2Cyz
++Gnwy9b7Ao4CSi05XtUxh2IoVdzYZz6c4PFb9C1ad52LDdRStiQT5A7+RKLj6Kr7f
++JrKFziJxMy4g4Kdn9G659vE7CWu/UAVjRUtc+mTBAEfjdbumizmHLG7DmnNhGl3R
++NGiVNLsUInSMGfUlJRzZJXhI4QIDAQABMA0GCSqGSIb3DQEBBQUAA4GBAEMmRvyN
++N7uE24Tc6TR19JadNHK8g3YGktRoXWiqd/y0HY4NRPgvnK/nX7CY/wXa1j+uDO8K
++e6/Ldm5RZrjtvfHJmTSAu8zkqTJz8bqRDH7kzL5Ni2Ky2x8r9dtB0ImpOiSlwvZN
++snMvbrxEdwBiqlC9prV2f9aG+ACo1KnPL0j6
++-----END CERTIFICATE-----
+diff --git a/ngx_stream_lua-0.0.5/t/cert/test2.key b/ngx_stream_lua-0.0.5/t/cert/test2.key
+new file mode 100644
+index 0000000..82ce6ce
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/cert/test2.key
+@@ -0,0 +1,15 @@
++-----BEGIN RSA PRIVATE KEY-----
++MIICXAIBAAKBgQDy+OVI2u5NBOeB2CyzGnwy9b7Ao4CSi05XtUxh2IoVdzYZz6c4
++PFb9C1ad52LDdRStiQT5A7+RKLj6Kr7fJrKFziJxMy4g4Kdn9G659vE7CWu/UAVj
++RUtc+mTBAEfjdbumizmHLG7DmnNhGl3RNGiVNLsUInSMGfUlJRzZJXhI4QIDAQAB
++AoGAEqBB83PVENJvbOTFiHVfUAjGtr3R/Wnwd4jOcjHHZB3fZ9sjVoxJntxfp3s1
++dwZir2rxlqVS6i3VAFiGiVTOGo2Vvzhw2J7f58twCECmnLb2f863AkGEYe4dAndD
++GHGD0WI0CBMD1sT18YCj561o0Wol5deWH0gM9pr2N3HkeIECQQD6hUKFlFhrpaHP
++WNJsl6BxgE6pB5kxLcMcpIQ7P+kHUvtyvCJl5QZJqPrpPGjRsAI5Ph92rpsp/zDp
++/IZNWGVjAkEA+Ele31Rt+XbV32MrLKZgBDBk+Pzss5LTn9fZ5v1k/7hrMk2VVWvk
++AD6n5QiGe/g59woANpPb1T9l956SBf0d6wJABTXOS17pc9uvANP1FGMW6CVl/Wf2
++DKrJ+weE5IKQwyE7r4gwIvRfbBrClSU3fNzvPueG2f4JphbzmnoxBNzIxwJAYivY
++mGNwzHehXx99/byXMHDWK+EN0n8WsBgP75Z3rekEcbJdfpYXY8Via1vwmOnwOW65
++4NqbzHix37PSNw37GwJBALxaGNpREO2Tk+oWOvsD2QyviMVae3mXAJHc6nLVdKDM
++q0YvDT6VdeNYYFTkAuzJacsVXOpn6AnUMFj0OBedMhc=
++-----END RSA PRIVATE KEY-----
+diff --git a/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.crt b/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.crt
+new file mode 100644
+index 0000000..b3e1e9f
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.crt
+@@ -0,0 +1,12 @@
++-----BEGIN CERTIFICATE-----
++MIIBtDCCAVoCCQD0QJnL8zpA0jAKBggqhkjOPQQDAjBhMQswCQYDVQQGEwJVUzET
++MBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzESMBAG
++A1UECgwJT3BlblJlc3R5MREwDwYDVQQDDAh0ZXN0LmNvbTAgFw0xNTA3MTcyMTUx
++NDFaGA8yMTE1MDYyMzIxNTE0MVowYTELMAkGA1UEBhMCVVMxEzARBgNVBAgMCkNh
++bGlmb3JuaWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xEjAQBgNVBAoMCU9wZW5S
++ZXN0eTERMA8GA1UEAwwIdGVzdC5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC
++AAT/OtGmlIlbtvvJ3OP0dm5lyEMCrMnpDTDjwBPnUZ2f+16LCmNsdtEJ0r0Sd4GM
++o4Lss2JpwzPy2SLGEj3KwGKSMAoGCCqGSM49BAMCA0gAMEUCIQDbNwDkq1FiqcRD
++XdbP1MPAc33N2IK9EDIfMgJ0nTL82wIgNZiL4xvCQe9UA0zC+JqHLnVCQHYAM9kI
++BbvzNrt0hEM=
++-----END CERTIFICATE-----
+diff --git a/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.key b/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.key
+new file mode 100644
+index 0000000..46eb72c
+--- /dev/null
++++ b/ngx_stream_lua-0.0.5/t/cert/test_ecdsa.key
+@@ -0,0 +1,5 @@
++-----BEGIN PRIVATE KEY-----
++MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg0vwBPGgv1hE6RnQo
++3imyoceR+5dLsKegodOlBwnWtbuhRANCAAT/OtGmlIlbtvvJ3OP0dm5lyEMCrMnp
++DTDjwBPnUZ2f+16LCmNsdtEJ0r0Sd4GMo4Lss2JpwzPy2SLGEj3KwGKS
++-----END PRIVATE KEY-----
+--
+2.19.1
+

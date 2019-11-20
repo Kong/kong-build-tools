@@ -1,0 +1,25 @@
+From a6afd31d32b31cf67afb13873deefb0c9d4e50a9 Mon Sep 17 00:00:00 2001
+From: James Callahan <james@konghq.com>
+Date: Tue, 11 Sep 2018 10:34:53 -0700
+Subject: [PATCH 4/9] inject req time api
+
+Signed-off-by: Aapo Talvensaari <aapo.talvensaari@gmail.com>
+---
+ ngx_stream_lua-0.0.7/src/ngx_stream_lua_util.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ngx_stream_lua-0.0.7/src/ngx_stream_lua_util.c b/ngx_stream_lua-0.0.6/src/ngx_stream_lua_util.c
+index 313a8f4..f47a574 100644
+--- a/ngx_stream_lua-0.0.7/src/ngx_stream_lua_util.c
++++ b/ngx_stream_lua-0.0.7/src/ngx_stream_lua_util.c
+@@ -1955,6 +1955,7 @@ ngx_stream_lua_inject_req_api(ngx_log_t *log, lua_State *L)
+     lua_pushcfunction(L, ngx_stream_lua_req_socket);
+     lua_setfield(L, -2, "socket");
+
++    ngx_stream_lua_inject_req_time_api(L);
+
+     lua_setfield(L, -2, "req");
+ }
+--
+2.19.1
+

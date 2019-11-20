@@ -1,0 +1,264 @@
+diff -ru a/nginx-1.15.8/src/core/ngx_connection.c b/nginx-1.15.8/src/core/ngx_connection.c
+--- a/nginx-1.15.8/src/core/ngx_connection.c	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/core/ngx_connection.c	2018-08-02 15:22:53.652819986 +1000
+@@ -560,6 +560,51 @@
+             }
+ #endif
+
++#if (NGX_HAVE_TRANSPARENT_PROXY && __linux)
++            /* Don't need to set on FreeBSD or OSX */
++
++            if (ls[i].transparent && !ngx_test_config) {
++
++                int transparent = 1;
++
++                switch (ls[i].sockaddr->sa_family) {
++
++                case AF_INET:
++
++                    if (setsockopt(s, IPPROTO_IP, IP_TRANSPARENT,
++                                   (const void *) &transparent, sizeof(int)) == -1)
++                    {
++                        ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
++                                      "setsockopt(IP_TRANSPARENT) %V failed",
++                                      &ls[i].addr_text);
++                        return NGX_ERROR;
++                    }
++
++                    break;
++
++#if (NGX_HAVE_INET6)
++
++                case AF_INET6:
++
++#if NGX_HAVE_IPV6_TRANSPARENT
++                    if (setsockopt(s, IPPROTO_IPV6, IPV6_TRANSPARENT,
++                                   (const void *) &transparent, sizeof(int)) == -1)
++#endif
++                    {
++                        ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
++                                      "setsockopt(IPV6_TRANSPARENT) %V failed",
++                                      &ls[i].addr_text);
++                        return NGX_ERROR;
++                    }
++
++                    break;
++
++#endif /* NGX_HAVE_INET6 */
++
++                }
++            }
++#endif /* NGX_HAVE_TRANSPARENT_PROXY */
++
+ #if (NGX_HAVE_INET6 && defined IPV6_V6ONLY)
+
+             if (ls[i].sockaddr->sa_family == AF_INET6) {
+diff -ru a/nginx-1.15.8/src/core/ngx_connection.h b/nginx-1.15.8/src/core/ngx_connection.h
+--- a/nginx-1.15.8/src/core/ngx_connection.h	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/core/ngx_connection.h	2018-08-02 13:57:14.579715578 +1000
+@@ -74,6 +74,10 @@
+ #endif
+     unsigned            reuseport:1;
+     unsigned            add_reuseport:1;
++
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++    unsigned            transparent:1;
++#endif
+     unsigned            keepalive:2;
+
+     unsigned            deferred_accept:1;
+diff -ru a/nginx-1.15.8/src/event/ngx_event_accept.c b/nginx-1.15.8/src/event/ngx_event_accept.c
+--- a/nginx-1.15.8/src/event/ngx_event_accept.c	2018-05-15 06:24:38.000000000 +1000
++++ b/nginx-1.15.8/src/event/ngx_event_accept.c	2018-08-02 15:11:02.332851640 +1000
+@@ -227,6 +227,13 @@
+         c->local_sockaddr = ls->sockaddr;
+         c->local_socklen = ls->socklen;
+
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++        if (ls->transparent) {
++            c->local_sockaddr = NULL;
++            c->local_socklen = 0;
++        }
++#endif
++
+ #if (NGX_HAVE_UNIX_DOMAIN)
+         if (c->sockaddr->sa_family == AF_UNIX) {
+             c->tcp_nopush = NGX_TCP_NOPUSH_DISABLED;
+diff -ru a/nginx-1.15.8/src/http/ngx_http.c b/nginx-1.15.8/src/http/ngx_http.c
+--- a/nginx-1.15.8/src/http/ngx_http.c	2018-05-15 06:24:38.000000000 +1000
++++ b/nginx-1.15.8/src/http/ngx_http.c	2018-08-02 13:59:39.696375794 +1000
+@@ -1772,6 +1772,10 @@
+     ls->reuseport = addr->opt.reuseport;
+ #endif
+
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++    ls->transparent = addr->opt.transparent;
++#endif
++
+     return ls;
+ }
+
+diff -ru a/nginx-1.15.8/src/http/ngx_http_core_module.c b/nginx-1.15.8/src/http/ngx_http_core_module.c
+--- a/nginx-1.15.8/src/http/ngx_http_core_module.c	2018-05-15 06:24:38.000000000 +1000
++++ b/nginx-1.15.8/src/http/ngx_http_core_module.c	2018-08-02 14:03:29.763032192 +1000
+@@ -3986,6 +3986,18 @@
+             continue;
+         }
+
++        if (ngx_strcmp(value[n].data, "transparent") == 0) {
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++            lsopt.transparent = 1;
++            continue;
++#else
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "transparent is not supported "
++                               "on this platform");
++            return NGX_CONF_ERROR;
++#endif
++        }
++
+         if (ngx_strcmp(value[n].data, "ssl") == 0) {
+ #if (NGX_HTTP_SSL)
+             lsopt.ssl = 1;
+diff -ru a/nginx-1.15.8/src/http/ngx_http_core_module.h b/nginx-1.15.8/src/http/ngx_http_core_module.h
+--- a/nginx-1.15.8/src/http/ngx_http_core_module.h	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/http/ngx_http_core_module.h	2018-08-02 14:24:00.302977383 +1000
+@@ -79,6 +79,9 @@
+ #endif
+     unsigned                   deferred_accept:1;
+     unsigned                   reuseport:1;
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++    unsigned                   transparent:1;
++#endif
+     unsigned                   so_keepalive:2;
+     unsigned                   proxy_protocol:1;
+
+diff -ru a/nginx-1.15.8/src/http/ngx_http_request.c b/nginx-1.15.8/src/http/ngx_http_request.c
+--- a/nginx-1.15.8/src/http/ngx_http_request.c	2018-05-15 06:24:38.000000000 +1000
++++ b/nginx-1.15.8/src/http/ngx_http_request.c	2018-08-02 15:08:29.969525091 +1000
+@@ -230,7 +230,11 @@
+
+     port = c->listening->servers;
+
+-    if (port->naddrs > 1) {
++    if (port->naddrs > 1
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++        || c->listening->transparent
++#endif
++    ) {
+
+         /*
+          * there are several addresses on this port and one of them
+diff -ru a/nginx-1.15.8/src/stream/ngx_stream.c b/nginx-1.15.8/src/stream/ngx_stream.c
+--- a/nginx-1.15.8/src/stream/ngx_stream.c	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/stream/ngx_stream.c	2018-08-02 14:00:06.753041252 +1000
+@@ -513,6 +513,9 @@
+ #if (NGX_HAVE_REUSEPORT)
+             ls->reuseport = addr[i].opt.reuseport;
+ #endif
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++            ls->transparent = addr[i].opt.transparent;
++#endif
+
+             stport = ngx_palloc(cf->pool, sizeof(ngx_stream_port_t));
+             if (stport == NULL) {
+diff -ru a/nginx-1.15.8/src/stream/ngx_stream_core_module.c b/nginx-1.15.8/src/stream/ngx_stream_core_module.c
+--- a/nginx-1.15.8/src/stream/ngx_stream_core_module.c	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/stream/ngx_stream_core_module.c	2018-08-02 14:29:10.122963611 +1000
+@@ -738,6 +738,18 @@
+             continue;
+         }
+
++        if (ngx_strcmp(value[i].data, "transparent") == 0) {
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++            ls->transparent = 1;
++            continue;
++#else
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "transparent is not supported "
++                               "on this platform");
++            return NGX_CONF_ERROR;
++#endif
++        }
++
+         if (ngx_strcmp(value[i].data, "ssl") == 0) {
+ #if (NGX_STREAM_SSL)
+             ngx_stream_ssl_conf_t  *sslcf;
+diff -ru a/nginx-1.15.8/src/stream/ngx_stream.h b/nginx-1.15.8/src/stream/ngx_stream.h
+--- a/nginx-1.15.8/src/stream/ngx_stream.h	2018-05-15 06:24:38.000000000 +1000
++++ b/nginx-1.15.8/src/stream/ngx_stream.h	2018-08-02 14:24:16.022976681 +1000
+@@ -55,6 +55,9 @@
+     unsigned                       ipv6only:1;
+ #endif
+     unsigned                       reuseport:1;
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++    unsigned                       transparent:1;
++#endif
+     unsigned                       so_keepalive:2;
+     unsigned                       proxy_protocol:1;
+ #if (NGX_HAVE_KEEPALIVE_TUNABLE)
+diff -ru a/nginx-1.15.8/src/stream/ngx_stream_handler.c b/nginx-1.15.8/src/stream/ngx_stream_handler.c
+--- a/nginx-1.15.8/src/stream/ngx_stream_handler.c	2017-10-26 16:42:53.000000000 +1100
++++ b/nginx-1.15.8/src/stream/ngx_stream_handler.c	2018-08-02 15:08:32.192858326 +1000
+@@ -42,7 +42,11 @@
+
+     port = c->listening->servers;
+
+-    if (port->naddrs > 1) {
++    if (port->naddrs > 1
++#if (NGX_HAVE_TRANSPARENT_PROXY)
++        || c->listening->transparent
++#endif
++    ) {
+
+         /*
+          * There are several addresses on this port and one of them
+diff -ru a/nginx-1.15.8/auto/os/linux b/nginx-1.15.8/auto/os/linux
+--- a/nginx-1.15.8/auto/os/linux	2018-05-14 17:24:38.000000000 -0300
++++ b/nginx-1.15.8/auto/os/linux	2018-10-31 12:20:12.343502288 -0300
+@@ -210,3 +210,16 @@
+ CC_AUX_FLAGS="$cc_aux_flags -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64"
+
+ DTRACE_FROM_SYSTEMTAP=YES
++
++
++# IPV6_TRANSPARENT
++
++ngx_feature="IPV6_TRANSPARENT"
++ngx_feature_name="NGX_HAVE_IPV6_TRANSPARENT"
++ngx_feature_run=no
++ngx_feature_incs="#include <linux/in6.h>"
++ngx_feature_path=
++ngx_feature_libs=
++ngx_feature_test="int optname = IPV6_TRANSPARENT;
++                  (void) optname"
++. auto/feature
+diff -ru a/nginx-1.15.8/src/os/unix/ngx_linux_config.h b/nginx-1.15.8/src/os/unix/ngx_linux_config.h
+--- a/nginx-1.15.8/src/os/unix/ngx_linux_config.h	2018-10-31 12:26:52.689485871 -0300
++++ b/nginx-1.15.8/src/os/unix/ngx_linux_config.h	2018-10-31 12:26:55.439485758 -0300
+@@ -42,9 +42,7 @@
+ #include <sched.h>
+
+ #include <sys/socket.h>
+-#include <netinet/in.h>
+ #include <netinet/tcp.h>        /* TCP_NODELAY, TCP_CORK */
+-#include <arpa/inet.h>
+ #include <netdb.h>
+ #include <sys/un.h>
+
+@@ -61,6 +59,15 @@
+ #include <ngx_auto_config.h>
+
+
++#if (NGX_HAVE_IPV6_TRANSPARENT)
++#include <linux/in6.h>
++#endif
++
++
++#include <netinet/in.h>
++#include <arpa/inet.h>
++
++
+ #if (NGX_HAVE_POSIX_SEM)
+ #include <semaphore.h>
+ #endif
