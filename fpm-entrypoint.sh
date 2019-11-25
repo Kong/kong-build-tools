@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -e
-set -x
+set -o errexit
 
 cd /tmp/build
 
@@ -50,5 +49,9 @@ else
     --url 'https://getkong.org/' usr etc \
   && mkdir /output/ \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
+  if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
+    gpg --import /kong.private.asc
+    echo "$PRIVATE_KEY_PASSPHRASE" | rpm --addsign /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE} > /dev/null 2>&1
+  fi
 fi
 
