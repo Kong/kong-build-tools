@@ -7,7 +7,7 @@ services:
       - 15002:9000
       - 15003:9001
   redis:
-    image: redis:5.0.4-alpine
+    image: redis:5.0.7-alpine
     ports:
       - 6379:6379
     expose:
