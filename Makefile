@@ -266,7 +266,7 @@ test-kong: kong-test-container
 	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh
 
-release-kong:
+release-kong: test
 	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -288,7 +288,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: setup-tests build-test-container kong-test-container
+test: setup-tests build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
