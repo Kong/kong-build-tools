@@ -204,7 +204,7 @@ package-kong: actual-package-kong
 endif
 
 actual-package-kong: build-kong
-	$(DOCKER_COMMAND) -f Dockerfile.package \
+	@$(DOCKER_COMMAND) -f Dockerfile.package \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -213,6 +213,8 @@ actual-package-kong: build-kong
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
+	--build-arg PRIVATE_KEY_FILE=kong.private.gpg-key.asc \
+	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
 	-t kong/kong-build-tools:kong-packaged-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) .
 ifeq ($(BUILDX),false)
 	docker run -d --rm --name output kong/kong-build-tools:kong-packaged-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
