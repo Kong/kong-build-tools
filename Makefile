@@ -32,24 +32,9 @@ RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirem
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
-RESTY_CONFIG_OPTIONS ?= "--with-cc-opt='-I/tmp/openssl/include' \
-  --with-ld-opt='-L/tmp/openssl -Wl,-rpath,/usr/local/kong/lib' \
-  --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION} \
-  --with-pcre-jit \
-  --with-http_realip_module \
-  --with-http_ssl_module \
-  --with-http_stub_status_module \
-  --with-http_v2_module \
-  --with-stream_ssl_preread_module \
-  --with-stream_realip_module \
-  "
 LIBYAML_VERSION ?= 0.2.1
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
-
-ifeq ($(RESTY_IMAGE_BASE),alpine)
-	OPENSSL_EXTRA_OPTIONSs=" -no-async"
-endif
 
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
@@ -175,9 +160,7 @@ else
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
-	--build-arg OPENSSL_EXTRA_OPTIONS=$(OPENSSL_EXTRA_OPTIONS) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg RESTY_CONFIG_OPTIONS=$(RESTY_CONFIG_OPTIONS) \
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \

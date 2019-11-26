@@ -37,6 +37,7 @@ OPENSSL_PREFIX=/usr/local/kong \
 OPENSSL_DESTDIR=/tmp/build \
 OPENRESTY_RPATH=/usr/local/kong/lib \
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES \
+EDITION=$EDITION \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
