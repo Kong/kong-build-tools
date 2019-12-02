@@ -46,7 +46,8 @@ else
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
     --provides 'kong-community-edition' \
-    --url 'https://getkong.org/' usr etc \
+    --after-install '/after-install.sh' \
+    --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
