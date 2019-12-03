@@ -7,5 +7,3 @@ RUN apk update \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \
     libffi-dev git unzip tar openssh m4 xz gnupg openssl musl \
     linux-headers bsd-compat-headers bash
-
-RUN mkdir -p /tmp/build/lib

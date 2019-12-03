@@ -10,7 +10,7 @@ rocks_trees = {
 }
 " > $ROCKS_CONFIG
 
-rsync /tmp/build/* /
+cp -R /tmp/build/* /
 
 export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 export LUAROCKS_CONFIG=$ROCKS_CONFIG

@@ -23,6 +23,16 @@ if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -V" | grep "/work/pcre-${RESTY_PCRE_VERSION}"
 fi
 
+if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
+    cp output/*.deb kong.deb
+    docker run -d --rm --name systemd-ubuntu --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg -i /src/kong.deb || true"
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get install -f -y"
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
+    docker stop systemd-ubuntu
+fi
+
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
 

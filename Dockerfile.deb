@@ -26,8 +26,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         git \
         m4 \
         file \
-        ssh \
-        rsync
-
-RUN mkdir -p /tmp/build/lib/systemd/system/
-COPY kong.service /tmp/build/lib/systemd/system/kong.service
+        ssh
