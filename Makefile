@@ -72,17 +72,16 @@ endif
 
 # Cache gets automatically busted every week. Set this to unique value to skip the cache
 CACHE_BUSTER?=`date +%V`
-DOCKER_BASE_SUFFIX=$$(md5sum Dockerfile.${PACKAGE_TYPE} | cut -d' ' -f 1)${CACHE_BUSTER}
-OPENRESTY_DOCKER_SHA=$$(md5sum Dockerfile.openresty | cut -d' ' -f 1)
 REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(cd openresty-build-tools/ && git rev-parse --short HEAD)
-KONG_DOCKER_SHA=$$(md5sum Dockerfile.kong | cut -d' ' -f 1)$$(md5sum build-kong.sh | cut -d' ' -f 1)-${KONG_VERSION}
-DOCKER_OPENRESTY_SUFFIX=${OPENRESTY_DOCKER_SHA}${REQUIREMENTS_SHA}${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${CACHE_BUSTER}
-DOCKER_KONG_SUFFIX=${KONG_DOCKER_SHA}-${KONG_SHA}${CACHE_BUSTER}
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
-DOCKER_TEST_SUFFIX=${DOCKER_KONG_SUFFIX}-$$(md5sum Dockerfile.test | cut -d' ' -f 1)
+
+DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
+DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHES}-${CACHE_BUSTER}
+DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}-${KONG_SHA}-${CACHE_BUSTER}
+DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${CACHE_BUSTER}
 
 CACHE?=true
 
