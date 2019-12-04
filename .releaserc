@@ -8,6 +8,7 @@
         "headerPattern": '^(\w*)(?:\(([\w\$\.\-\* ]*)\))? (.*)$'
       }
     }],
-    '@semantic-release/github'
+    '@semantic-release/github',
+    '@semantic-release/release-notes-generator'
   ]
 }
