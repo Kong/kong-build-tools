@@ -14,15 +14,9 @@ ARG REDHAT_USERNAME
 ARG REDHAT_PASSWORD
 ARG RHEL="false"
 
-RUN if [ "$RHEL" = "true" ] ; then subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach ; fi
+RUN if [ "$RHEL" = "true" ] ; then yum -y install --disableplugin=subscription-manager perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils hostname unzip ; fi
 
-RUN yum -y install perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils hostname unzip
-
-RUN if [ "$RHEL" = "true" ] ; then \
-  subscription-manager remove --all \
-  && subscription-manager unregister \
-  && subscription-manager clean \
-  ; fi
+RUN if [ "$RHEL" = "false" ] ; then yum -y install perl perl-Time-HiRes gcc make unzip tar gzip shadow-utils hostname unzip ; fi
 
 RUN curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
   && make -C "/tmp/su-exec-${SU_EXEC_VERSION}" \
