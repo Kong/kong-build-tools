@@ -12,8 +12,8 @@ elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.amd64.rpm output/kong.rpm
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ] && [ "$RESTY_IMAGE_TAG" == "6" ]; then
   cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
-  docker pull registry.access.redhat.com/rhel${RESTY_IMAGE_TAG}
-  docker tag registry.access.redhat.com/rhel${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
+  docker pull registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi
+  docker tag registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi rhel:${RESTY_IMAGE_TAG}
   DOCKER_FILE="Dockerfile.rpm"
   RHEL=true
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
