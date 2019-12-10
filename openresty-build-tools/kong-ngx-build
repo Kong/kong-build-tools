@@ -435,6 +435,7 @@ main() {
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
           OPENRESTY_OPTS+=('--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module')
+          OPENRESTY_OPTS+=('--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream')
         fi
 
         if [ ! -z "$PCRE_VER" ]; then
