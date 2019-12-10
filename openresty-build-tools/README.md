@@ -27,14 +27,6 @@ Optional arguments:
       --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty.
                                      (Patching is enabled by default)
 
-      --openresty-patches <branch>   Specify an openresty-patches branch to use when applying patches.
-                                     (Defaults to "master")
-                                     NOTE: This option is mutually exclusive with --openresty-patches-dir.
-
-      --openresty-patches-dir <dir>  Specify the root directory of a local copy of openresty-patches
-                                     to use instead of checking out a branch from the repository.
-                                     NOTE: This option is mutually exclusive with --openresty-patches.
-
       --no-kong-nginx-module         Do not include lua-kong-nginx-module while patching and compiling OpenResty.
                                      (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)
 
