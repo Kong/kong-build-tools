@@ -35,6 +35,7 @@ fi
 
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ls -la /usr/local/bin/go-pluginserver"
 
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
