@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools
 
+ADD ./test/kong_license.json /etc/kong/license.json
 
 COPY kong /kong
 RUN mkdir -p /kong/servroot/logs

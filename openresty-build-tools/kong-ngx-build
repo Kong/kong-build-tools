@@ -416,7 +416,7 @@ main() {
         OPENRESTY_OPTS=(
           "--prefix=$OPENRESTY_PREFIX"
           "--with-cc-opt='-I$OPENSSL_INSTALL/include'"
-          "--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'"
+          "--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
           "--with-pcre-jit"
           "--with-http_ssl_module"
           "--with-http_realip_module"

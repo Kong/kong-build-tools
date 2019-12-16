@@ -33,6 +33,13 @@ pushd /kong
 
   mkdir -p /tmp/plugin
   
+  /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
+    CRYPTO_DIR=/usr/local/kong \
+    OPENSSL_DIR=/usr/local/kong \
+    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
+    YAML_INCDIR=/tmp/yaml \
+    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
+  
   grep git@github.com .requirements | while read -r line ; do
     rm -rf /tmp/plugin || true
     echo "Processing $line"
@@ -41,7 +48,7 @@ pushd /kong
     version=$(echo $line | cut -d " " -f2)
     git clone --branch $version --recursive $repo_url /tmp/plugin/
     cd /tmp/plugin/
-    /tmp/build/usr/local/bin/luarocks make kong-*.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
+    /tmp/build/usr/local/bin/luarocks make *.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
     cd /kong
   done
   
@@ -56,13 +63,6 @@ pushd /kong
     directory=$(echo $line | cut -d " " -f2)
     mv /tmp/plugin/dist /tmp/build/usr/local/kong/$directory
   done
-
-  /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
-    CRYPTO_DIR=/usr/local/kong \
-    OPENSSL_DIR=/usr/local/kong \
-    YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
-    YAML_INCDIR=/tmp/yaml \
-    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/

@@ -18,7 +18,7 @@ services:
       timeout: 10s
       retries: 10
   kong:
-    image: kong/kong-build-tools:test
+    image: mashape/kong-build-tools:test
     privileged: true
     network_mode: host
     container_name: kong
