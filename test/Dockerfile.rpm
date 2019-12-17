@@ -23,7 +23,7 @@ RUN curl -sL "${SU_EXEC_URL}" | tar -C /tmp -zxf - \
   && cp "/tmp/su-exec-${SU_EXEC_VERSION}/su-exec" /usr/bin \
   && useradd --uid 1337 kong
 
-COPY ./kong_license.json /etc/kong/license.json
+ADD ./test/kong_license.json /etc/kong/license.json
 COPY output/kong.rpm /kong.rpm
 RUN rpm -i kong.rpm
 

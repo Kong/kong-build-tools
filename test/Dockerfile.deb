@@ -33,7 +33,7 @@ RUN if [ "$KONG_UID" != "1337" ] ; then chown -R ${USER}:0 /usr/local/kong \
   && chmod -R 777 /usr/local/share \
   && chmod -R 777 /usr/local/bin ; fi
 
-COPY test/kong_license.json /etc/kong/license.json
+ADD ./test/kong_license.private /etc/kong/license.json
 COPY test/docker-entrypoint.sh /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
