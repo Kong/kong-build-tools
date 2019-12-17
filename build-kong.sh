@@ -54,11 +54,13 @@ pushd /kong
   
   grep https://api.github.com .requirements | while read -r line ; do
     rm -rf /tmp/plugin || true
+    mkdir -p /tmp/plugin
     rm -rf /tmp/release.tar.gz || true
     echo "Processing $line"
     github_url=$(echo $line | cut -d " " -f1)
-    asset_url=`curl $github_url?access_token=$GITHUB_ACCESSTOKEN | grep \/assets\/ | cut -d '"' -f 4`
-    curl -L -o /tmp/release.tar.gz -H 'Accept:application/octet-stream' $asset_url?access_token=$GITHUB_ACCESSTOKEN
+    github_token=$(echo $line | cut -d " " -f3)
+    asset_url=`curl $github_url?access_token=$github_token | grep \/assets\/ | cut -d '"' -f 4`
+    curl -fsSLo /tmp/release.tar.gz -H 'Accept:application/octet-stream' $asset_url?access_token=$github_token
     tar -xzvf /tmp/release.tar.gz --directory /tmp/plugin
     directory=$(echo $line | cut -d " " -f2)
     mv /tmp/plugin/dist /tmp/build/usr/local/kong/$directory

@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -e
-set -x
+set -ex
 
 if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
   exit 0
@@ -10,31 +9,30 @@ fi
 USE_TTY="-t"
 test -t 1 && USE_TTY="-it"
 
-if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -v" | grep -q ${RESTY_VERSION}
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "/usr/local/kong/bin/openssl version" | grep -q ${RESTY_OPENSSL_VERSION}
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks --version" | grep -q ${RESTY_LUAROCKS_VERSION}
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/bin/luajit"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/include/luajit-2.1"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config" | grep -q "/usr/local/openresty/luajit/lib"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/kong/lib/libssl.so.1.1"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/kong/lib/libcrypto.so.1.1"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty" | grep -q "/usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -V" | grep "/work/pcre-${RESTY_PCRE_VERSION}"
-fi
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version" | grep -q ${RESTY_OPENSSL_VERSION}
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version" | grep -q ${RESTY_LUAROCKS_VERSION}
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks config" | grep -q "/usr/local/openresty/luajit/bin/luajit"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks config" | grep -q "/usr/local/openresty/luajit/include/luajit-2.1"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks config" | grep -q "/usr/local/openresty/luajit/lib"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty" | grep -q "/usr/local/kong/lib/libssl.so.1.1"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty" | grep -q "/usr/local/kong/lib/libcrypto.so.1.1"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty" | grep -q "/usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -V" | grep "/work/pcre-${RESTY_PCRE_VERSION}"
 
 if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
+    docker stop systemd-ubuntu || true
+    docker rm -f systemd-ubuntu || true
     cp output/*.deb kong.deb
     docker run -d --rm --name systemd-ubuntu --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "mkdir -p /etc/kong"
+    docker cp test/kong_license.private systemd-ubuntu:/etc/kong/license.json
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg -i /src/kong.deb || true"
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get install -f -y"
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
     docker stop systemd-ubuntu
 fi
-
-docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks --version"
-docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "luarocks install version"
 
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
@@ -56,7 +54,12 @@ while [[ "$(kubectl get pod --all-namespaces | grep -v Running | grep -v Complet
   sleep 10;
 done
 
-helm install --dep-up --version 0.14.2 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG} stable/kong
+if [[ "$EDITION" == "enterprise" ]]; then
+  kubectl create secret generic kong-enterprise-license --from-file=test/kong_license.private
+  helm install --dep-up --version 0.14.2 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG},enterprise.enabled=true stable/kong
+else
+  helm install --dep-up --version 0.14.2 --name kong --set image.repository=localhost,image.tag=${KONG_TEST_CONTAINER_TAG} stable/kong
+fi
 
 while [[ "$(kubectl get deployment kong-kong | tail -n +2 | awk '{print $4}')" != 1 ]]; do
   echo "waiting for Kong to be ready"
