@@ -43,8 +43,6 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTL
 ENV GOLANG_VERSION 1.13.5
 
 RUN set -eux; \
-	\
-# this "case" statement is generated via "update.sh"
 	dpkgArch="$(dpkg --print-architecture || echo amd64)"; \
 	case "${dpkgArch##*-}" in \
 		amd64) goRelArch='linux-amd64'; goRelSha256='512103d7ad296467814a6e3f635631bd35574cab3369a97a323c9a585ccaa569' ;; \
@@ -78,8 +76,12 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 RUN mkdir -p /tmp/go/src/github.com/kong/ \
     && git clone --branch ${KONG_GO_PLUGINSERVER_VERSION} https://github.com/Kong/go-pluginserver.git /tmp/go/src/github.com/kong/go-pluginserver \
     && cd /tmp/go/src/github.com/kong/go-pluginserver \
-    && go get ./... \
-    && make build \
+    && go get ./...
+    
+RUN set -eux; \
+	dpkgArch="$(dpkg --print-architecture || echo amd64)" \
+	&& cd /tmp/go/src/github.com/kong/go-pluginserver \
+    && make build GOARCH=$dpkgArch GOOS=linux \
     && mkdir -p /tmp/build/usr/local/bin/ \
     && mv go-pluginserver /tmp/build/usr/local/bin/
 
