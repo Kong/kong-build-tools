@@ -19,6 +19,7 @@ docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/loca
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty" | grep -q "/usr/local/kong/lib/libcrypto.so.1.1"
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty" | grep -q "/usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
 docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -V" | grep "/work/pcre-${RESTY_PCRE_VERSION}"
+docker run ${USE_TTY} --rm ${KONG_TEST_CONTAINER_NAME} /bin/sh -c "ls -la /usr/local/bin/go-pluginserver"
 
 if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
     docker stop systemd-ubuntu || true
