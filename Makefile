@@ -227,6 +227,7 @@ build-kong: actual-build-kong
 endif
 
 actual-build-kong:
+	touch id_rsa.private
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
@@ -315,6 +316,7 @@ endif
 
 build-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
+	touch test/kong_license.private
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
