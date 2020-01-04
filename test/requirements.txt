@@ -25,5 +25,5 @@ six==1.13.0
 stevedore==1.31.0
 tavern==0.34.0
 urllib3==1.25.7
-wcwidth==0.1.7
+wcwidth==0.1.8
 zipp==0.6.0
