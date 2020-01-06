@@ -11,7 +11,6 @@ LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
-OPENRESTY_PATCHES_DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"/../openresty-patches)
 KONG_NGINX_MODULE=master
 DEBUG=0
 NPROC=
@@ -26,6 +25,7 @@ main() {
   OS=$(uname -s)
   NPROC=$(n_proc)
   SCRIPT_PATH=$(dirname "$(canon_path $0)")
+  OPENRESTY_PATCHES_DIR=$(canon_path "$SCRIPT_PATH/../openresty-patches")
 
   while (( "$#" )); do
     case "$1" in
