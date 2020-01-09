@@ -10,7 +10,7 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
+                        KONG_SOURCE = "next"
                         KONG_SOURCE_LOCATION = "/tmp/kong"
                         DOCKERHUB = credentials('dockerhub')
                         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
