@@ -12,8 +12,12 @@ pipeline {
                     environment {
                         KONG_SOURCE = "master"
                         KONG_SOURCE_LOCATION = "/tmp/kong"
+                        DOCKERHUB = credentials('dockerhub')
+                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
+                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
                     }
                     steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'KONG_TEST_DATABASE=postgres TEST_SUITE=integration make test-kong'
                         sh 'KONG_TEST_DATABASE=cassandra TEST_SUITE=integration make test-kong'
