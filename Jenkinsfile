@@ -1,8 +1,28 @@
 pipeline {
     agent none
     stages {
-        stage('Test Builds') {
+        stage('Testing') {
             parallel {
+                stage('Kong Testing'){
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        KONG_SOURCE = "master"
+                        KONG_SOURCE_LOCATION = "/tmp/kong"
+                    }
+                    steps {
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'KONG_TEST_DATABASE=postgres TEST_SUITE=integration make test-kong'
+                        sh 'KONG_TEST_DATABASE=cassandra TEST_SUITE=integration make test-kong'
+                        sh 'KONG_TEST_DATABASE=off TEST_SUITE=dbless make test-kong'
+                        sh 'KONG_TEST_DATABASE=postgres TEST_SUITE=plugins make test-kong'
+                        sh 'KONG_TEST_DATABASE=cassandra TEST_SUITE=plugins make test-kong'
+                        sh 'TEST_SUITE=pdk make test-kong'
+                    }
+                }
                 stage('RedHat Builds'){
                     agent {
                         node {
