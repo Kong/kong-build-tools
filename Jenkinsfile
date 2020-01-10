@@ -104,7 +104,7 @@ pipeline {
                 }
             }
         }
-        stage('Test Builds') {
+        stage('Test Release') {
             parallel {
                 stage('RedHat Builds'){
                     agent {
@@ -206,6 +206,31 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export BUILDX=false RESTY_IMAGE_TAG=bionic && make package-kong && make test'
                         sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make setup-build && make package-kong && make test'
+                    }
+                }
+                stage('Other Releases') {
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        KONG_SOURCE = "master"
+                        KONG_SOURCE_LOCATION = "/tmp/kong"
+                        DOCKERHUB = credentials('dockerhub')
+                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
+                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                    }
+                    steps {
+                        sh 'make setup-kong-build-tools'
+                        sh 'mkdir -p $HOME/bin'
+                        sh 'sudo ln -s $HOME/bin/kubectl /usr/local/bin/kubectl'
+                        sh 'sudo ln -s $HOME/bin/kind /usr/local/bin/kind'
+                        dir('../kong-build-tools'){ sh 'make setup-ci' }
+                        sh 'PACKAGE_TYPE=src RESTY_IMAGE_BASE=src make release'
+                        sh 'PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=1 make release'
+                        sh 'PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 make release'
                     }
                 }
             }
