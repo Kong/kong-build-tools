@@ -9,6 +9,11 @@ pipeline {
     }
     stages {
         stage('Build') {
+            agent {
+                node {
+                    label 'docker-compose'
+                }
+            }
             steps {
                 sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                 sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
@@ -16,54 +21,80 @@ pipeline {
             }
         }
         stage('Test Kong') {
-            matrix {
-                axes {
-                    axis {
-                        name 'TEST_DATABASE'
-                        values 'off', 'postgres', 'cassandra'
-                    }
-                    axis {
-                        name 'TEST_SUITE'
-                        values 'dbless', 'integration', 'plugins', 'pdk'
-                    }
-                }
-                excludes {
-                    exclude {
-                        axis {
-                            name 'TEST_DATABASE'
-                            values 'off'
-                        }
-                        axis {
-                            name 'TEST_SUITE'
-                            notValues 'dbless'
-                        }
-                    }
-                    exclude {
-                        axis {
-                            name 'TEST_DATABASE'
-                            values 'postgres', 'cassandra'
-                        }
-                        axis {
-                            name 'TEST_SUITE'
-                            values 'dbless'
-                        }
-                    }
-                    exclude {
-                        axis {
-                            name 'TEST_DATABASE'
-                            values 'postgres', 'cassandra'
-                        }
-                        axis {
-                            name 'TEST_SUITE'
-                            values 'pdk'
-                        }
-                    }
-                }
-                stage('test'){
+            failFast true
+            parallel {
+                stage('pdk'){
                     agent {
                         node {
                             label 'docker-compose'
                         }
+                    }
+                    environment {
+                        TEST_SUITE = "pdk"
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('postgres'){
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = "postgres"
+                        TEST_SUITE = "integration"
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('postgres plugins'){
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = "postgres"
+                        TEST_SUITE = "plugins"
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('cassandra'){
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = "cassandra"
+                        TEST_SUITE = "integration"
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('cassandra plugins'){
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = "cassandra"
+                        TEST_SUITE = "plugins"
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
