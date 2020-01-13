@@ -257,6 +257,7 @@ kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) || \
 	( $(MAKE) build-kong  && $(DOCKER_COMMAND) -f Dockerfile.test \
+	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg KONG_SHA=${KONG_SHA} \
