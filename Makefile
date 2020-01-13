@@ -305,6 +305,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
 	RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
+	HOST=127.0.0.1 \
+	ADMIN_PORT=8444 \
+	PROXY_PORT=8000 \
 	./test/run_tests.sh
 endif
 
@@ -321,8 +324,8 @@ endif
 develop-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker run -it --network host --rm -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) \
-	-e ADMIN_URI="https://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-admin -o jsonpath='{.spec.ports[0].nodePort}'`" \
-	-e PROXY_URI="http://`kubectl get nodes --namespace default -o jsonpath='{.items[0].status.addresses[0].address}'`:`kubectl get svc --namespace default kong-kong-proxy -o jsonpath='{.spec.ports[0].nodePort}'`" \
+	-e ADMIN_URI="http://127.0.0.1:8001" \
+	-e PROXY_URI="http://127.0.0.1:8000" \
 	-v $$PWD/test:/app \
 	kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash
 endif
@@ -339,12 +342,16 @@ endif
 
 setup-tests: cleanup-tests
 ifneq ($(RESTY_IMAGE_BASE),src)
-	./.ci/setup_kind.sh
+	KONG_DOCKER_TAG=$(KONG_TEST_CONTAINER_NAME) docker-compose -f test/kong-tests-compose.yaml up -d
+	while ! curl localhost:8001; do \
+		echo "Waiting for Kong to be ready..."; \
+		sleep 5; \
+	done
 endif
 
 cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
-	-kind delete cluster
+	docker-compose -f test/kong-tests-compose.yaml down
 endif
 
 cleanup: cleanup-tests cleanup-build
