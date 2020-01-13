@@ -63,8 +63,7 @@ make build-test-container
 *Prerequisites:*
 
 - Docker
-- [Kind](https://github.com/kubernetes-sigs/kind)
-- [Helm](https://github.com/helm/helm)
+- Docker Compose
 
 ```
 make test
