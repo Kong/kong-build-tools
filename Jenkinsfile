@@ -4,6 +4,9 @@ pipeline {
         KONG_SOURCE = "next"
         KONG_SOURCE_LOCATION = "/tmp/kong"
     }
+    options {
+        retry(2)
+    }
     stages {
         stage('Test Builds') {
             parallel {
@@ -99,6 +102,9 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export BUILDX=false RESTY_IMAGE_TAG=bionic && make package-kong && make test'
                         sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make setup-build && make package-kong && make test'
+                    }
+                    post {
+                        sh 'make cleanup-build'
                     }
                 }
             }
