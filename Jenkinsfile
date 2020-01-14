@@ -1,5 +1,9 @@
 pipeline {
     agent none
+    environment {
+        KONG_SOURCE = "next"
+        KONG_SOURCE_LOCATION = "/tmp/kong"
+    }
     stages {
         stage('Test Builds') {
             parallel {
@@ -10,8 +14,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
                         DOCKERHUB = credentials('dockerhub')
@@ -34,8 +36,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
                         DOCKERHUB = credentials('dockerhub')
@@ -59,8 +59,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
                         DOCKERHUB = credentials('dockerhub')
@@ -84,9 +82,10 @@ pipeline {
                             label 'docker-compose'
                         }
                     }
+                    options {
+                        retry(2)
+                    }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         DOCKERHUB = credentials('dockerhub')
@@ -103,6 +102,11 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export BUILDX=false RESTY_IMAGE_TAG=bionic && make package-kong && make test'
                         sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make setup-build && make package-kong && make test'
+                    }
+                    post {
+                        always {
+                            sh 'make cleanup-build'
+                        }
                     }
                 }
             }
