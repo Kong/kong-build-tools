@@ -1,5 +1,9 @@
 pipeline {
     agent none
+    environment {
+        KONG_SOURCE = "next"
+        KONG_SOURCE_LOCATION = "/tmp/kong"
+    }
     stages {
         stage('Test Builds') {
             parallel {
@@ -10,8 +14,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
                         DOCKERHUB = credentials('dockerhub')
@@ -34,8 +36,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
                         DOCKERHUB = credentials('dockerhub')
@@ -59,8 +59,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
                         DOCKERHUB = credentials('dockerhub')
@@ -85,8 +83,6 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "master"
-                        KONG_SOURCE_LOCATION = "/tmp/kong"
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         DOCKERHUB = credentials('dockerhub')
