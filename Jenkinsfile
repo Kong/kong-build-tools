@@ -4,9 +4,6 @@ pipeline {
         KONG_SOURCE = "next"
         KONG_SOURCE_LOCATION = "/tmp/kong"
     }
-    options {
-        retry(2)
-    }
     stages {
         stage('Test Builds') {
             parallel {
@@ -85,6 +82,9 @@ pipeline {
                             label 'docker-compose'
                         }
                     }
+                    options {
+                        retry(2)
+                    }
                     environment {
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
@@ -104,7 +104,9 @@ pipeline {
                         sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make setup-build && make package-kong && make test'
                     }
                     post {
-                        sh 'make cleanup-build'
+                        always {
+                            sh 'make cleanup-build'
+                        }
                     }
                 }
             }
