@@ -3,6 +3,9 @@ pipeline {
     environment {
         KONG_SOURCE = "next"
         KONG_SOURCE_LOCATION = "/tmp/kong"
+        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
+        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
+        DOCKERHUB = credentials('dockerhub')
     }
     stages {
         stage('Test Builds') {
@@ -16,9 +19,6 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
-                        DOCKERHUB = credentials('dockerhub')
-                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
-                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
@@ -38,9 +38,6 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
-                        DOCKERHUB = credentials('dockerhub')
-                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
-                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
@@ -61,9 +58,6 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
-                        DOCKERHUB = credentials('dockerhub')
-                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
-                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
@@ -88,9 +82,6 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
-                        DOCKERHUB = credentials('dockerhub')
-                        DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
-                        DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         USER = 'travis'
                         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
