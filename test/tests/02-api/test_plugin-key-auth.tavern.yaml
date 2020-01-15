@@ -4,7 +4,6 @@ test_name: Test the key auth plugin
 stages:
   - name: Create a service
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services"
       method: POST
       json:
@@ -20,7 +19,6 @@ stages:
     max_retries: 1
   - name: Create a route
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services/{service_id:s}/routes"
       method: POST
       json:
@@ -37,7 +35,6 @@ stages:
     max_retries: 1
   - name: Enable the key-auth plugin
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services/keyauthservice/plugins/"
       method: POST
       json:
@@ -65,7 +62,6 @@ stages:
     max_retries: 1
   - name: Create a consumer
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/consumers/"
       method: POST
       json:
@@ -80,7 +76,6 @@ stages:
     max_retries: 1
   - name: Provision a key for the consumer
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason/key-auth"
       method: POST    
       json:
@@ -109,7 +104,6 @@ stages:
     max_retries: 1
   - name: Delete the key-auth key
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason/key-auth/{key_id:s}"
       method: DELETE
     response:
@@ -118,7 +112,6 @@ stages:
     max_retries: 1
   - name: Delete the consumer
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason"
       method: DELETE
     response:
@@ -127,7 +120,6 @@ stages:
     max_retries: 1
   - name: Delete the route
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes/keyauthroute"
       method: DELETE
     response:
@@ -136,7 +128,6 @@ stages:
     max_retries: 1
   - name: Delete the service
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services/keyauthservice"
       method: DELETE
     response:

@@ -66,13 +66,14 @@ RUN set -eux; \
 		exit 1; \
 	fi; \
 	\
-	export PATH="/usr/local/go/bin:$PATH"; \
-	go version 
+	export PATH="/usr/local/go/bin:$PATH"
+
 
 ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
+RUN go version
 RUN mkdir -p /tmp/go/src/github.com/kong/ \
     && git clone --branch ${KONG_GO_PLUGINSERVER_VERSION} https://github.com/Kong/go-pluginserver.git /tmp/go/src/github.com/kong/go-pluginserver \
     && cd /tmp/go/src/github.com/kong/go-pluginserver \
