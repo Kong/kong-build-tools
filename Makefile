@@ -2,6 +2,7 @@
 
 export SHELL:=/bin/bash
 
+VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=bionic
 PACKAGE_TYPE?=deb
@@ -14,6 +15,7 @@ TEST_ADMIN_URI?=$(TEST_ADMIN_PROTOCOL)$(TEST_HOST):$(TEST_ADMIN_PORT)
 TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
+TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -22,8 +24,9 @@ KONG_CONFLICTS?="kong-enterprise-edition"
 KONG_LICENSE?="ASL 2.0"
 
 PRIVATE_REPOSITORY?=true
+KONG_TEST_CONTAINER_NAME=kong-tests
 KONG_TEST_CONTAINER_TAG?=5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-KONG_TEST_CONTAINER_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
+KONG_TEST_IMAGE_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_GO_PLUGINSERVER_VERSION ?= `grep KONG_GO_PLUGINSERVER_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -84,6 +87,8 @@ DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
 DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHES}-${CACHE_BUSTER}
 DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}
 DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${KONG_SHA}-${CACHE_BUSTER}
+
+KONG_BASE_IMAGE_NAME=kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 
 CACHE?=true
 
@@ -156,7 +161,7 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	PACKAGE_TYPE=rpm
 endif
 	$(CACHE_COMMAND) kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
-	( $(DOCKER_COMMAND) -f Dockerfile.$(PACKAGE_TYPE) \
+	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t kong/kong-build-tools:$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
@@ -168,7 +173,7 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else
 	$(CACHE_COMMAND) kong/kong-build-tools:openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-base ; \
-	$(DOCKER_COMMAND) -f Dockerfile.openresty \
+	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
@@ -206,7 +211,7 @@ package-kong: actual-package-kong
 endif
 
 actual-package-kong: build-kong
-	@$(DOCKER_COMMAND) -f Dockerfile.package \
+	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -225,7 +230,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f Dockerfile.scratch \
+	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -246,7 +251,7 @@ actual-build-kong:
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) kong/kong-build-tools:kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
-	$(DOCKER_COMMAND) -f Dockerfile.kong \
+	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
@@ -256,7 +261,7 @@ actual-build-kong:
 kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) kong/kong-build-tools:test-$(DOCKER_TEST_SUFFIX) || \
-	( $(MAKE) build-kong  && $(DOCKER_COMMAND) -f Dockerfile.test \
+	( $(MAKE) build-kong  && $(DOCKER_COMMAND) -f test/Dockerfile.test \
 	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
@@ -293,32 +298,32 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: setup-tests build-test-container
+test: build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
+	VERBOSE=$(VERBOSE) \
 	KONG_VERSION=$(KONG_VERSION) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
-	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	RESTY_VERSION=$(RESTY_VERSION) \
 	RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
 	RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
-	HOST=127.0.0.1 \
-	ADMIN_PORT=8444 \
-	PROXY_PORT=8000 \
+	CACHE_COMMAND="$(CACHE_COMMAND)" \
+	UPDATE_CACHE_COMMAND="$(UPDATE_CACHE_COMMAND)" \
+	TEST_SHA=$(TEST_SHA) \
+	PACKAGE_LOCATION=$(PWD)/output \
+	KONG_HOST=127.0.0.1 \
+	KONG_ADMIN_PORT=8444 \
+	KONG_PROXY_PORT=8000 \
+	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+	KONG_ADMIN_URI="http://$(TEST_HOST):$(TEST_ADMIN_PORT)" \
+	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
+	TEST_COMPOSE_PATH=$(TEST_COMPOSE_PATH) \
+	KONG_BASE_IMAGE_NAME=$(KONG_BASE_IMAGE_NAME) \
 	./test/run_tests.sh
-endif
-
-run_tests:
-ifneq ($(RESTY_IMAGE_BASE),src)
-	cd test && \
-	$(CACHE_COMMAND) kong/kong-build-tools:test-runner-$(TEST_SHA) || \
-	docker build -t kong/kong-build-tools:test-runner-$(TEST_SHA) -f Dockerfile.test_runner .
-	cd test && \
-	docker run -t --network host -e RESTY_VERSION=$(RESTY_VERSION) -e KONG_VERSION=$(KONG_VERSION) -e ADMIN_URI=$(TEST_ADMIN_URI) -e PROXY_URI=$(TEST_PROXY_URI) kong/kong-build-tools:test-runner-$(TEST_SHA) /bin/bash -c "py.test -p no:logging -p no:warnings test_*.tavern.yaml"
-	-$(UPDATE_CACHE_COMMAND) kong/kong-build-tools:test-runner-$(TEST_SHA)
 endif
 
 develop-tests:
@@ -336,13 +341,15 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	test/build_container.sh
 endif
 
 setup-tests: cleanup-tests
 ifneq ($(RESTY_IMAGE_BASE),src)
-	KONG_DOCKER_TAG=$(KONG_TEST_CONTAINER_NAME) docker-compose -f test/kong-tests-compose.yaml up -d
+	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
+	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
+		docker-compose -f test/kong-tests-compose.yaml up -d
 	while ! curl localhost:8001; do \
 		echo "Waiting for Kong to be ready..."; \
 		sleep 5; \

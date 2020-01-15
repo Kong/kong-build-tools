@@ -4,7 +4,6 @@ test_name: Smoke test Kong
 stages:
   - name: Check admin API is alive
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}"
       method: GET
     response:
@@ -13,7 +12,6 @@ stages:
     max_retries: 1
   - name: Create a service
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services"
       method: POST
       json:
@@ -27,7 +25,6 @@ stages:
     max_retries: 1
   - name: List the services
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/services"
       method: GET
     response:
@@ -39,7 +36,6 @@ stages:
     max_retries: 1
   - name: Create the route
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: POST
       json:
@@ -55,7 +51,6 @@ stages:
     max_retries: 1
   - name: List the routes
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: GET
     response:
