@@ -1,0 +1,9 @@
+ARG KONG_BASE_IMAGE_NAME
+
+FROM ${KONG_BASE_IMAGE_NAME}
+
+RUN mkdir /plugins
+COPY go-plugins/go-hello.go /plugins
+WORKDIR /plugins
+
+RUN go build -buildmode=plugin go-hello.go
