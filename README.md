@@ -24,7 +24,7 @@ cd ~
 git clone git@github.com:Kong/kong.git
 git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
-make build-kong
+make package-kong
 ls output/
 kong-0.0.0.xenial.all.deb
 ```
@@ -76,7 +76,7 @@ The Kong functional tests use [Tavern](https://taverntesting.github.io/).
 *Prerequisites*
 
 - Docker
-- A Packaged Kong Release (`make build-kong`)
+- A Packaged Kong Release (`make package-kong`)
 
 ```
 make test
