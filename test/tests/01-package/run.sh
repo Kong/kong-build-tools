@@ -1,15 +1,15 @@
 # XXX why only ubuntu?
 if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -v | grep -q ${RESTY_VERSION}"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -v 2>&1 | grep -q ${RESTY_VERSION}"
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks --version | grep -q ${RESTY_LUAROCKS_VERSION}"
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config | grep -q /usr/local/openresty/luajit/bin/luajit"
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config | grep -q /usr/local/openresty/luajit/include/luajit-2.1"
     docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "luarocks config | grep -q /usr/local/openresty/luajit/lib"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty | grep -q /usr/local/kong/lib/libssl.so.1.1"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty | grep -q /usr/local/kong/lib/libcrypto.so.1.1"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin//openresty | grep -q /usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
-    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -V | grep /work/pcre-${RESTY_PCRE_VERSION}"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/kong/lib/libssl.so.1.1"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/kong/lib/libcrypto.so.1.1"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
+    docker run ${USE_TTY} --rm kong/kong-build-tools:test /bin/bash -c "openresty -V 2>&1 | grep /work/pcre-${RESTY_PCRE_VERSION}"
 fi
 
 # XXX why only bionic?
