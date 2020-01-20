@@ -7,7 +7,7 @@ docker build --build-arg KONG_BASE_IMAGE_NAME=$KONG_BASE_IMAGE_NAME \
   -f Dockerfile.build_plugin -t go-plugin-builder .
 docker run --name go-plugin-builder-container go-plugin-builder
 
-docker cp go-plugin-builder-container:/plugins/go-hello.so .
+docker cp go-plugin-builder-container:/go-plugins/go-hello.so .
 
 docker rm -f go-plugin-builder-container
 rm -rf go-plugins
