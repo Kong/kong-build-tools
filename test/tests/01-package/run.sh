@@ -30,9 +30,13 @@ if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
 Environment=KONG_DATABASE=off
 EOD"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl daemon-reload"
+  sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
+  sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
+  sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl restart kong"
+  sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl stop kong"
   docker stop systemd-ubuntu
   rm kong.deb

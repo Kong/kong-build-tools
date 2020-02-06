@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 source test/util.sh
 
 if $VERBOSE; then
