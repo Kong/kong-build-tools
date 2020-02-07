@@ -10,6 +10,7 @@ FROM kong/fpm:0.0.1 as FPM
 COPY --from=KONG /tmp/build /tmp/build
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
 COPY after-install.sh /after-install.sh
+COPY after-remove.sh /after-remove.sh
 COPY .rpmmacros /root/.rpmmacros
 ARG PRIVATE_KEY_FILE
 COPY ${PRIVATE_KEY_FILE} /kong.private.asc 

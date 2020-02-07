@@ -1,0 +1,13 @@
+/usr/local/kong/logs/*.log {
+  rotate 14
+  daily
+  missingok
+  compress
+  notifempty
+  sharedscripts
+  postrotate
+  if [ -f /usr/local/kong/pids/nginx.pid ]; then
+    kill -USR1 `cat /usr/local/kong/pids/nginx.pid`
+  fi
+  endscript
+}
