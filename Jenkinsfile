@@ -1,7 +1,7 @@
 pipeline {
     agent none
     environment {
-        KONG_SOURCE = "release/2.0.0"
+        KONG_SOURCE = "next"
         KONG_SOURCE_LOCATION = "/tmp/kong"
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
