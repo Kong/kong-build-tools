@@ -47,6 +47,7 @@ else
     --license "ASL 2.0" \
     --provides 'kong-community-edition' \
     --after-install '/after-install.sh' \
+    --after-remove '/after-remove.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}

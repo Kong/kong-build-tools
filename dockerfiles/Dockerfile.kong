@@ -9,3 +9,4 @@ COPY kong /kong
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
+COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate
