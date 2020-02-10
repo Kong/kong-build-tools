@@ -4,7 +4,6 @@ test_name: Test the request termination plugin
 stages:
   - name: Create a route
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes"
       method: POST
       json:
@@ -21,7 +20,6 @@ stages:
     max_retries: 1
   - name: Enable the request termination plugin
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes/requestterminationroute/plugins/"
       method: POST
       json:
@@ -52,7 +50,6 @@ stages:
     max_retries: 1
   - name: Delete the route
     request:
-      verify: false
       url: "{tavern.env_vars.ADMIN_URI}/routes/requestterminationroute"
       method: DELETE
     response:

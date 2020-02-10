@@ -24,7 +24,7 @@ cd ~
 git clone git@github.com:Kong/kong.git
 git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
-make build-kong
+make package-kong
 ls output/
 kong-0.0.0.xenial.all.deb
 ```
@@ -54,7 +54,7 @@ export REDHAT_PASSWORD=password
 Sometimes it's useful to have a docker image with the Kong asset installed that you just built.
 
 ```
-export KONG_TEST_CONTAINER_NAME=kong:testing
+export KONG_TEST_IMAGE_NAME=kong:testing
 make build-test-container
 ```
 
@@ -63,8 +63,7 @@ make build-test-container
 *Prerequisites:*
 
 - Docker
-- [Kind](https://github.com/kubernetes-sigs/kind)
-- [Helm](https://github.com/helm/helm)
+- Docker Compose
 
 ```
 make test
@@ -77,7 +76,7 @@ The Kong functional tests use [Tavern](https://taverntesting.github.io/).
 *Prerequisites*
 
 - Docker
-- A Packaged Kong Release (`make build-kong`)
+- A Packaged Kong Release (`make package-kong`)
 
 ```
 make test
