@@ -1,2 +1,4 @@
 helm
 kong
+id_rsa.private
+kong_license.private

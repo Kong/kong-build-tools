@@ -1,11 +1,13 @@
 ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 ARG DOCKER_OPENRESTY_SUFFIX
+ARG DOCKER_REPOSITORY
 
-FROM kong/kong-build-tools:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX}
+FROM ${DOCKER_REPOSITORY}:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX}
 
 WORKDIR /kong
 COPY kong /kong
+COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh

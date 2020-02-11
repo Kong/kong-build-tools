@@ -416,7 +416,7 @@ main() {
         OPENRESTY_OPTS=(
           "--prefix=$OPENRESTY_PREFIX"
           "--with-cc-opt='-I$OPENSSL_INSTALL/include'"
-          "--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'"
+          "--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
           "--with-pcre-jit"
           "--with-http_ssl_module"
           "--with-http_realip_module"
@@ -424,6 +424,13 @@ main() {
           "--with-http_v2_module"
           "-j$NPROC"
         )
+        
+        if [ $EDITION == 'enterprise' ]; then
+            OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
+            OPENRESTY_OPTS+=('--add-module=/enterprise/lua-kong-nginx-module')
+        elif [ $KONG_NGINX_MODULE != 0 ]; then
+          OPENRESTY_OPTS+=('--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module')
+        fi
 
         if version_gte $NGINX_CORE_VER 1.11.4; then
           OPENRESTY_OPTS+=('--with-stream_realip_module')
@@ -431,11 +438,6 @@ main() {
 
         if version_gte $NGINX_CORE_VER 1.11.5; then
           OPENRESTY_OPTS+=('--with-stream_ssl_preread_module')
-        fi
-
-        if [ $KONG_NGINX_MODULE != 0 ]; then
-          OPENRESTY_OPTS+=('--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module')
-          OPENRESTY_OPTS+=('--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream')
         fi
 
         if [ ! -z "$PCRE_VER" ]; then
