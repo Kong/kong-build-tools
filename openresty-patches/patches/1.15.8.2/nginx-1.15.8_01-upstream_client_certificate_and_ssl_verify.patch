@@ -12,7 +12,7 @@ index 90710557..539a4db9 100644
 
 
  #if (NGX_HTTP_CACHE)
-@@ -1694,7 +1694,15 @@
+@@ -1694,7 +1694,14 @@
      c->sendfile = 0;
      u->output.sendfile = 0;
 
@@ -21,7 +21,6 @@ index 90710557..539a4db9 100644
 +    if (u->conf->ssl_server_name
 +        || ngx_http_lua_kong_get_upstream_ssl_verify(r, u->conf->ssl_verify))
 +    {
-+    //if (u->conf->ssl_server_name || u->conf->ssl_verify) {
 +#else
      if (u->conf->ssl_server_name || u->conf->ssl_verify) {
 +#endif
