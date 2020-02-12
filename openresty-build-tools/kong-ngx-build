@@ -188,7 +188,7 @@ main() {
       if [ ! -z ${OPENSSL_SHA+x} ]; then
         echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
       fi
-      tar -xzvf openssl-$OPENSSL_VER.tar.gz
+      tar -xzf openssl-$OPENSSL_VER.tar.gz
     fi
 
     # OpenResty
@@ -209,7 +209,7 @@ main() {
         if [ ! -z ${OPENRESTY_SHA+x} ]; then
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
         fi
-        tar -xzvf openresty-$OPENRESTY_VER.tar.gz
+        tar -xzf openresty-$OPENRESTY_VER.tar.gz
       fi
     fi
 
@@ -223,7 +223,7 @@ main() {
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
         fi
-        tar -xzvf pcre-${PCRE_VER}.tar.gz
+        tar -xzf pcre-${PCRE_VER}.tar.gz
       fi
     fi
 
@@ -241,7 +241,7 @@ main() {
           if [ ! -z ${LUAROCKS_SHA+x} ]; then
             echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
           fi
-          tar -xzvf luarocks-$LUAROCKS_VER.tar.gz
+          tar -xzf luarocks-$LUAROCKS_VER.tar.gz
         fi
       fi
     fi
