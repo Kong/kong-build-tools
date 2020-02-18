@@ -27,7 +27,9 @@ services:
       KONG_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
       KONG_TEST_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_TEST_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
       KONG_CASSANDRA_CONTACT_POINTS: 127.0.0.1
       KONG_TEST_CASSANDRA_CONTACT_POINTS: 127.0.0.1
       KONG_PG_HOST: 127.0.0.1
@@ -66,6 +68,7 @@ services:
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
+      POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
     ports:
       - '5432:5432'
     expose:
