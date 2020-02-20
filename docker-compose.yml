@@ -66,6 +66,7 @@ services:
   postgres:
     image: postgres:${POSTGRES_VERSION:-9.5}
     environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
       POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
