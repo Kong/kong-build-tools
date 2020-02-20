@@ -425,7 +425,7 @@ main() {
           "-j$NPROC"
         )
 
-        if [ $EDITION == 'enterprise' ]; then
+        if [ "$EDITION" == 'enterprise' ]; then
           OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
           OPENRESTY_OPTS+=('--add-module=/enterprise/lua-kong-nginx-module')
 
