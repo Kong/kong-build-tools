@@ -20,7 +20,8 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
       --includedir=/tmp/yaml-${LIBYAML_VERSION} \
     && make install \
     && ./configure --libdir=/usr/local/kong/lib \
-    && make install
+    && make install \
+    && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
 ARG KONG_GMP_VERSION=6.1.2
 ENV KONG_GMP_VERSION $KONG_GMP_VERSION
@@ -134,7 +135,8 @@ ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 COPY kong-licensing /enterprise/kong-licensing
 COPY lua-kong-nginx-module /enterprise/lua-kong-nginx-module
 
-RUN /tmp/build-openresty.sh
+RUN /tmp/build-openresty.sh \
+    && rm -rf /work
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 

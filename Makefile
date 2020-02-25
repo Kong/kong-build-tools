@@ -88,7 +88,7 @@ else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
-DOCKER_REPOSITORY=mashape/kong-build-tools
+DOCKER_REPOSITORY?=mashape/kong-build-tools
 
 debug:
 	@echo ${CACHE}
