@@ -179,13 +179,7 @@ endif
 ifeq ($(RESTY_IMAGE_TAG),'xenial')
 	exit 0
 endif
-ifeq ($(OPENRESTY_PATCHES),1)
-	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
-	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied"
-else
-	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
-	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied || exit 0"
-endif
+	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 
 ifeq ($(RESTY_IMAGE_BASE),src)
 package-kong:
