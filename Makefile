@@ -156,6 +156,8 @@ build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm -rf kong
+	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-base ; \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
@@ -176,10 +178,6 @@ else
 	-t $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . )
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
-ifeq ($(RESTY_IMAGE_TAG),'xenial')
-	exit 0
-endif
-	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 
 ifeq ($(RESTY_IMAGE_BASE),src)
 package-kong:
