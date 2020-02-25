@@ -68,4 +68,8 @@ RUN chmod -R 777 /kong
 WORKDIR /kong
 RUN make dev
 
+RUN curl -L https://cpanmin.us | perl - App::cpanminus \
+    && cpanm --notest Test::Nginx \
+    && cpanm --notest local::lib
+
 CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
