@@ -23,34 +23,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools
 
-ENV GOLANG_VERSION 1.13.5
-
-RUN set -eux; \
-	dpkgArch="$(dpkg --print-architecture || echo amd64)"; \
-	case "${dpkgArch##*-}" in \
-		amd64) goRelArch='linux-amd64'; goRelSha256='512103d7ad296467814a6e3f635631bd35574cab3369a97a323c9a585ccaa569' ;; \
-		armhf) goRelArch='linux-armv6l'; goRelSha256='26259f61d52ee2297b1e8feef3a0fc82144b666a2b95512402c31cc49713c133' ;; \
-		arm64) goRelArch='linux-arm64'; goRelSha256='227b718923e20c846460bbecddde9cb86bad73acc5fb6f8e1a96b81b5c84668b' ;; \
-		*) goRelArch='src'; goRelSha256='27d356e2a0b30d9983b60a788cf225da5f914066b37a6b4f69d457ba55a626ff'; \
-			echo >&2; echo >&2 "warning: current architecture ($dpkgArch) does not have a corresponding Go binary release; will be building from source"; echo >&2 ;; \
-	esac; \
-	\
-	url="https://golang.org/dl/go${GOLANG_VERSION}.${goRelArch}.tar.gz"; \
-	curl -fsSLo go.tgz "$url"; \
-	echo "${goRelSha256} *go.tgz" | sha256sum -c -; \
-	tar -C /usr/local -xzf go.tgz; \
-	rm go.tgz; \
-	\
-	if [ "$goRelArch" = 'src' ]; then \
-		echo >&2; \
-		echo >&2 'error: UNIMPLEMENTED'; \
-		echo >&2 'TODO install golang-any from jessie-backports for GOROOT_BOOTSTRAP (and uninstall after build)'; \
-		echo >&2; \
-		exit 1; \
-	fi; \
-	\
-	export PATH="/usr/local/go/bin:$PATH"; \
-	go version 
+COPY --from=KONG /usr/local/go /usr/local/go
 
 ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
@@ -71,5 +44,7 @@ RUN make dev
 RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest Test::Nginx \
     && cpanm --notest local::lib
+
+RUN rm -rf /tmp/build
 
 CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
