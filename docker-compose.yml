@@ -24,6 +24,7 @@ services:
     container_name: kong
     environment:
       JOBS: 2
+      TEST_SPLIT: ${TEST_SPLIT:-all}
       TEST_SUITE: ${TEST_SUITE:-integration}
       KONG_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}
