@@ -184,5 +184,20 @@ pipeline {
                 }
             }
         }
+        stage('Release') {
+            agent {
+                node {
+                    label 'docker-compose'
+                }
+            }
+            environment {
+                GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+            }
+            steps {
+                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
+                sh 'nvm install lts/*'
+                sh 'npx semantic-release --beta'
+            }
+        }
     }
 }
