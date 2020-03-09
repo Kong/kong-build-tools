@@ -352,4 +352,3 @@ endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
-	-rm -rf openresty-build-tools
