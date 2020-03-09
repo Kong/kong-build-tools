@@ -22,6 +22,8 @@ services:
     privileged: true
     network_mode: host
     container_name: kong
+#    volumes:
+#      - ./kong:/kong
     environment:
       JOBS: 2
       TEST_SPLIT: ${TEST_SPLIT:-all}

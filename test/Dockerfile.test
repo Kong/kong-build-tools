@@ -21,7 +21,8 @@ RUN apt-get update && apt-get install -y \
     jq \
     httpie \
     iputils-ping \
-    net-tools
+    net-tools \
+    valgrind
 
 COPY --from=KONG /usr/local/go /usr/local/go
 
