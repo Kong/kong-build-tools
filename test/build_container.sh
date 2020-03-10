@@ -1,42 +1,33 @@
+set -e
+
 if docker image inspect $KONG_TEST_IMAGE_NAME; then exit 0; fi
 
-RHEL=false
-if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  DOCKERFILE="Dockerfile.alpine"
-elif [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
-  DOCKERFILE="Dockerfile.deb"
+rm -rf docker-kong || true
+git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
+
+if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
+  cp output/*${RESTY_IMAGE_TAG}.amd64.deb docker-kong/ubuntu/kong
+  BUILD_DIR="ubuntu"
+elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+  cp output/*.amd64.apk.tar.gz docker-kong/alpine/kong
+  BUILD_DIR="alpine"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
-  DOCKERFILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.el${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
-elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
-  DOCKERFILE="Dockerfile.rpm"
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.aws.amd64.rpm output/kong.rpm
-elif [ "$RESTY_IMAGE_BASE" == "rhel" ] && [ "$RESTY_IMAGE_TAG" == "6" ]; then
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
-  docker pull registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi
-  docker tag registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi rhel:${RESTY_IMAGE_TAG}
-  DOCKERFILE="Dockerfile.rpm"
-  RHEL=true
+  cp output/*.el${RESTY_IMAGE_TAG}.amd64.rpm docker-kong/centos/kong
+  BUILD_DIR="centos"
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.rhel${RESTY_IMAGE_TAG}.amd64.rpm output/kong.rpm
-  docker pull registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi
-  docker tag registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi rhel:${RESTY_IMAGE_TAG}
-  DOCKERFILE="Dockerfile.rpm"
-  RHEL=true
-elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
-  exit 0
+  cp output/*.rhel${RESTY_IMAGE_TAG}.amd64.rpm docker-kong/rhel/kong
+  BUILD_DIR="rhel"
 else
-  echo "Unrecognized base image $RESTY_IMAGE_BASE"
   exit 1
 fi
 
-docker build \
---build-arg RESTY_IMAGE_BASE=$RESTY_IMAGE_BASE \
---build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
---build-arg KONG_VERSION=$KONG_VERSION \
---build-arg KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME \
---build-arg RHEL=$RHEL \
---build-arg REDHAT_USERNAME=$REDHAT_USERNAME \
---build-arg REDHAT_PASSWORD=$REDHAT_PASSWORD \
--f test/$DOCKERFILE \
--t $KONG_TEST_IMAGE_NAME .
+pushd docker-kong/${BUILD_DIR}
+    docker build -t $KONG_TEST_IMAGE_NAME \
+    --no-cache \
+    --build-arg LOCAL_KONG_PACKAGE=kong \
+    --build-arg RESTY_IMAGE_BASE=$RESTY_IMAGE_BASE \
+    --build-arg RESTY_IMAGE_TAG=$RESTY_IMAGE_TAG \
+    --build-arg ASSET_LOCATION=local .
+popd
+
+rm -rf docker-kong || true

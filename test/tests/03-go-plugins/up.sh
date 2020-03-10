@@ -2,8 +2,8 @@
 # clone plugins
 git clone https://github.com/Kong/go-plugins
 
-echo $KONG_BASE_IMAGE_NAME
-docker build --build-arg KONG_BASE_IMAGE_NAME=$KONG_BASE_IMAGE_NAME \
+echo $DOCKER_GO_BUILDER
+docker build --build-arg DOCKER_GO_BUILDER=$DOCKER_GO_BUILDER \
   -f Dockerfile.build_plugin -t go-plugin-builder .
 docker run --name go-plugin-builder-container go-plugin-builder
 
@@ -12,6 +12,7 @@ docker cp go-plugin-builder-container:/go-plugins/go-hello.so .
 docker rm -f go-plugin-builder-container
 rm -rf go-plugins
 
+echo $KONG_BASE_IMAGE_NAME
 docker build --build-arg KONG_TEST_IMAGE_NAME=$KONG_TEST_IMAGE_NAME \
   -f Dockerfile.custom_kong -t custom-kong-with-go-plugin .
 

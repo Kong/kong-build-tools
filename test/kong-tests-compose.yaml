@@ -32,7 +32,7 @@ services:
 
   kong:
     image: "${KONG_TEST_IMAGE_NAME:-kong:latest}"
-    user: "${KONG_USER:-root}"
+    user: "${KONG_USER:-kong}"
     container_name: "${KONG_TEST_CONTAINER_NAME:-kong-tests}"
     depends_on:
       db:

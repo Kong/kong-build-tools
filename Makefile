@@ -37,6 +37,7 @@ KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 LIBYAML_VERSION ?= 0.2.1
+DOCKER_KONG_VERSION ?= chore/remove-builder-pattern
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
@@ -310,7 +311,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_ADMIN_URI="http://$(TEST_HOST):$(TEST_ADMIN_PORT)" \
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
 	TEST_COMPOSE_PATH=$(TEST_COMPOSE_PATH) \
-	KONG_BASE_IMAGE_NAME=$(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
+	DOCKER_GO_BUILDER=$(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
 	./test/run_tests.sh
 endif
 
@@ -331,6 +332,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
+	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	test/build_container.sh
 endif
 
@@ -348,8 +350,9 @@ endif
 cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
+	docker-compose -f test/kong-tests-compose.yaml rm -f
+
 endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
-	-rm -rf openresty-build-tools
