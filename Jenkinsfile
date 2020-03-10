@@ -95,6 +95,7 @@ pipeline {
                         }
                     }
                     environment {
+                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -114,6 +115,7 @@ pipeline {
                         }
                     }
                     environment {
+                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -134,6 +136,7 @@ pipeline {
                         }
                     }
                     environment {
+                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -158,6 +161,7 @@ pipeline {
                         retry(2)
                     }
                     environment {
+                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"

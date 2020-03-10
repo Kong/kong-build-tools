@@ -135,7 +135,8 @@ ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 COPY kong-licensing /enterprise/kong-licensing
 COPY lua-kong-nginx-module /enterprise/lua-kong-nginx-module
 
-RUN /tmp/build-openresty.sh \
+ARG DEBUG=1
+RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \
     && rm -rf /work
 
 WORKDIR /kong
