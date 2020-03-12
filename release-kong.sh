@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -eo pipefail
 
 CWD=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -15,6 +14,19 @@ KONG_VERSION=$KONG_VERSION
 BUILD_DIR="output"
 BINTRAY_PUT_ARGS=""
 BINTRAY_DIRECTORY="${RESTY_IMAGE_BASE}/${RESTY_IMAGE_TAG}"
+
+DOCKER_REPOSITORY="kong/kong"
+DOCKER_TAG="latest"
+if [ "$REPOSITORY_OS_NAME" == "next" ]; then
+  DOCKER_TAG="dev"
+fi
+
+if [ "$RESTY_IMAGE_BASE" != "src" ]; then
+  docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker push ${DOCKER_REPOSITORY}:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker push ${DOCKER_REPOSITORY}:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+fi
 
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   BINTRAY_DIRECTORY=""
@@ -39,6 +51,11 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   REPOSITORY_OS_NAME="${REPOSITORY_OS_NAME:-alpine}"
   REPOSITORY_NAME="${REPOSITORY_NAME:-$KONG_PACKAGE_NAME-alpine-tar}"
   OUTPUT_FILE_SUFFIX=".${ARCHITECTURE}.apk.tar.gz"
+  docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${KONG_VERSION}
+  docker push ${DOCKER_REPOSITORY}:${KONG_VERSION}
+
+  docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${DOCKER_TAG}
+  docker push ${DOCKER_REPOSITORY}:${DOCKER_TAG}
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   BINTRAY_DIRECTORY="amazonlinux/amazonlinux"
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-rpm}"
