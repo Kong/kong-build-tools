@@ -12,7 +12,7 @@ docker cp go-plugin-builder-container:/go-plugins/go-hello.so .
 docker rm -f go-plugin-builder-container
 rm -rf go-plugins
 
-echo $KONG_BASE_IMAGE_NAME
+echo $KONG_TEST_IMAGE_NAME
 docker build --build-arg KONG_TEST_IMAGE_NAME=$KONG_TEST_IMAGE_NAME \
   -f Dockerfile.custom_kong -t custom-kong-with-go-plugin .
 
