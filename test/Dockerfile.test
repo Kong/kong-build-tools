@@ -16,13 +16,18 @@ ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.s
 COPY --from=KONG /tmp/build/ /tmp/build
 RUN cp -R /tmp/build/* /
 RUN rm -rf /usr/local/bin/kong
-RUN apt-get update && apt-get install -y \
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
+    apt-get update && apt-get install -y \
+    tzdata \
     vim \
     jq \
     httpie \
     iputils-ping \
     net-tools \
-    valgrind
+    valgrind \
+    net-tools && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
+    apt-get install -y postgresql
 
 COPY --from=KONG /usr/local/go /usr/local/go
 

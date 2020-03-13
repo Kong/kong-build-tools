@@ -22,6 +22,13 @@ services:
     privileged: true
     network_mode: host
     container_name: kong
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 #    volumes:
 #      - ./kong:/kong
     environment:
