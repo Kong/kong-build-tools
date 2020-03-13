@@ -46,6 +46,7 @@ else
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
     --provides 'kong-community-edition' \
+    --replaces 'kong-community-edition' \
     --after-install '/after-install.sh' \
     --after-remove '/after-remove.sh' \
     --url 'https://getkong.org/' usr etc lib \
