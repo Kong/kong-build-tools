@@ -38,6 +38,7 @@ KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requir
 OPENRESTY_PATCHES ?= 1
 LIBYAML_VERSION ?= 0.2.1
 DOCKER_KONG_VERSION ?= master
+DEBUG ?= 0
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
@@ -69,9 +70,9 @@ BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
 DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
-DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHES}-${CACHE_BUSTER}
-DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}
-DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${KONG_SHA}-${CACHE_BUSTER}
+DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${CACHE_BUSTER}
+DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}
+DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${DEBUG}-${KONG_SHA}-${CACHE_BUSTER}
 
 CACHE?=true
 
@@ -88,7 +89,7 @@ else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
-DOCKER_REPOSITORY=mashape/kong-build-tools
+DOCKER_REPOSITORY?=mashape/kong-build-tools
 
 debug:
 	@echo ${CACHE}
@@ -98,6 +99,7 @@ debug:
 	@echo ${UPDATE_CACHE_COMMAND}
 	@echo ${DOCKER_COMMAND}
 	@echo ${BUILDX_INFO}
+	@echo ${DEBUG}
 
 setup-ci:
 ifneq ($(RESTY_IMAGE_BASE),src)
@@ -156,6 +158,8 @@ build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm -rf kong
+	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-base ; \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
@@ -173,18 +177,9 @@ else
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
+	--build-arg DEBUG=$(DEBUG) \
 	-t $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . )
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
-endif
-ifeq ($(RESTY_IMAGE_TAG),'xenial')
-	exit 0
-endif
-ifeq ($(OPENRESTY_PATCHES),1)
-	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
-	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied"
-else
-	docker run -t --rm $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
-	/bin/sh -c "test -f /work/openresty-$(RESTY_VERSION)/bundle/.patch_applied || exit 0"
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -194,7 +189,11 @@ else
 package-kong: actual-package-kong
 endif
 
-actual-package-kong: build-kong
+actual-package-kong:
+ifeq ($(DEBUG),1)
+	exit 1
+endif
+	make build-kong
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \

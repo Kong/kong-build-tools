@@ -22,7 +22,18 @@ services:
     privileged: true
     network_mode: host
     container_name: kong
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+#    volumes:
+#      - ./kong:/kong
     environment:
+      JOBS: 2
+      TEST_SPLIT: ${TEST_SPLIT:-all}
       TEST_SUITE: ${TEST_SUITE:-integration}
       KONG_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}

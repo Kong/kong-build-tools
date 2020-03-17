@@ -26,4 +26,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         git \
         m4 \
         file \
-        ssh
+        ssh \
+        valgrind

@@ -29,6 +29,11 @@ mkdir -p /tmp/build/usr/local/kong
 mkdir -p /tmp/build/
 mkdir -p /work
 
+if [ "$DEBUG" == 1 ]
+then
+  KONG_NGX_BUILD_ARGS="--debug"
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -43,7 +48,7 @@ EDITION=$EDITION \
 --openssl $RESTY_OPENSSL_VERSION \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --pcre $RESTY_PCRE_VERSION \
---work /work >> $BUILD_OUTPUT 2>&1
+--work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
 
 # The build finished without returning an error so dump a tail of the output
 dump_output
