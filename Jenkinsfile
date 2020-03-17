@@ -1,5 +1,8 @@
 pipeline {
     agent none
+    triggers {
+        cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
+    }
     environment {
         KONG_SOURCE = "master"
         KONG_SOURCE_LOCATION = "/tmp/kong"
@@ -182,6 +185,24 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
+        stage('Release') {
+            agent {
+                node {
+                    label 'docker-compose'
+                }
+            }
+            when {
+                triggeredBy 'TimerTrigger'
+            }
+            environment {
+                GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+            }
+            steps {
+                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
+                sh '. ~/.nvm/nvm.sh && nvm install lts/*'
+                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
             }
         }
     }
