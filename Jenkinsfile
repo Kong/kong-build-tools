@@ -196,7 +196,7 @@ pipeline {
             steps {
                 sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
                 sh 'nvm install lts/*'
-                sh 'npx semantic-release --beta'
+                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
             }
         }
     }
