@@ -11,8 +11,8 @@ if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; t
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   cp output/*.amd64.apk.tar.gz docker-kong/alpine/kong
   BUILD_DIR="alpine"
-elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
-  cp output/*.el${RESTY_IMAGE_TAG}.amd64.rpm docker-kong/centos/kong
+elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+  cp output/*.amd64.rpm docker-kong/centos/kong
   BUILD_DIR="centos"
 elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   cp output/*.rhel${RESTY_IMAGE_TAG}.amd64.rpm docker-kong/rhel/kong

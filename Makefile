@@ -37,7 +37,7 @@ KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 LIBYAML_VERSION ?= 0.2.1
-DOCKER_KONG_VERSION ?= master
+DOCKER_KONG_VERSION ?= fix/aws-testability
 DEBUG ?= 0
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
@@ -356,3 +356,5 @@ endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
+	-rm -rf docker-kong
+	-rm -rf output/*
