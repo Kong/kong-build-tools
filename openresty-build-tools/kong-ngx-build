@@ -430,11 +430,13 @@ main() {
 
         if [ "$EDITION" == 'enterprise' ]; then
           OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
-          OPENRESTY_OPTS+=('--add-module=/enterprise/lua-kong-nginx-module')
+        fi
 
-        elif [ $KONG_NGINX_MODULE != 0 ]; then
+        if [ $KONG_NGINX_MODULE != 0 ]; then
           OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module")
-          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
+          if [[ -d $DOWNLOAD_CACHE/lua-kong-nginx-module/stream ]]; then
+            OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
+          fi
         fi
 
         if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
