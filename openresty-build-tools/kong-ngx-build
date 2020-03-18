@@ -248,6 +248,9 @@ main() {
 
     # lua-kong-nginx-module
     if [ $KONG_NGINX_MODULE != 0 ]; then
+      if [[ $KONG_NGINX_MODULE == "master" ]]; then
+        KONG_NGINX_MODULE="origin/master"
+      fi
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-kong-nginx-module ]; then
           warn "lua-kong-nginx-module source not found, cloning..."
@@ -256,7 +259,8 @@ main() {
 
         pushd lua-kong-nginx-module
           git fetch
-          git reset --hard origin/$KONG_NGINX_MODULE
+          # Accept both tags, branches and SHAs
+          git reset --hard $KONG_NGINX_MODULE || git reset --hard origin/$KONG_NGINX_MODULE
         popd
       popd
     fi
