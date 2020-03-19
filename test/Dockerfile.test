@@ -7,27 +7,11 @@ ARG DOCKER_REPOSITORY
 
 FROM ${DOCKER_REPOSITORY}:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
 
-FROM ${DOCKER_REPOSITORY}:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
-
-ENV PATH=$PATH:/kong/bin:/usr/local/openresty/bin/:/usr/local/kong/bin/:/usr/local/openresty/nginx/sbin/
-ENV LUA_PATH=/kong/?.lua;/kong/?/init.lua;/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua
-ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so
+FROM ${DOCKER_REPOSITORY}:ubuntu-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
 
 COPY --from=KONG /tmp/build/ /tmp/build
 RUN cp -R /tmp/build/* /
 RUN rm -rf /usr/local/bin/kong
-RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
-    apt-get update && apt-get install -y \
-    tzdata \
-    vim \
-    jq \
-    httpie \
-    iputils-ping \
-    net-tools \
-    valgrind \
-    net-tools && \
-    dpkg-reconfigure --frontend noninteractive tzdata && \
-    apt-get install -y postgresql
 
 COPY --from=KONG /usr/local/go /usr/local/go
 
@@ -40,16 +24,11 @@ RUN mkdir -p /tmp/go/src/github.com/kong/ \
     && cd /tmp/go/src/github.com/kong/go-pluginserver \
     && go mod tidy
 
-
 COPY kong /kong
 RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
 WORKDIR /kong
-RUN make dev
-
-RUN curl -L https://cpanmin.us | perl - App::cpanminus \
-    && cpanm --notest Test::Nginx \
-    && cpanm --notest local::lib
+RUN make dev  
 
 RUN rm -rf /tmp/build
 

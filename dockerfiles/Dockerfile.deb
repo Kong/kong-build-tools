@@ -6,7 +6,12 @@ ARG RESTY_IMAGE_TAG="bionic"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+ENV PATH=$PATH:/kong/bin:/usr/local/openresty/bin/:/usr/local/kong/bin/:/usr/local/openresty/nginx/sbin/
+ENV LUA_PATH=/kong/?.lua;/kong/?/init.lua;/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua
+ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so
+
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime \
+    && DEBIAN_FRONTEND=noninteractive apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
@@ -27,4 +32,18 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         m4 \
         file \
         ssh \
-        valgrind
+        valgrind \
+        tzdata \
+        vim \
+        jq \
+        httpie \
+        iputils-ping \
+        net-tools \
+        valgrind \
+        net-tools \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && apt-get install -y postgresql
+
+RUN curl -L https://cpanmin.us | perl - App::cpanminus \
+    && cpanm --notest Test::Nginx \
+    && cpanm --notest local::lib
