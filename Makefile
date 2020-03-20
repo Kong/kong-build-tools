@@ -356,3 +356,5 @@ endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
+	-rm -rf docker-kong
+	-rm -rf output/*
