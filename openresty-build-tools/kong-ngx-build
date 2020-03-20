@@ -305,7 +305,7 @@ main() {
       fi
     fi
 
-    if version_eq $OPENRESTY_VER 1.15.8; then # this occurs in OpenResty 1.15.8.1 and 1.15.8.2
+    if version_eq $OPENRESTY_VER 1.15.8; then # this occurs in OpenResty 1.15.8.x
       if [ ! -z "$PCRE_VER" ]; then
         warn "Building OpenResty $OPENRESTY_VER with static libpcre, applying the fix_static_libpcre_linking patch..."
         pushd $OPENRESTY_DOWNLOAD/bundle/ngx_lua-0.10.15

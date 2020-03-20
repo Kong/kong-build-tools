@@ -1,0 +1,207 @@
+From 22945d38da972613a171231ba16f7c759d4512a1 Mon Sep 17 00:00:00 2001
+From: Javier Guerra <javier.guerra@konghq.com>
+Date: Tue, 13 Aug 2019 05:05:17 -0700
+Subject: [PATCH] Dynamic remapping of lightuserdata values
+
+To allow architectures with VA larger than 47 bits, splits the space in 8 sections, each of 2^LJ_LUV_SECT_SHIFT bytes
+(2^45 on ARM64 (32TiB), VA is 48 bits).  Since the lightuserdata value must have zeros on all bits above 47, only
+sections [0..3] are valid.  The table `luv_sect_map[]` must map any section used by the memory layout into a valid
+section.  It should also be a symetric mapping, so a repeat of the transformation returns the original value.
+
+The `luv_init_map()` function uses a sample of different types of pointers to determine with sections are actually
+used, and constructs the required table.
+---
+ src/lj_api.c   |  5 +--
+ src/lj_arch.h  |  1 +
+ src/lj_cconv.c |  2 +-
+ src/lj_obj.h   | 15 +++++++++
+ src/lj_state.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 105 insertions(+), 3 deletions(-)
+
+diff --git a/LuaJIT-2.1-20190507/src/lj_api.c b/LuaJIT-2.1-20190507/src/lj_api.c
+index 9c4864d..0a3f778 100644
+--- a/LuaJIT-2.1-20190507/src/lj_api.c
++++ b/LuaJIT-2.1-20190507/src/lj_api.c
+@@ -595,7 +595,7 @@ LUA_API void *lua_touserdata(lua_State *L, int idx)
+   if (tvisudata(o))
+     return uddata(udataV(o));
+   else if (tvislightud(o))
+-    return lightudV(o);
++    return lightuvmap(lightudV(o));
+   else
+     return NULL;
+ }
+@@ -696,6 +696,7 @@ LUA_API void lua_pushboolean(lua_State *L, int b)
+ 
+ LUA_API void lua_pushlightuserdata(lua_State *L, void *p)
+ {
++  p = lightuvmap(p);
+   setlightudV(L->top, checklightudptr(L, p));
+   incr_top(L);
+ }
+@@ -1138,7 +1139,7 @@ static TValue *cpcall(lua_State *L, lua_CFunction func, void *ud)
+   fn->c.f = func;
+   setfuncV(L, top++, fn);
+   if (LJ_FR2) setnilV(top++);
+-  setlightudV(top++, checklightudptr(L, ud));
++  setlightudV(top++, checklightudptr(L, lightuvmap(ud)));
+   cframe_nres(L->cframe) = 1+0;  /* Zero results. */
+   L->top = top;
+   return top-1;  /* Now call the newly allocated C function. */
+diff --git a/LuaJIT-2.1-20190507/src/lj_arch.h b/LuaJIT-2.1-20190507/src/lj_arch.h
+index 8f6bc52..cf1c641 100644
+--- a/LuaJIT-2.1-20190507/src/lj_arch.h
++++ b/LuaJIT-2.1-20190507/src/lj_arch.h
+@@ -237,6 +237,7 @@
+ #define LJ_TARGET_MASKROT	1
+ #define LJ_TARGET_UNIFYROT	2	/* Want only IR_BROR. */
+ #define LJ_TARGET_GC64		1
++#define LJ_LUV_SECT_SHIFT	45
+ #define LJ_ARCH_NUMMODE		LJ_NUMMODE_DUAL
+ 
+ #define LJ_ARCH_VERSION		80
+diff --git a/LuaJIT-2.1-20190507/src/lj_cconv.c b/LuaJIT-2.1-20190507/src/lj_cconv.c
+index 13b8230..05eed3a 100644
+--- a/LuaJIT-2.1-20190507/src/lj_cconv.c
++++ b/LuaJIT-2.1-20190507/src/lj_cconv.c
+@@ -611,7 +611,7 @@ void lj_cconv_ct_tv(CTState *cts, CType *d,
+     if (ud->udtype == UDTYPE_IO_FILE)
+       tmpptr = *(void **)tmpptr;
+   } else if (tvislightud(o)) {
+-    tmpptr = lightudV(o);
++    tmpptr = lightuvmap(lightudV(o));
+   } else if (tvisfunc(o)) {
+     void *p = lj_ccallback_new(cts, d, funcV(o));
+     if (p) {
+diff --git a/LuaJIT-2.1-20190507/src/lj_obj.h b/LuaJIT-2.1-20190507/src/lj_obj.h
+index a89ea0d..77a157b 100644
+--- a/LuaJIT-2.1-20190507/src/lj_obj.h
++++ b/LuaJIT-2.1-20190507/src/lj_obj.h
+@@ -830,6 +830,21 @@ typedef union GCobj {
+ #define setpriV(o, i)		(setitype((o), (i)))
+ #endif
+ 
++#ifdef LJ_LUV_SECT_SHIFT
++#define LJ_LUV_SECT_MASK (7UL << LJ_LUV_SECT_SHIFT)
++extern uint8_t luv_sect_map[8];
++#endif
++
++static LJ_AINLINE void *lightuvmap(void *p)
++{
++#ifdef LJ_LUV_SECT_SHIFT
++  uintptr_t section = luv_sect_map[((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & 7];
++  p = (void *)(((uintptr_t)p & ~LJ_LUV_SECT_MASK) | (section << LJ_LUV_SECT_SHIFT));
++#endif
++  return p;
++}
++
++#include <stdio.h>
+ static LJ_AINLINE void setlightudV(TValue *o, void *p)
+ {
+ #if LJ_GC64
+diff --git a/LuaJIT-2.1-20190507/src/lj_state.c b/LuaJIT-2.1-20190507/src/lj_state.c
+index a0fba2a..1ab3097 100644
+--- a/LuaJIT-2.1-20190507/src/lj_state.c
++++ b/LuaJIT-2.1-20190507/src/lj_state.c
+@@ -29,6 +29,90 @@
+ #include "lj_alloc.h"
+ #include "luajit.h"
+ 
++/* -- lightuserdata remapping --------------------------------------------- */
++
++#ifdef LJ_LUV_SECT_SHIFT
++
++static char checked_layout = 0;
++
++#define LJ_LUV_SECT_MASK (7UL << LJ_LUV_SECT_SHIFT)
++uint8_t luv_sect_map[8] = {
++  0, 1, 7, 3, 4, 5, 6, 2,		/*  111 <-> 010  */
++};
++
++
++static void luvmap_mark_need(void *p)
++{
++  int index = ((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & 7;
++
++  luv_sect_map[index] = index < 4 ? index : 128;
++}
++
++static void luvmap_fold(void)
++{
++  int i, j;
++
++  for (i = 0; i < 8; ++i) {
++    if (luv_sect_map[i] == 128) {		/* needed but invalid */
++      for (j = 3; j >= 0; --j) {
++	if (luv_sect_map[j] == 255) {		/* found unused, swap */
++	  luv_sect_map[i] = j;
++	  luv_sect_map[j] = i;
++	  break;
++	}
++      }
++    }
++  }
++
++  for (i = 0; i < 8; ++i) {
++    if (luv_sect_map[i] == 128)
++      abort();		/* unfixed section */
++
++    if (luv_sect_map[i] == 255)
++      luv_sect_map[i] = i;
++  }
++}
++
++static void luv_init_map() {
++  int i;
++
++  if (checked_layout != 0)
++    return;
++
++  for (i = 0; i < 8; ++i)
++    luv_sect_map[i] = 255;
++
++  char unused_local = 0;
++  void *p = malloc(1); lua_assert(c != NULL);
++
++  luvmap_mark_need(NULL);		/* common use */
++  luvmap_mark_need(&checked_layout);	/* global space */
++  luvmap_mark_need(&unused_local);	/* stack space */
++  luvmap_mark_need(&luv_init_map);	/* function space */
++  luvmap_mark_need(p);			/* heap space */
++
++  /* some modules mask pointers before pushing. */
++  /* mark them as needed too */
++  #define luv_mask47(p) ((void *) ((uintptr_t) (p) & ((1UL << 47) - 1)))
++
++  luvmap_mark_need(luv_mask47(&checked_layout));
++  luvmap_mark_need(luv_mask47(&unused_local));
++  luvmap_mark_need(luv_mask47(&luv_init_map));
++  luvmap_mark_need(luv_mask47(p));
++
++  #undef luv_mask47
++
++  free(p);
++
++  luvmap_fold();
++  checked_layout = 1;
++}
++
++#else
++#define luv_init_map()
++#endif
++
++
+ /* -- Stack handling ------------------------------------------------------ */
+ 
+ /* Stack sizes. */
+@@ -186,6 +270,7 @@ lua_State *lj_state_newstate(lua_Alloc f, void *ud)
+ LUA_API lua_State *lua_newstate(lua_Alloc f, void *ud)
+ #endif
+ {
++  luv_init_map();
+   GG_State *GG = (GG_State *)f(ud, NULL, 0, sizeof(GG_State));
+   lua_State *L = &GG->L;
+   global_State *g = &GG->g;
+-- 
+2.17.1
+
