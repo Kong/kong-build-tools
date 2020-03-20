@@ -1,7 +1,10 @@
 ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 ARG DOCKER_OPENRESTY_SUFFIX
+ARG DOCKER_KONG_SUFFIX
 ARG DOCKER_REPOSITORY
+
+FROM ${DOCKER_REPOSITORY}:golang-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as GOLANG
 
 FROM ${DOCKER_REPOSITORY}:openresty-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_OPENRESTY_SUFFIX}
 
@@ -12,3 +15,5 @@ COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
 COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate
+
+COPY --from=GOLANG /usr/local/bin/go-pluginserver /tmp/build/usr/local/bin/go-pluginserver
