@@ -144,7 +144,7 @@ COPY kong /kong
 COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
 
-RUN /build-kong.sh && rm -rf /kong
+RUN /build-kong.sh
 
-RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
-
+RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true \
+    && cp -R /tmp/build/* /
