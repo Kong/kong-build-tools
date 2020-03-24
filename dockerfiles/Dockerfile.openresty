@@ -141,7 +141,6 @@ RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \
 
 WORKDIR /kong
 COPY kong /kong
-COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh && rm -rf /kong
