@@ -69,6 +69,8 @@ pushd /kong
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
+  
+  make install
 popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/

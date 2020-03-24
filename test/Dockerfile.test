@@ -1,25 +1,16 @@
-ARG RESTY_IMAGE_BASE="ubuntu"
-ARG RESTY_IMAGE_TAG="bionic"
-ARG DOCKER_KONG_SUFFIX
-ARG DOCKER_BASE_SUFFIX
-ARG KONG_SHA
+ARG DOCKER_OPENRESTY_SUFFIX
 ARG DOCKER_REPOSITORY
 
-FROM ${DOCKER_REPOSITORY}:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
+FROM ${DOCKER_REPOSITORY}:test-${DOCKER_OPENRESTY_SUFFIX}
 
-FROM ${DOCKER_REPOSITORY}:ubuntu-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
-
-COPY --from=KONG /tmp/build/ /tmp/build
-RUN cp -R /tmp/build/* /
 RUN rm -rf /usr/local/bin/kong
-
-COPY --from=KONG /usr/local/go /usr/local/go
 
 ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-RUN mkdir -p /tmp/go/src/github.com/kong/ \
+RUN rm -rf /tmp/go/src/github.com/kong/ || true \
+    && mkdir -p /tmp/go/src/github.com/kong/ \
     && git clone --branch ${KONG_GO_PLUGINSERVER_VERSION} https://github.com/Kong/go-pluginserver.git /tmp/go/src/github.com/kong/go-pluginserver \
     && cd /tmp/go/src/github.com/kong/go-pluginserver \
     && go mod tidy

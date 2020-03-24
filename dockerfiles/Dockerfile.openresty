@@ -145,6 +145,7 @@ COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
+COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true \
     && cp -R /tmp/build/* /

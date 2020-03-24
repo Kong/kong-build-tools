@@ -9,4 +9,3 @@ WORKDIR /kong
 COPY kong /kong
 
 RUN /build-kong.sh
-COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate
