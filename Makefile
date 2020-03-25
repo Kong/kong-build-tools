@@ -55,7 +55,7 @@ ifneq ($(BUILDX_INFO),)
 endif
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --squash --build-arg BUILDPLATFORM=x/amd64
 else
 	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
 endif
