@@ -1,5 +1,0 @@
-ARG KONG_TEST_IMAGE_NAME
-
-FROM ${KONG_TEST_IMAGE_NAME}
-
-COPY go-hello.so /usr/local/kong
