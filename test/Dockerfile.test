@@ -2,9 +2,10 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 ARG DOCKER_KONG_SUFFIX
 ARG DOCKER_OPENRESTY_SUFFIX
+ARG DOCKER_GO_SUFFIX
 ARG DOCKER_REPOSITORY
 
-FROM ${DOCKER_REPOSITORY}:golang-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as GOLANG
+FROM ${DOCKER_REPOSITORY}:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} as GOLANG
 
 FROM ${DOCKER_REPOSITORY}:test-${DOCKER_OPENRESTY_SUFFIX}
 
@@ -33,12 +34,6 @@ ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-RUN rm -rf /tmp/go/src/github.com/kong/ \
-    && mkdir -p /tmp/go/src/github.com/kong/ \
-    && git clone --branch ${KONG_GO_PLUGINSERVER_VERSION} https://github.com/Kong/go-pluginserver.git /tmp/go/src/github.com/kong/go-pluginserver \
-    && cd /tmp/go/src/github.com/kong/go-pluginserver \
-    && go mod tidy
-
 COPY kong /kong
 RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
@@ -50,5 +45,7 @@ RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest local::lib
 
 RUN rm -rf /tmp/build
+
+COPY --from=GOLANG /usr/local/bin/go-pluginserver /usr/local/bin/go-pluginserver
 
 CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
