@@ -189,7 +189,7 @@ else
 package-kong: actual-package-kong
 endif
 
-actual-package-kong: cleanup
+actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
