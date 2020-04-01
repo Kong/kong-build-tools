@@ -102,15 +102,13 @@ debug:
 	@echo ${DEBUG}
 
 setup-ci:
-ifneq ($(RESTY_IMAGE_BASE),src)
-	.ci/setup_ci.sh
-	$(MAKE) setup-build
-endif
+	@echo "no longer used"
 
 setup-build: cleanup-build
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
+	.ci/setup_ci.sh
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
 	--amazonec2-instance-type a1.medium \
@@ -189,7 +187,7 @@ else
 package-kong: actual-package-kong
 endif
 
-actual-package-kong: cleanup setup-build
+actual-package-kong: cleanup
 ifeq ($(DEBUG),1)
 	exit 1
 endif
