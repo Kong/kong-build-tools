@@ -184,7 +184,14 @@ main() {
 
     if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
       warn "OpenSSL source not found, downloading..."
-      curl -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+      set +e
+      curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+      if [[ $? != 0 ]]; then
+        curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+        [[ $? != 0 ]] && err "Could not download OpenSSL"
+      fi
+      set -e
+
       if [ ! -z ${OPENSSL_SHA+x} ]; then
         echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
       fi
