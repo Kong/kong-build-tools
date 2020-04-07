@@ -1,0 +1,38 @@
+From d58e2c9c008b4bc75ac2f9e21684b719a13b7f09 Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Tue, 10 Sep 2019 11:45:11 -0700
+Subject: [PATCH] feature: implemented the 'ngx.crc32_short' and
+ 'ngx.crc32_long' C FFI APIs.
+
+---
+ ngx_lua-0.10.15/src/ngx_http_lua_string.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/ngx_lua-0.10.15/src/ngx_http_lua_string.c b/ngx_lua-0.10.15/src/ngx_http_lua_string.c
+index bdadeb47..892d6d6f 100644
+--- a/ngx_lua-0.10.15/src/ngx_http_lua_string.c
++++ b/ngx_lua-0.10.15/src/ngx_http_lua_string.c
+@@ -700,6 +700,20 @@ ngx_http_lua_ffi_sha1_bin(const u_char *src, size_t len, u_char *dst)
+ }
+ 
+ 
++unsigned int
++ngx_http_lua_ffi_crc32_short(const u_char *src, size_t len)
++{
++    return ngx_crc32_short((u_char *) src, len);
++}
++
++
++unsigned int
++ngx_http_lua_ffi_crc32_long(const u_char *src, size_t len)
++{
++    return ngx_crc32_long((u_char *) src, len);
++}
++
++
+ size_t
+ ngx_http_lua_ffi_encode_base64(const u_char *src, size_t slen, u_char *dst,
+     int no_padding)
+-- 
+2.25.2
+
