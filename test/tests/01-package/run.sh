@@ -15,7 +15,7 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luaro
 
 # kong binaries
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -la /usr/local/bin/go-pluginserver"
+docker run ${USE_TTY} --user=root --rm ${DOCKER_GO_BUILDER} /bin/sh -c "ls -la /usr/local/bin/go-pluginserver"
 
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then

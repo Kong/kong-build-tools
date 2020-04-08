@@ -22,6 +22,11 @@ if [ "$REPOSITORY_OS_NAME" == "next" ]; then
 fi
 
 if [ "$RESTY_IMAGE_BASE" != "src" ]; then
+  docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker push kong/go-plugin-tool:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  docker push kong/go-plugin-tool:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+  
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
   docker push ${DOCKER_REPOSITORY}:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
@@ -56,6 +61,7 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
 
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${DOCKER_TAG}
   docker push ${DOCKER_REPOSITORY}:${DOCKER_TAG}
+
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   BINTRAY_DIRECTORY="amazonlinux/amazonlinux"
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-rpm}"
