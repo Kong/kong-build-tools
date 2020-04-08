@@ -62,11 +62,6 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${DOCKER_TAG}
   docker push ${DOCKER_REPOSITORY}:${DOCKER_TAG}
 
-  docker tag localhost:5000/go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}
-  docker push kong/go-plugin-tool:${KONG_VERSION}
-
-  docker tag localhost:5000/go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${DOCKER_TAG}
-  docker push kong/go-plugin-tool:${DOCKER_TAG}
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   BINTRAY_DIRECTORY="amazonlinux/amazonlinux"
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-rpm}"
