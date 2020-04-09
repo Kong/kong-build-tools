@@ -267,7 +267,6 @@ kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
-
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
@@ -287,14 +286,13 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) .
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX)
-
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh
+	docker exec kong /kong/.ci/run_tests.sh && \
+	$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) || true
 
 release-kong: test
 	ARCHITECTURE=amd64 \
@@ -386,7 +384,6 @@ cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
 	docker-compose -f test/kong-tests-compose.yaml rm -f
-
 endif
 
 cleanup: cleanup-tests cleanup-build
