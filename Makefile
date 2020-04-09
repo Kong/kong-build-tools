@@ -151,7 +151,6 @@ endif
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
 
 build-golang:
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -167,7 +166,6 @@ else
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg DEBUG=$(DEBUG) \
 	-t $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX) . )
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX)
 endif
 
 build-openresty:
@@ -195,7 +193,6 @@ else
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	--build-arg DEBUG=$(DEBUG) \
 	-t $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) . )
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -261,13 +258,11 @@ actual-build-kong:
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg DOCKER_GO_SUFFIX=$(DOCKER_GO_SUFFIX) \
 	-t $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) . )
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
 
 kong-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
-
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
@@ -287,14 +282,14 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) .
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX)
-
+	
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX)
 endif
 
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh
+	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
 
 release-kong: test
 	ARCHITECTURE=amd64 \
@@ -347,7 +342,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
 	TEST_COMPOSE_PATH=$(TEST_COMPOSE_PATH) \
 	DOCKER_GO_BUILDER=$(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX) \
-	./test/run_tests.sh
+	./test/run_tests.sh && make update-cache-images
 endif
 
 develop-tests:
@@ -386,10 +381,15 @@ cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
 	docker-compose -f test/kong-tests-compose.yaml rm -f
-
 endif
 
 cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+
+update-cache-images:
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
