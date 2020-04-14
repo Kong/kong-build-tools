@@ -14,6 +14,5 @@ COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
 
 RUN /build-kong.sh
-COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate
 
 COPY --from=GOLANG /usr/local/bin/go-pluginserver /tmp/build/usr/local/bin/go-pluginserver
