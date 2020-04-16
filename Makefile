@@ -105,7 +105,7 @@ debug:
 setup-ci:
 	@echo "no longer used"
 
-setup-build: cleanup-build
+setup-build:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
@@ -202,7 +202,7 @@ else
 package-kong: actual-package-kong
 endif
 
-actual-package-kong: cleanup
+actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
