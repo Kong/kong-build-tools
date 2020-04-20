@@ -50,9 +50,6 @@ else ifeq ($(RESTY_IMAGE_TAG),xenial)
 endif
 
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
-ifneq ($(BUILDX_INFO),)
-	BUILDX=false
-endif
 
 ifeq ($(BUILDX),false)
 	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
@@ -102,14 +99,13 @@ debug:
 	@echo ${BUILDX_INFO}
 	@echo ${DEBUG}
 
-setup-ci:
-	@echo "no longer used"
+setup-ci: setup-build
 
-setup-build: cleanup-build
+setup-build:
+	.ci/setup_ci.sh
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
-	.ci/setup_ci.sh
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
 	--amazonec2-instance-type a1.medium \
@@ -202,7 +198,7 @@ else
 package-kong: actual-package-kong
 endif
 
-actual-package-kong: cleanup
+actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
