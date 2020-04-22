@@ -284,7 +284,7 @@ endif
 
 test-kong: kong-test-container
 	docker-compose up -d
-	bash -c 'while [[ "$$(docker-compose ps | grep healthy | wc -l)" != "3" ]]; do docker-compose ps && sleep 5; done'
+	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
 
 release-kong: test
