@@ -34,6 +34,7 @@ ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
+RUN rm -rf /kong/* || true
 COPY kong /kong
 RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
