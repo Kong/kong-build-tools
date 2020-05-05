@@ -25,6 +25,9 @@ elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlibc"
   OUTPUT_FILE_SUFFIX=".aws"
 fi
+if [ "$RESTY_IMAGE_TAG" == "bullseye" ]; then
+  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
+fi
 OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo ${BUILDPLATFORM} | awk -F "/" '{ print $2}')
 
 ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`
