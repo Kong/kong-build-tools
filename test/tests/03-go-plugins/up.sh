@@ -1,4 +1,6 @@
 
+set -x
+
 # clone plugins
 git clone https://github.com/Kong/go-plugins
 
@@ -11,6 +13,8 @@ pushd go-plugins
   test -t 1 && USE_TTY="-it"
 
   GO_PDK_VERSION=$(curl -fsL https://raw.githubusercontent.com/Kong/go-pluginserver/$KONG_GO_PLUGINSERVER_VERSION/go.mod | grep go-pdk | awk -F" " '{print $2}')
+  echo "$KONG_GO_PLUGINSERVER_VERSION"
+  echo "$GO_PDK_VERSION"
   docker run -d --name go-plugin --rm -v $(pwd):/plugins $DOCKER_GO_BUILDER tail -f /dev/null
   docker exec $USE_TTY go-plugin go mod edit -replace github.com/Kong/go-pdk=github.com/Kong/go-pdk@$GO_PDK_VERSION
   docker exec $USE_TTY go-plugin make
