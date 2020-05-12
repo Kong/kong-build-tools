@@ -4,6 +4,7 @@ git clone https://github.com/Kong/go-plugins
 pushd go-plugins
 
   echo "Go builder image: $DOCKER_GO_BUILDER"
+  rm -rf *.so
 
   for src in *.go; do
     echo "compile $src"
