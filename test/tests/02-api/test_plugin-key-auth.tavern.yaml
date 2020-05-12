@@ -1,0 +1,136 @@
+---
+test_name: Test the key auth plugin
+
+stages:
+  - name: Create a service
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/services"
+      method: POST
+      json:
+        name: keyauthservice
+        url: http://mockbin.org
+    response:
+      status_code:
+        - 201
+      save:
+        body:
+          service_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Create a route
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/services/{service_id:s}/routes"
+      method: POST
+      json:
+        name: "keyauthroute"
+        hosts:
+        - "randomapiname.com"
+    response:
+      status_code:
+        - 201
+      save:
+        body:
+          route_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Enable the key-auth plugin
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/services/keyauthservice/plugins/"
+      method: POST
+      json:
+        name: key-auth
+    response:
+      strict: False
+      status_code: 201
+      save:
+        body:
+          plugin_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Proxy a request
+    request:
+      url: "{tavern.env_vars.PROXY_URI}/request"
+      method: GET
+      headers:
+        host: randomapiname.com
+    response:
+      strict: False
+      status_code: 401
+      body:
+        message: "No API key found in request"
+    delay_after: 5
+    max_retries: 1
+  - name: Create a consumer
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/consumers/"
+      method: POST
+      json:
+        username: Jason
+    response:
+      strict: False
+      status_code: 201
+      save:
+        body:
+          consumer_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Provision a key for the consumer
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason/key-auth"
+      method: POST    
+      json:
+        key: "90210"
+    response:
+      strict: False
+      status_code: 201
+      save:
+        body:
+          key_id: id
+    delay_after: 5
+    max_retries: 1
+  - name: Proxy a request with the key provided
+    request:
+      url: "{tavern.env_vars.PROXY_URI}/request"
+      method: GET
+      headers:
+        host: randomapiname.com
+        apikey: "90210"
+    response:
+      strict: False
+      status_code: 200
+      headers:
+        Via: "kong/{tavern.env_vars.KONG_VERSION}"
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the key-auth key
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason/key-auth/{key_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the consumer
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/consumers/Jason"
+      method: DELETE
+    response:
+      status_code: 204
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the route
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/routes/keyauthroute"
+      method: DELETE
+    response:
+      status_code: 204
+    delay_after: 5
+    max_retries: 1
+  - name: Delete the service
+    request:
+      url: "{tavern.env_vars.ADMIN_URI}/services/keyauthservice"
+      method: DELETE
+    response:
+      status_code: 204
+    delay_after: 5
+    max_retries: 1
