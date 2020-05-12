@@ -1,6 +1,4 @@
 
-set -x
-
 # clone plugins
 git clone https://github.com/Kong/go-plugins
 
