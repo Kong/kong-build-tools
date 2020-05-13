@@ -37,7 +37,8 @@ wait_kong() {
   while [[ "$(docker-compose -f $TEST_COMPOSE_PATH ps | grep healthy | wc -l | tr -d ' ')" != "2" ]]; do
     msg_yellow "Waiting for Kong to be ready..."
     docker-compose -f $TEST_COMPOSE_PATH ps
-    sleep 5
+    docker-compose -f $TEST_COMPOSE_PATH logs
+    sleep 15
   done
 }
 

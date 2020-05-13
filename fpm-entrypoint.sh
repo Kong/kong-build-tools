@@ -7,7 +7,7 @@ cd /tmp/build
 FPM_PARAMS=""
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   PACKAGE_TYPE="deb"
-  FPM_PARAMS="-d libpcre3 -d perl -d zlibc"
+  FPM_PARAMS="-d libpcre3 -d perl -d zlibc -d zlib1g-dev"
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
   PACKAGE_TYPE="rpm"

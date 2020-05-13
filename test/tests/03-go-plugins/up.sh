@@ -1,29 +1,22 @@
 
 # clone plugins
 git clone https://github.com/Kong/go-plugins
+
 pushd go-plugins
 
   echo "Go builder image: $DOCKER_GO_BUILDER"
+  rm -rf *.so
 
-  for src in *.go; do
-    echo "compile $src"
-    docker run --rm -v $(pwd):/plugins $DOCKER_GO_BUILDER build $src
-  done
+  USE_TTY="-t"
+  test -t 1 && USE_TTY="-it"
+
+  GO_PDK_VERSION=$(curl -fsL https://raw.githubusercontent.com/Kong/go-pluginserver/$KONG_GO_PLUGINSERVER_VERSION/go.mod | grep go-pdk | awk -F" " '{print $2}')
+  docker run -d --name go-plugin --rm -v $(pwd):/plugins $DOCKER_GO_BUILDER tail -f /dev/null
+  docker exec $USE_TTY go-plugin go mod edit -replace github.com/Kong/go-pdk=github.com/Kong/go-pdk@$GO_PDK_VERSION
+  docker exec $USE_TTY go-plugin make
+  docker stop go-plugin
 
 popd
-
-# cp -v *.so /usr/local/kong
-# cd ..
-# rm -rf go-plugins
-
-# docker build --build-arg DOCKER_GO_BUILDER=$DOCKER_GO_BUILDER \
-#   -f Dockerfile.build_plugin -t go-plugin-builder .
-# docker run --name go-plugin-builder-container go-plugin-builder
-
-# docker cp go-plugin-builder-container:/go-plugins/go-hello.so .
-
-# docker rm -f go-plugin-builder-container
-# rm -rf go-plugins
 
 echo $KONG_TEST_IMAGE_NAME
 docker build --build-arg KONG_TEST_IMAGE_NAME=$KONG_TEST_IMAGE_NAME \
