@@ -4,8 +4,7 @@ pipeline {
         cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
     }
     environment {
-        KONG_SOURCE = "test/kong-package"
-        DOCKER_KONG_VERSION = "centos-zlib"
+        KONG_SOURCE = "master"
         KONG_SOURCE_LOCATION = "/tmp/kong"
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
@@ -13,22 +12,84 @@ pipeline {
     }
     stages {
         stage('Build Kong') {
+            agent {
+                node {
+                    label 'docker-compose'
+                }
+            }
+            steps {
+                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                sh 'make kong-test-container'
+            }
+        }
+        stage('Tests Kong') {
             parallel {
-                stage('next') {
+                stage('dbless') {
                     agent {
                         node {
                             label 'docker-compose'
                         }
                     }
+                    environment {
+                        TEST_DATABASE = "off"
+                        TEST_SUITE = "dbless"
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                        sh 'make kong-test-container'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('postgres') {
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = 'postgres'
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('postgres plugins') {
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = 'postgres'
+                        TEST_SUITE = 'plugins'
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                        sh 'make test-kong'
+                    }
+                }
+                stage('cassandra') {
+                    agent {
+                        node {
+                            label 'docker-compose'
+                        }
+                    }
+                    environment {
+                        TEST_DATABASE = 'cassandra'
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                        sh 'make test-kong'
                     }
                 }
             }
         }
-        stage('Test Builds Next') {
+        stage('Test Builds') {
             parallel {
                 stage('RedHat Builds'){
                     agent {
@@ -122,6 +183,23 @@ pipeline {
                 }
             }
         }
-
+        stage('Release') {
+            agent {
+                node {
+                    label 'docker-compose'
+                }
+            }
+            when {
+                triggeredBy 'TimerTrigger'
+            }
+            environment {
+                GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+            }
+            steps {
+                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
+                sh '. ~/.nvm/nvm.sh && nvm install lts/*'
+                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
+            }
+        }
     }
 }
