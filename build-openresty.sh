@@ -34,6 +34,11 @@ then
   KONG_NGX_BUILD_ARGS="--debug"
 fi
 
+if [ -z "$KONG_NGINX_MODULE" ]
+then
+  KONG_NGINX_MODULE="master"
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -47,6 +52,7 @@ EDITION=$EDITION \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
 --luarocks $RESTY_LUAROCKS_VERSION \
+--kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
 --work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
 
