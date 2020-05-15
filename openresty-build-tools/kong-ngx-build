@@ -61,6 +61,10 @@ main() {
         OPENSSL_SHA=$2
         shift 2
         ;;
+      --with-openssl-fips)
+        OPENSSL_FIPS_VER=2.0.16
+        shift 1
+        ;;
       --luarocks)
         LUAROCKS_VER=$2
         shift 2
@@ -140,6 +144,13 @@ main() {
     fatal "OpenSSL version can not be empty"
   fi
 
+  if [[ -n "$OPENSSL_FIPS_VER" ]] && \
+       ! version_eq $OPENSSL_VER 1.0.1 && \
+       ! version_eq $OPENSSL_VER 1.0.2 ];
+  then
+    fatal "OpenSSL FIPS mode is only supported for OpenSSL 1.0.1 and 1.0.2"
+  fi
+
   # retrieve DIST info of DIST-specific patches
 
   if [ -f /etc/os-release ]; then
@@ -159,6 +170,7 @@ main() {
   NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
 
   OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
+  OPENSSL_FIPS_DOWNLOAD=$DOWNLOAD_CACHE/openssl-fips-$OPENSSL_FIPS_VER
   OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
 
   mkdir -p $DOWNLOAD_CACHE $PREFIX
@@ -180,6 +192,20 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
+    # OpenSSL FIPS module
+    if [[ -n "$OPENSSL_FIPS_VER" ]]; then
+      # instructions available at:
+      # https://www.openssl.org/docs/fips/UserGuide-2.0.pdf
+      warn "OpenSSL FIPS module not found, downloading..."
+      set +e
+      curl --fail -sSLO https://www.openssl.org/source/old/fips/openssl-fips-$OPENSSL_FIPS_VER.tar.gz
+      if [[ $? != 0 ]]; then
+        err "Could not download OpenSSL FIPS module"
+      fi
+      set -e
+      tar -xzf openssl-fips-$OPENSSL_FIPS_VER.tar.gz
+    fi
+
     # OpenSSL
 
     if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
@@ -367,38 +393,60 @@ main() {
   if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
     notice "Building OpenSSL..."
 
+    if [[ -n "$OPENSSL_FIPS_VER" ]]; then
+      pushd $OPENSSL_FIPS_DOWNLOAD
+        notice "Building OpenSSL FIPS module..."
+        OPENSSL_FIPS_OPTS=(
+          "-g"
+        )
+
+        eval "FIPSDIR=$OPENSSL_PREFIX/fips ./config ${OPENSSL_FIPS_OPTS[*]}"
+        make
+        make install
+      popd
+    fi
+
     pushd $OPENSSL_DOWNLOAD
       if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
-          OPENSSL_OPTS=(
-            "-g"
-            "shared"
-            "-DPURIFY"
-            "no-threads"
-            "--prefix=$OPENSSL_PREFIX"
-            "--openssldir=$OPENSSL_PREFIX"
-          )
+        OPENSSL_OPTS=(
+          "-g"
+          "shared"
+          "-DPURIFY"
+          "no-threads"
+          "--prefix=$OPENSSL_PREFIX"
+          "--openssldir=$OPENSSL_PREFIX"
+        )
 
-          if version_gte $OPENSSL_VER 1.1.0; then
-            OPENSSL_OPTS+=('no-unit-test')
+        if version_gte $OPENSSL_VER 1.1.0; then
+          OPENSSL_OPTS+=('no-unit-test')
 
-          else
-            OPENSSL_OPTS+=('no-tests')
+        else
+          OPENSSL_OPTS+=('no-tests')
+        fi
+
+        if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
+          local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
+          if [[ $OS != "Darwin" ]]; then
+            ld_opts="$ld_opts,--enable-new-dtags"
           fi
 
-          if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
-            local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
-            if [[ $OS != "Darwin" ]]; then
-              ld_opts="$ld_opts,--enable-new-dtags"
-            fi
+          OPENSSL_OPTS+=("$ld_opts")
+        fi
 
-            OPENSSL_OPTS+=("$ld_opts")
-          fi
+        if [ $DEBUG == 1 ]; then
+          OPENSSL_OPTS+=('-d')
+        fi
 
-          if [ $DEBUG == 1 ]; then
-            OPENSSL_OPTS+=('-d')
-          fi
+        if [[ -n "$OPENSSL_FIPS_VER" ]]; then
+          OPENSSL_OPTS+=('fips')
+          OPENSSL_OPTS+=("--with-fipsdir=$OPENSSL_PREFIX/fips")
+        fi
 
         eval ./config ${OPENSSL_OPTS[*]}
+
+        if [[ -n "$OPENSSL_FIPS_VER" ]]; then
+          make depend
+        fi
       fi
 
       if version_gte $OPENSSL_VER 1.1.0; then
@@ -408,6 +456,12 @@ main() {
       fi
 
       make install_sw DESTDIR=${OPENSSL_DESTDIR}
+
+      if [[ -n "$OPENSSL_FIPS_VER" ]]; then
+        if [[ $(nm ${OPENSSL_INSTALL}/lib/libcrypto.so | grep FIPS | wc -l) -lt 100 ]]; then
+          fatal "OpenSSL FIPS module required, but missing FIPS symbols from libcrypto dylib"
+        fi
+      fi
     popd
 
     succ "OpenSSL $OPENSSL_VER has been built successfully!"
