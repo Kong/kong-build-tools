@@ -1,0 +1,22 @@
+diff --git a/nginx-1.15.8/src/http/modules/ngx_http_proxy_module.c b/nginx-1.15.8/src/http/modules/ngx_http_proxy_module.c
+index 7d2526a..18c538c 100644
+--- a/nginx-1.15.8/src/http/modules/ngx_http_proxy_module.c
++++ b/nginx-1.15.8/src/http/modules/ngx_http_proxy_module.c
+@@ -124,7 +124,7 @@ static ngx_int_t ngx_http_proxy_eval(ngx_http_request_t *r,
+ #if (NGX_HTTP_CACHE)
+ static ngx_int_t ngx_http_proxy_create_key(ngx_http_request_t *r);
+ #endif
+-static ngx_int_t ngx_http_proxy_create_request(ngx_http_request_t *r);
++ngx_int_t ngx_http_proxy_create_request(ngx_http_request_t *r);
+ static ngx_int_t ngx_http_proxy_reinit_request(ngx_http_request_t *r);
+ static ngx_int_t ngx_http_proxy_body_output_filter(void *data, ngx_chain_t *in);
+ static ngx_int_t ngx_http_proxy_process_status_line(ngx_http_request_t *r);
+@@ -1146,7 +1146,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
+ #endif
+
+
+-static ngx_int_t
++ngx_int_t
+ ngx_http_proxy_create_request(ngx_http_request_t *r)
+ {
+     size_t                        len, uri_len, loc_len, body_len,
