@@ -9,8 +9,8 @@ ENV GOLANG_VERSION 1.13.5
 ARG KONG_GO_PLUGINSERVER_VERSION=master
 ENV KONG_GO_PLUGINSERVER_VERSION $KONG_GO_PLUGINSERVER_VERSION
 
-
 RUN set -eux; \
+	distro=$(sed -n -e 's/^NAME="\(.*\)\"/\1/p' /etc/os-release) \
 	dpkgArch="$(dpkg --print-architecture || echo amd64)"; \
 	case "${dpkgArch##*-}" in \
 		amd64) goRelArch='linux-amd64'; goRelSha256='512103d7ad296467814a6e3f635631bd35574cab3369a97a323c9a585ccaa569' ;; \
@@ -25,6 +25,10 @@ RUN set -eux; \
 	echo "${goRelSha256} *go.tgz" | sha256sum -c -; \
 	tar -C /usr/local -xzf go.tgz; \
 	rm go.tgz; \
+	if [ "$distro" = 'Alpine Linux' ]; then \
+		cd /usr/local/go/src; \
+		./make.bash; \
+	fi; \
 	\
 	if [ "$goRelArch" = 'src' ]; then \
 		echo >&2; \
@@ -36,6 +40,7 @@ RUN set -eux; \
 	\
 	export PATH="/usr/local/go/bin:$PATH" ; \
 	export GOPATH="/tmp/go" ; \
+	go version; \
 	\
 	mkdir /gps ; cd /gps ; \
 	go mod init go-pluginserver ; \
