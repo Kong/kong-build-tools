@@ -77,6 +77,10 @@ elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
   curl -L https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz -o output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
 fi
 
+if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
+  exit 0
+fi
+
 REPOSITORY_OS_NAME=$(sed -e 's/\//-/g' <<< $REPOSITORY_OS_NAME)
 BINTRAY_PUT_ARGS="$BINTRAY_PUT_ARGS?publish=1&override=0"
 
