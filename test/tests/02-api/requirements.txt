@@ -16,7 +16,7 @@ pluggy==0.13.1
 py==1.8.1
 PyJWT==1.7.1
 pykwalify==1.7.0
-pytest==4.5.0
+pytest==4.6.10
 python-box==4.2.3
 python-dateutil==2.8.1
 PyYAML==5.3.1
