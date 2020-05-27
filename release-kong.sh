@@ -10,6 +10,7 @@ BINTRAY_API="https://api.bintray.com"
 
 KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME
 KONG_VERSION=$KONG_VERSION
+OFFICIAL_RELEASE=$OFFICIAL_RELEASE
 
 BUILD_DIR="output"
 BINTRAY_PUT_ARGS=""
@@ -21,11 +22,16 @@ if [ "$REPOSITORY_OS_NAME" == "next" ]; then
   DOCKER_TAG="development"
 fi
 
-if [ "$RESTY_IMAGE_BASE" != "src" ]; then
-  docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  docker push kong/go-plugin-tool:${KONG_VERSION}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
-  docker push kong/go-plugin-tool:${DOCKER_TAG}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}
+if [ "$OFFICIAL_RELEASE" == "true" ]; then
+  if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+    docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}-alpine
+    docker push kong/go-plugin-tool:${KONG_VERSION}-alpine
+  fi
+  
+  if [ "$RESTY_IMAGE_TAG" == "bionic" ]; then
+    docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}
+    docker push kong/go-plugin-tool:${KONG_VERSION}
+  fi
 fi
 
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
