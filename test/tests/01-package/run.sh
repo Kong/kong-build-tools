@@ -21,7 +21,7 @@ docker run ${USE_TTY} --user=root --rm ${DOCKER_GO_BUILDER} /bin/sh -c "ls -la /
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
   cp $PACKAGE_LOCATION/*.deb kong.deb
-  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu
+  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:18.04
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg -i /src/kong.deb || true"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get install -f -y"
