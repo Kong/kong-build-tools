@@ -14,7 +14,7 @@ pipeline {
         stage('Build Kong') {
             agent {
                 node {
-                    label 'docker-compose'
+                    label 'bionic'
                 }
             }
             steps {
@@ -28,7 +28,7 @@ pipeline {
                 stage('dbless') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -44,7 +44,7 @@ pipeline {
                 stage('postgres') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -59,7 +59,7 @@ pipeline {
                 stage('postgres plugins') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -75,7 +75,7 @@ pipeline {
                 stage('cassandra') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -94,7 +94,7 @@ pipeline {
                 stage('RedHat Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -113,7 +113,7 @@ pipeline {
                 stage('Centos Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -133,7 +133,7 @@ pipeline {
                 stage('Debian Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -154,7 +154,7 @@ pipeline {
                 stage('Ubuntu Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     options {
@@ -186,7 +186,7 @@ pipeline {
         stage('Release') {
             agent {
                 node {
-                    label 'docker-compose'
+                    label 'bionic'
                 }
             }
             when {
