@@ -45,9 +45,10 @@ RUN set -eux; \
 	mkdir /gps ; cd /gps ; \
 	go mod init go-pluginserver ; \
 	go get -d -v github.com/Kong/go-pluginserver@${KONG_GO_PLUGINSERVER_VERSION} ; \
-	go install ... ; \
+	go install -ldflags="-s -w -X main.version=${KONG_GO_PLUGINSERVER_VERSION}" ... ; \
 	cp /tmp/go/bin/go-pluginserver /usr/local/bin/ ;\
-	cd ; rm -r /gps
+	cd ; rm -r /gps; \
+	go-pluginserver --version
 
 RUN (echo '#!/bin/sh' && echo 'go build -buildmode=plugin "$@"') >> /usr/local/bin/build && \
 	chmod a+x /usr/local/bin/build
