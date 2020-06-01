@@ -12,6 +12,14 @@ pipeline {
     }
     stages {
         stage('Build Kong') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             agent {
                 node {
                     label 'bionic'
@@ -24,6 +32,14 @@ pipeline {
             }
         }
         stage('Tests Kong') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             parallel {
                 stage('dbless') {
                     agent {
@@ -90,6 +106,14 @@ pipeline {
             }
         }
         stage('Test Builds') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             parallel {
                 stage('RedHat Builds'){
                     agent {
