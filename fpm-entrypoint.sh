@@ -22,7 +22,7 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   fi
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   PACKAGE_TYPE="rpm"
-  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlibc"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes"
   OUTPUT_FILE_SUFFIX=".aws${RESTY_IMAGE_TAG}"
 fi
 if [ "$RESTY_IMAGE_TAG" == "bullseye" ]; then
