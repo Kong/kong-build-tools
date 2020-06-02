@@ -12,9 +12,17 @@ pipeline {
     }
     stages {
         stage('Build Kong') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             agent {
                 node {
-                    label 'docker-compose'
+                    label 'bionic'
                 }
             }
             steps {
@@ -24,11 +32,19 @@ pipeline {
             }
         }
         stage('Tests Kong') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             parallel {
                 stage('dbless') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -44,7 +60,7 @@ pipeline {
                 stage('postgres') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -59,7 +75,7 @@ pipeline {
                 stage('postgres plugins') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -75,7 +91,7 @@ pipeline {
                 stage('cassandra') {
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -90,11 +106,19 @@ pipeline {
             }
         }
         stage('Test Builds') {
+            when {
+                beforeAgent true
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
+            }
             parallel {
                 stage('RedHat Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -113,7 +137,7 @@ pipeline {
                 stage('Centos Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -133,7 +157,7 @@ pipeline {
                 stage('Debian Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     environment {
@@ -154,7 +178,7 @@ pipeline {
                 stage('Ubuntu Builds'){
                     agent {
                         node {
-                            label 'docker-compose'
+                            label 'bionic'
                         }
                     }
                     options {
@@ -186,7 +210,7 @@ pipeline {
         stage('Release') {
             agent {
                 node {
-                    label 'docker-compose'
+                    label 'bionic'
                 }
             }
             when {
