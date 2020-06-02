@@ -1,4 +1,6 @@
-FROM alpine
+ARG RESTY_IMAGE_TAG="3"
+
+FROM alpine:${RESTY_IMAGE_TAG}
 
 RUN apk update \
   && apk add ca-certificates wget coreutils patch grep \
