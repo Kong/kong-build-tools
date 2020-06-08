@@ -35,11 +35,16 @@ EOD"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl restart kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl stop kong"
+  sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg --remove $KONG_PACKAGE_NAME"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "! test -f /lib/systemd/system/kong.service"
   docker stop systemd-ubuntu
