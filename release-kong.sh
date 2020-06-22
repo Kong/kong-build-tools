@@ -22,18 +22,6 @@ if [ "$REPOSITORY_OS_NAME" == "next" ]; then
   DOCKER_TAG="development"
 fi
 
-if [ "$OFFICIAL_RELEASE" == "true" ]; then
-  if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-    docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}-alpine
-    docker push kong/go-plugin-tool:${KONG_VERSION}-alpine
-  fi
-  
-  if [ "$RESTY_IMAGE_TAG" == "bionic" ]; then
-    docker tag mashape/kong-build-tools:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} kong/go-plugin-tool:${KONG_VERSION}
-    docker push kong/go-plugin-tool:${KONG_VERSION}
-  fi
-fi
-
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   BINTRAY_DIRECTORY=""
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-deb}"

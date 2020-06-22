@@ -130,10 +130,6 @@ Also does some rudimentary checks of the systemd and logrotate we include with o
 Uses the python [tavern](https://taverntesting.github.io/) testing tool to run functional tests against Kong with Postgres by 
 sending REST requests to the Kong admin api and validating the expected responses / behaviour on the proxy ports.
 
-**03-go-plugin**
-
-Builds a go-plugin and sets it up with Kong to verify the go-plugin capabilities
-
 ## Releasing Kong
 
 The same defaults that applied when creating a packaged version of Kong apply to releasing said package

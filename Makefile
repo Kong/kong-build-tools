@@ -153,21 +153,6 @@ endif
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
 
-build-golang:
-ifeq ($(RESTY_IMAGE_BASE),src)
-	@echo "nothing to be done"
-else
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX) || \
-	( $(MAKE) build-base ; \
-	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.golang \
-	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
-	-t $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX) . )
-endif
-
 build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
@@ -251,7 +236,6 @@ actual-build-kong:
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
-	$(MAKE) build-golang && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -268,8 +252,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX) \
 	$(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) )
-
-	$(MAKE) build-golang
 
 	docker run -d --rm --name test $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) tail -f /dev/null
 	docker export test | docker import - $(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX)
@@ -347,7 +329,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
 	TEST_COMPOSE_PATH=$(TEST_COMPOSE_PATH) \
 	KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
-	DOCKER_GO_BUILDER=$(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX) \
 	./test/run_tests.sh && make update-cache-images
 endif
 
@@ -397,5 +378,4 @@ cleanup: cleanup-tests cleanup-build
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):go-plugin-tool-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_GO_SUFFIX)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)
