@@ -1,2 +1,0 @@
-
-stop_kong

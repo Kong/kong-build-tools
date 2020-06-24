@@ -40,7 +40,6 @@ services:
     environment:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_GO_PLUGINS_DIR: "${KONG_GO_PLUGINS_DIR:-off}"
       KONG_PLUGINS: "${KONG_PLUGINS:-bundled}"
       KONG_CASSANDRA_CONTACT_POINTS: db
       KONG_DATABASE: postgres

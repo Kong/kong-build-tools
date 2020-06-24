@@ -2,16 +2,17 @@ ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 ARG DOCKER_KONG_SUFFIX
 ARG DOCKER_OPENRESTY_SUFFIX
-ARG DOCKER_GO_SUFFIX
 ARG DOCKER_REPOSITORY
-
-FROM ${DOCKER_REPOSITORY}:go-plugin-tool-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_GO_SUFFIX} as GOLANG
 
 FROM ${DOCKER_REPOSITORY}:test-${DOCKER_OPENRESTY_SUFFIX}
 
 ENV PATH=$PATH:/kong/bin:/usr/local/openresty/bin/:/usr/local/kong/bin/:/usr/local/openresty/nginx/sbin/
 ENV LUA_PATH=/kong/?.lua;/kong/?/init.lua;/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua
 ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so
+ENV GO_VERSION="1.13.12"
+
+ARG KONG_GO_PLUGINSERVER_VERSION=master
+ENV KONG_GO_PLUGINSERVER_VERSION $KONG_GO_PLUGINSERVER_VERSION
 
 RUN cp -R /tmp/build/* / || true
 RUN rm -rf /usr/local/bin/kong
@@ -28,11 +29,21 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get install -y postgresql
 
-COPY --from=GOLANG /usr/local/go /usr/local/go
+RUN curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz \
+	-o /tmp/go.tar.gz && \
+	cd /tmp && tar -xf go.tar.gz
 
-ENV KONG_GO_PLUGINSERVER_VERSION=master
 ENV GOPATH=/tmp/go
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+ENV PATH $GOPATH/bin:$PATH
+
+RUN go version ; \
+	mkdir /gps ; cd /gps ; \
+	go mod init go-pluginserver ; \
+	go get -d -v github.com/Kong/go-pluginserver@${KONG_GO_PLUGINSERVER_VERSION} ; \
+	go install -ldflags="-s -w -X main.version=${KONG_GO_PLUGINSERVER_VERSION}" ... ; \
+	cp /tmp/go/bin/go-pluginserver /usr/local/bin/ ;\
+	cd ; rm -r /gps; \
+	go-pluginserver --version
 
 RUN rm -rf /kong/* || true
 COPY kong /kong
@@ -46,7 +57,5 @@ RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest local::lib
 
 RUN rm -rf /tmp/build
-
-COPY --from=GOLANG /usr/local/bin/go-pluginserver /usr/local/bin/go-pluginserver
 
 CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
