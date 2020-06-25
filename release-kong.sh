@@ -64,6 +64,9 @@ elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
   OUTPUT_FILE_SUFFIX=".tar.gz"
   curl -L https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz -o output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
 fi
+if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ] && [ "$RESTY_IMAGE_TAG" == "2" ]; then
+  BINTRAY_DIRECTORY="amazonlinux/amazonlinux2"
+fi
 
 if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
   exit 0
