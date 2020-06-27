@@ -13,7 +13,7 @@ more-itertools==8.4.0
 paho-mqtt==1.3.1
 pbr==5.4.5
 pluggy==0.13.1
-py==1.8.2
+py==1.9.0
 PyJWT==1.7.1
 pykwalify==1.7.0
 pytest==4.5.0
