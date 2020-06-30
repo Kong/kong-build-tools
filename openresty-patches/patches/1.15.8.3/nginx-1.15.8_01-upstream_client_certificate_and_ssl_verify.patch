@@ -12,7 +12,7 @@ index 90710557..539a4db9 100644
 
 
  #if (NGX_HTTP_CACHE)
-@@ -1694,7 +1694,14 @@
+@@ -1691,7 +1691,14 @@
      c->sendfile = 0;
      u->output.sendfile = 0;
 
@@ -38,7 +38,7 @@ index 90710557..539a4db9 100644
      r->connection->log->action = "SSL handshaking to upstream";
 
      rc = ngx_ssl_handshake(c);
-@@ -1775,7 +1775,11 @@
+@@ -1768,7 +1768,11 @@
 
      if (c->ssl->handshaked) {
 
