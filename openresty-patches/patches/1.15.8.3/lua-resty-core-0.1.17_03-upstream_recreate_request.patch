@@ -1,0 +1,55 @@
+From daf26ee06cb4e276c96ea7e34a192f04d5fa7a22 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Tue, 23 Jun 2020 17:40:20 -0700
+Subject: [PATCH 1/2] feature: add the `balancer.recreate_request` function,
+ which allows user to recreate request buffer in balancer phase.
+
+This allows certain request parameters, such as headers (including
+`Host` header) to be modified between balancer retries.
+---
+ lua-resty-core-0.1.17/lib/ngx/balancer.lua | 25 ++++++++++++++++++++++
+
+diff --git a/lua-resty-core-0.1.17/lib/ngx/balancer.lua b/lua-resty-core-0.1.17/lib/ngx/balancer.lua
+index d584639..2bc16e1 100644
+--- a/lua-resty-core-0.1.17/lib/ngx/balancer.lua
++++ b/lua-resty-core-0.1.17/lib/ngx/balancer.lua
+@@ -38,6 +38,10 @@ if subsystem == 'http' then
+     int ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
+         long connect_timeout, long send_timeout,
+         long read_timeout, char **err);
++
++    int
++    ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
++        char **err);
+     ]]
+ 
+     ngx_lua_ffi_balancer_set_current_peer =
+@@ -207,4 +211,25 @@ function _M.set_timeouts(connect_timeout, send_timeout, read_timeout)
+ end
+ 
+ 
++if subsystem == 'http' then
++    function _M.recreate_request()
++        local r = get_request()
++        if not r then
++            error("no request found")
++        end
++
++        local rc = C.ngx_http_lua_ffi_balancer_recreate_request(r, errmsg)
++        if rc == FFI_OK then
++            return true
++        end
++
++        if errmsg[0] ~= nil then
++            return nil, ffi_str(errmsg[0])
++        end
++
++        return nil, "failed to recreate the upstream request"
++    end
++end
++
++
+ return _M
+-- 
+2.20.1
+
