@@ -23,7 +23,7 @@ elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   PACKAGE_TYPE="rpm"
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes"
-  OUTPUT_FILE_SUFFIX=".aws${RESTY_IMAGE_TAG}"
+  OUTPUT_FILE_SUFFIX=".aws"
 fi
 if [ "$RESTY_IMAGE_TAG" == "bullseye" ]; then
   FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"

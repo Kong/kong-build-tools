@@ -55,7 +55,7 @@ elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-rpm}"
   REPOSITORY_NAME="${REPOSITORY_NAME:-$KONG_PACKAGE_NAME-rpm}"
   REPOSITORY_OS_NAME="${REPOSITORY_OS_NAME:-aws}"
-  OUTPUT_FILE_SUFFIX=".aws${RESTY_IMAGE_TAG.${ARCHITECTURE}.rpm"
+  OUTPUT_FILE_SUFFIX=".aws${RESTY_IMAGE_TAG}.${ARCHITECTURE}.rpm"
 elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
   BINTRAY_DIRECTORY=""
   REPOSITORY_TYPE="${REPOSITORY_TYPE:-generic}"
@@ -63,6 +63,9 @@ elif [ "$RESTY_IMAGE_BASE" == "src" ]; then
   REPOSITORY_OS_NAME="${REPOSITORY_OS_NAME:-src}"
   OUTPUT_FILE_SUFFIX=".tar.gz"
   curl -L https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz -o output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
+fi
+if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ] && [ "$RESTY_IMAGE_TAG" == "2" ]; then
+  BINTRAY_DIRECTORY="amazonlinux/amazonlinux2"
 fi
 
 if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
