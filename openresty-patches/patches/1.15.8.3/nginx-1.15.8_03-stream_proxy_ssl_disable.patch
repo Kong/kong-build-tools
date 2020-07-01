@@ -9,13 +9,13 @@ index 09493135..fc8f8479 100644
 +#if (NGX_STREAM_LUA_KONG)
 +#include <ngx_stream_lua_kong_module.h>
 +#endif
- 
- 
+
+
  typedef struct {
-@@ -779,8 +782,18 @@ ngx_stream_proxy_init_upstream(ngx_stream_session_t *s)
- 
+@@ -799,8 +802,18 @@ ngx_stream_proxy_init_upstream(ngx_stream_session_t *s)
+
  #if (NGX_STREAM_SSL)
- 
+
 +#if (NGX_STREAM_LUA_KONG)
 +
 +    if (pc->type == SOCK_STREAM && pscf->ssl
@@ -25,7 +25,7 @@ index 09493135..fc8f8479 100644
 +#else
 +
      if (pc->type == SOCK_STREAM && pscf->ssl) {
- 
+
 +#endif
 +
          if (u->proxy_protocol) {

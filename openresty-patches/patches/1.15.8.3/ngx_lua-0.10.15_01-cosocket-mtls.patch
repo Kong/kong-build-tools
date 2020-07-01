@@ -35,12 +35,12 @@ index efd5875f..1e3fc91f 100644
 -static int ngx_http_lua_ssl_free_session(lua_State *L);
 -#endif
  static void ngx_http_lua_socket_tcp_close_connection(ngx_connection_t *c);
- 
- 
+
+
 @@ -309,13 +306,6 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
      lua_pushcfunction(L, ngx_http_lua_socket_tcp_connect);
      lua_setfield(L, -2, "connect");
- 
+
 -#if (NGX_HTTP_SSL)
 -
 -    lua_pushcfunction(L, ngx_http_lua_socket_tcp_sslhandshake);
@@ -50,7 +50,7 @@ index efd5875f..1e3fc91f 100644
 -
      lua_pushcfunction(L, ngx_http_lua_socket_tcp_receive);
      lua_setfield(L, -2, "receive");
- 
+
 @@ -386,19 +376,6 @@ ngx_http_lua_inject_socket_tcp_api(ngx_log_t *log, lua_State *L)
      lua_setfield(L, -2, "__gc");
      lua_rawset(L, LUA_REGISTRYINDEX);
@@ -69,12 +69,12 @@ index efd5875f..1e3fc91f 100644
 -
 -#endif
  }
- 
- 
-@@ -1531,64 +1508,69 @@ ngx_http_lua_socket_conn_error_retval_handler(ngx_http_request_t *r,
- 
+
+
+@@ -1579,64 +1556,69 @@ ngx_http_lua_socket_conn_error_retval_handler(ngx_http_request_t *r,
+
  #if (NGX_HTTP_SSL)
- 
+
 -static int
 -ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
 +static const char *
@@ -97,7 +97,7 @@ index efd5875f..1e3fc91f 100644
 +    if (ops & SOCKET_OP_CONNECT && u->conn_waiting) {
 +        return "socket busy connecting";
 +    }
- 
+
 -    n = lua_gettop(L);
 -    if (n < 1 || n > 5) {
 -        return luaL_error(L, "ngx.socket sslhandshake: expecting 1 ~ 5 "
@@ -105,7 +105,7 @@ index efd5875f..1e3fc91f 100644
 +    if (ops & SOCKET_OP_READ && u->read_waiting) {
 +        return "socket busy reading";
      }
- 
+
 -    r = ngx_http_lua_get_req(L);
 -    if (r == NULL) {
 -        return luaL_error(L, "no request found");
@@ -116,12 +116,12 @@ index efd5875f..1e3fc91f 100644
 +    {
 +        return "socket busy writing";
      }
- 
+
 -    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 -                   "lua tcp socket ssl handshake");
 +    return NULL;
 +}
- 
+
 -    luaL_checktype(L, 1, LUA_TTABLE);
 +int
 +ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
@@ -134,12 +134,12 @@ index efd5875f..1e3fc91f 100644
 +    ngx_http_lua_ctx_t      *ctx;
 +    ngx_http_lua_co_ctx_t   *coctx;
 +    const char              *busy_rc;
- 
+
 -    lua_rawgeti(L, 1, SOCKET_CTX_INDEX);
 -    u = lua_touserdata(L, -1);
 +    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 +                   "lua tcp socket tls handshake");
- 
+
      if (u == NULL
          || u->peer.connection == NULL
          || u->read_closed
@@ -151,13 +151,13 @@ index efd5875f..1e3fc91f 100644
 +        *errmsg = "closed";
 +        return NGX_ERROR;
      }
- 
+
      if (u->request != r) {
 -        return luaL_error(L, "bad request");
 +        *errmsg = "bad request";
 +        return NGX_ERROR;
      }
- 
+
 -    ngx_http_lua_socket_check_busy_connecting(r, u, L);
 -    ngx_http_lua_socket_check_busy_reading(r, u, L);
 -    ngx_http_lua_socket_check_busy_writing(r, u, L);
@@ -168,7 +168,7 @@ index efd5875f..1e3fc91f 100644
 +        *errmsg = busy_rc;
 +        return NGX_ERROR;
 +    }
- 
+
      if (u->raw_downstream || u->body_downstream) {
 -        lua_pushnil(L);
 -        lua_pushliteral(L, "not supported for downstream");
@@ -176,11 +176,11 @@ index efd5875f..1e3fc91f 100644
 +        *errmsg = "not supported for downstream";
 +        return NGX_ERROR;
      }
- 
+
      c = u->peer.connection;
-@@ -1596,122 +1578,96 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
+@@ -1644,122 +1626,96 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
      u->ssl_session_reuse = 1;
- 
+
      if (c->ssl && c->ssl->handshaked) {
 -        switch (lua_type(L, 2)) {
 -        case LUA_TUSERDATA:
@@ -189,7 +189,7 @@ index efd5875f..1e3fc91f 100644
 +        if (sess != NULL) {
 +            return NGX_DONE;
 +        }
- 
+
 -        case LUA_TBOOLEAN:
 -            if (!lua_toboolean(L, 2)) {
 -                /* avoid generating the ssl session */
@@ -198,17 +198,17 @@ index efd5875f..1e3fc91f 100644
 -            }
 -            /* fall through */
 +        u->ssl_session_reuse = enable_session_reuse;
- 
+
 -        default:
 -            ngx_http_lua_ssl_handshake_retval_handler(r, u, L);
 -            break;
 -        }
 +        (void) ngx_http_lua_tls_handshake_retval_handler(r, u, NULL);
- 
+
 -        return 1;
 +        return NGX_OK;
      }
- 
+
      if (ngx_ssl_create_connection(u->conf->ssl, c,
                                    NGX_SSL_BUFFER|NGX_SSL_CLIENT)
          != NGX_OK)
@@ -219,7 +219,7 @@ index efd5875f..1e3fc91f 100644
 +        *errmsg = "failed to create ssl connection";
 +        return NGX_ERROR;
      }
- 
+
      ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
      if (ctx == NULL) {
 -        return luaL_error(L, "no ctx found");
@@ -231,11 +231,11 @@ index efd5875f..1e3fc91f 100644
 +        *errmsg = "no ctx found";
 +        return NGX_ERROR;
      }
- 
+
      coctx = ctx->cur_co_ctx;
- 
+
      c->sendfile = 0;
- 
+
 -    if (n >= 2) {
 -        if (lua_type(L, 2) == LUA_TBOOLEAN) {
 -            u->ssl_session_reuse = lua_toboolean(L, 2);
@@ -258,12 +258,12 @@ index efd5875f..1e3fc91f 100644
 +            *errmsg = "lua tls set session failed";
 +            return NGX_ERROR;
          }
- 
+
 -        if (n >= 3) {
 -            name.data = (u_char *) lua_tolstring(L, 3, &name.len);
 +        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
 +                       "lua tls set session: %p", sess);
- 
+
 -            if (name.data) {
 -                ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 -                               "lua ssl server name: \"%*s\"", name.len,
@@ -271,12 +271,12 @@ index efd5875f..1e3fc91f 100644
 +    } else {
 +        u->ssl_session_reuse = enable_session_reuse;
 +    }
- 
+
 -#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
 +    if (server_name != NULL && server_name->data != NULL) {
 +        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 +                       "lua tls server name: \"%V\"", server_name);
- 
+
 -                if (SSL_set_tlsext_host_name(c->ssl->connection,
 -                                             (char *) name.data)
 -                    == 0)
@@ -293,7 +293,7 @@ index efd5875f..1e3fc91f 100644
 +            *errmsg = "SSL_set_tlsext_host_name failed";
 +            return NGX_ERROR;
 +        }
- 
+
  #else
 -
 -               ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -305,11 +305,11 @@ index efd5875f..1e3fc91f 100644
  #endif
 -            }
 +    }
- 
+
 -            if (n >= 4) {
 -                u->ssl_verify = lua_toboolean(L, 4);
 +    u->ssl_verify = verify;
- 
+
 -                if (n >= 5) {
 -                    if (lua_toboolean(L, 5)) {
 +    if (ocsp_status_req) {
@@ -329,17 +329,17 @@ index efd5875f..1e3fc91f 100644
 -            }
 -        }
      }
- 
+
 -    dd("found sni name: %.*s %p", (int) name.len, name.data, name.data);
 -
 -    if (name.len == 0) {
 +    if (server_name->len == 0) {
          u->ssl_name.len = 0;
- 
+
      } else {
          if (u->ssl_name.data) {
              /* buffer already allocated */
- 
+
 -            if (u->ssl_name.len >= name.len) {
 +            if (u->ssl_name.len >= server_name->len) {
                  /* reuse it */
@@ -347,62 +347,62 @@ index efd5875f..1e3fc91f 100644
 -                u->ssl_name.len = name.len;
 +                ngx_memcpy(u->ssl_name.data, server_name->data, server_name->len);
 +                u->ssl_name.len = server_name->len;
- 
+
              } else {
                  ngx_free(u->ssl_name.data);
-@@ -1722,17 +1678,16 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
- 
+@@ -1770,17 +1726,16 @@ ngx_http_lua_socket_tcp_sslhandshake(lua_State *L)
+
  new_ssl_name:
- 
+
 -            u->ssl_name.data = ngx_alloc(name.len, ngx_cycle->log);
 +            u->ssl_name.data = ngx_alloc(server_name->len, ngx_cycle->log);
              if (u->ssl_name.data == NULL) {
                  u->ssl_name.len = 0;
- 
+
 -                lua_pushnil(L);
 -                lua_pushliteral(L, "no memory");
 -                return 2;
 +                *errmsg = "no memory";
 +                return NGX_ERROR;
              }
- 
+
 -            ngx_memcpy(u->ssl_name.data, name.data, name.len);
 -            u->ssl_name.len = name.len;
 +            ngx_memcpy(u->ssl_name.data, server_name->data, server_name->len);
 +            u->ssl_name.len = server_name->len;
          }
      }
- 
-@@ -1746,7 +1701,8 @@ new_ssl_name:
- 
+
+@@ -1794,7 +1748,8 @@ new_ssl_name:
+
      rc = ngx_ssl_handshake(c);
- 
+
 -    dd("ngx_ssl_handshake returned %d", (int) rc);
 +    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
 +                   "ngx_ssl_handshake returned %d", rc);
- 
+
      if (rc == NGX_AGAIN) {
          if (c->write->timer_set) {
-@@ -1756,13 +1712,13 @@ new_ssl_name:
+@@ -1804,13 +1760,13 @@ new_ssl_name:
          ngx_add_timer(c->read, u->connect_timeout);
- 
+
          u->conn_waiting = 1;
 -        u->write_prepare_retvals = ngx_http_lua_ssl_handshake_retval_handler;
 +        u->write_prepare_retvals = ngx_http_lua_tls_handshake_retval_handler;
- 
+
          ngx_http_lua_cleanup_pending_operation(coctx);
          coctx->cleanup = ngx_http_lua_coctx_cleanup;
          coctx->data = u;
- 
+
 -        c->ssl->handler = ngx_http_lua_ssl_handshake_handler;
 +        c->ssl->handler = ngx_http_lua_tls_handshake_handler;
- 
+
          if (ctx->entered_content_phase) {
              r->write_event_handler = ngx_http_lua_content_wev_handler;
-@@ -1771,21 +1727,25 @@ new_ssl_name:
+@@ -1819,21 +1775,25 @@ new_ssl_name:
              r->write_event_handler = ngx_http_core_run_phases;
          }
- 
+
 -        return lua_yield(L, 0);
 +        return NGX_AGAIN;
 +    }
@@ -414,14 +414,14 @@ index efd5875f..1e3fc91f 100644
 +
 +        return NGX_ERROR;
      }
- 
+
 -    top = lua_gettop(L);
 -    ngx_http_lua_ssl_handshake_handler(c);
 -    return lua_gettop(L) - top;
 +    return NGX_OK;
  }
- 
- 
+
+
  static void
 -ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
 +ngx_http_lua_tls_handshake_handler(ngx_connection_t *c)
@@ -432,34 +432,34 @@ index efd5875f..1e3fc91f 100644
      ngx_int_t                    rc;
      ngx_connection_t            *dc;  /* downstream connection */
      ngx_http_request_t          *r;
-@@ -1808,11 +1768,9 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
+@@ -1856,11 +1816,9 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
      waiting = u->conn_waiting;
- 
+
      dc = r->connection;
 -    L = u->write_co_ctx->co;
- 
+
      if (c->read->timedout) {
 -        lua_pushnil(L);
 -        lua_pushliteral(L, "timeout");
 +        u->error_ret = "timeout";
          goto failed;
      }
- 
-@@ -1821,19 +1779,18 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
+
+@@ -1869,19 +1827,18 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
      }
- 
+
      if (c->ssl->handshaked) {
 -
          if (u->ssl_verify) {
              rc = SSL_get_verify_result(c->ssl->connection);
- 
+
              if (rc != X509_V_OK) {
 -                lua_pushnil(L);
 -                err = lua_pushfstring(L, "%d: %s", (int) rc,
 -                                      X509_verify_cert_error_string(rc));
 +                u->error_ret = X509_verify_cert_error_string(rc);
 +                u->openssl_error_code_ret = rc;
- 
+
                  llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
                  if (llcf->log_socket_errors) {
 -                    ngx_log_error(NGX_LOG_ERR, dc->log, 0, "lua ssl "
@@ -468,16 +468,16 @@ index efd5875f..1e3fc91f 100644
 +                                  "certificate verify error: (%d: %s)",
 +                                  rc, u->error_ret);
                  }
- 
+
                  goto failed;
-@@ -1844,12 +1801,11 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
+@@ -1892,12 +1849,11 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
              if (u->ssl_name.len
                  && ngx_ssl_check_host(c, &u->ssl_name) != NGX_OK)
              {
 -                lua_pushnil(L);
 -                lua_pushliteral(L, "certificate host mismatch");
 +                u->error_ret = "certificate host mismatch";
- 
+
                  llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
                  if (llcf->log_socket_errors) {
 -                    ngx_log_error(NGX_LOG_ERR, dc->log, 0, "lua ssl "
@@ -485,25 +485,25 @@ index efd5875f..1e3fc91f 100644
                                    "certificate does not match host \"%V\"",
                                    &u->ssl_name);
                  }
-@@ -1864,7 +1820,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
+@@ -1912,7 +1868,7 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
              ngx_http_lua_socket_handle_conn_success(r, u);
- 
+
          } else {
 -            (void) ngx_http_lua_ssl_handshake_retval_handler(r, u, L);
 +            (void) ngx_http_lua_tls_handshake_retval_handler(r, u, NULL);
          }
- 
+
          if (waiting) {
-@@ -1874,60 +1830,84 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
+@@ -1922,60 +1878,84 @@ ngx_http_lua_ssl_handshake_handler(ngx_connection_t *c)
          return;
      }
- 
+
 -    lua_pushnil(L);
 -    lua_pushliteral(L, "handshake failed");
 +    u->error_ret = "handshake failed";
- 
+
  failed:
- 
+
      if (waiting) {
          u->write_prepare_retvals =
 -                                ngx_http_lua_socket_conn_error_retval_handler;
@@ -512,7 +512,7 @@ index efd5875f..1e3fc91f 100644
 +            ngx_http_lua_socket_conn_error_retval_handler;
 +        ngx_http_lua_socket_handle_conn_error(r, u, NGX_HTTP_LUA_SOCKET_FT_SSL);
          ngx_http_run_posted_requests(dc);
- 
+
      } else {
 -        (void) ngx_http_lua_socket_conn_error_retval_handler(r, u, L);
 +        u->ft_type |= NGX_HTTP_LUA_SOCKET_FT_SSL;
@@ -520,8 +520,8 @@ index efd5875f..1e3fc91f 100644
 +        (void) ngx_http_lua_socket_conn_error_retval_handler(r, u, NULL);
      }
  }
- 
- 
+
+
 +
 +int
 +ngx_http_lua_ffi_socket_tcp_get_tlshandshake_result(ngx_http_request_t *r,
@@ -552,26 +552,26 @@ index efd5875f..1e3fc91f 100644
      ngx_connection_t            *c;
 -    ngx_ssl_session_t           *ssl_session, **ud;
 +    ngx_ssl_session_t           *ssl_session;
- 
+
      if (!u->ssl_session_reuse) {
 -        lua_pushboolean(L, 1);
 -        return 1;
 +        return 0;
      }
- 
+
 -    ud = lua_newuserdata(L, sizeof(ngx_ssl_session_t *));
 -
      c = u->peer.connection;
- 
+
      ssl_session = ngx_ssl_get_session(c);
      if (ssl_session == NULL) {
 -        *ud = NULL;
 +        u->ssl_session_ret = NULL;
- 
+
      } else {
 -        *ud = ssl_session;
 +        u->ssl_session_ret = ssl_session;
- 
+
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
 -                      "lua ssl save session: %p", ssl_session);
 -
@@ -582,11 +582,11 @@ index efd5875f..1e3fc91f 100644
 -        lua_setmetatable(L, -2);
 +                       "lua tls save session: %p", ssl_session);
      }
- 
+
 -    return 1;
 +    return 0;
  }
- 
+
 +
 +void
 +ngx_http_lua_ffi_tls_free_session(ngx_ssl_session_t *sess)
@@ -599,30 +599,30 @@ index efd5875f..1e3fc91f 100644
 +
 +
  #endif  /* NGX_HTTP_SSL */
- 
- 
-@@ -1980,12 +1960,14 @@ ngx_http_lua_socket_prepare_error_retvals(ngx_http_request_t *r,
+
+
+@@ -2028,12 +2008,14 @@ ngx_http_lua_socket_prepare_error_retvals(ngx_http_request_t *r,
      u_char           errstr[NGX_MAX_ERROR_STR];
      u_char          *p;
- 
+
 -    if (ft_type & (NGX_HTTP_LUA_SOCKET_FT_RESOLVER
 -                   | NGX_HTTP_LUA_SOCKET_FT_SSL))
 -    {
 +    if (ft_type & NGX_HTTP_LUA_SOCKET_FT_RESOLVER) {
          return 2;
      }
- 
+
 +    if (ft_type & NGX_HTTP_LUA_SOCKET_FT_SSL) {
 +        return 0;
 +    }
 +
      lua_pushnil(L);
- 
+
      if (ft_type & NGX_HTTP_LUA_SOCKET_FT_TIMEOUT) {
-@@ -6057,27 +6039,6 @@ ngx_http_lua_coctx_cleanup(void *data)
+@@ -6119,27 +6101,6 @@ ngx_http_lua_coctx_cleanup(void *data)
  }
- 
- 
+
+
 -#if (NGX_HTTP_SSL)
 -
 -static int
@@ -652,16 +652,16 @@ index 091e4378..bb618702 100644
 --- a/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.h
 +++ b/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.h
 @@ -114,6 +114,9 @@ struct ngx_http_lua_socket_tcp_upstream_s {
- 
+
  #if (NGX_HTTP_SSL)
      ngx_str_t                        ssl_name;
 +    ngx_ssl_session_t               *ssl_session_ret;
 +    const char                      *error_ret;
 +    int                              openssl_error_code_ret;
  #endif
- 
+
      unsigned                         ft_type:16;
--- 
+--
 2.20.1
 
 
@@ -678,8 +678,8 @@ diff --git a/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c b/ngx_lua-0.10.15/src
 index 1e3fc91f..43759e91 100644
 --- a/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c
 +++ b/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c
-@@ -1599,13 +1599,7 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
- 
+@@ -1647,13 +1647,7 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+
      ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
      if (ctx == NULL) {
 -        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -691,9 +691,9 @@ index 1e3fc91f..43759e91 100644
 -        return NGX_ERROR;
 +        return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
      }
- 
+
      coctx = ctx->cur_co_ctx;
--- 
+--
 2.20.1
 
 
@@ -725,10 +725,10 @@ index 43759e91..02f4e84a 100644
 -#if (NGX_HTTP_SSL)
 -static char ngx_http_lua_ssl_session_metatable_key;
 -#endif
- 
- 
+
+
  void
-@@ -1535,13 +1531,16 @@ int
+@@ -1583,13 +1579,16 @@ int
  ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
      ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t *sess,
      int enable_session_reuse, ngx_str_t *server_name, int verify,
@@ -744,22 +744,22 @@ index 43759e91..02f4e84a 100644
      const char              *busy_rc;
 +    ngx_ssl_conn_t          *ssl_conn;
 +    X509                    *x509;
- 
+
      ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                     "lua tcp socket tls handshake");
-@@ -1597,6 +1596,8 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+@@ -1645,6 +1644,8 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
          return NGX_ERROR;
      }
- 
+
 +    ssl_conn = c->ssl->connection;
 +
      ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
      if (ctx == NULL) {
          return NGX_HTTP_LUA_FFI_NO_REQ_CTX;
-@@ -1619,6 +1620,53 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+@@ -1667,6 +1668,53 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
          u->ssl_session_reuse = enable_session_reuse;
      }
- 
+
 +    if (chain != NULL) {
 +        ngx_http_lua_assert(pkey != NULL); /* ensured by resty.core */
 +
@@ -810,7 +810,7 @@ index 43759e91..02f4e84a 100644
      if (server_name != NULL && server_name->data != NULL) {
          ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                         "lua tls server name: \"%V\"", server_name);
--- 
+--
 2.20.1
 
 
@@ -827,16 +827,16 @@ diff --git a/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c b/ngx_lua-0.10.15/src
 index 02f4e84a..b5954c7d 100644
 --- a/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c
 +++ b/ngx_lua-0.10.15/src/ngx_http_lua_socket_tcp.c
-@@ -1708,7 +1708,8 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
- 
+@@ -1756,7 +1756,8 @@ ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+
              if (u->ssl_name.len >= server_name->len) {
                  /* reuse it */
 -                ngx_memcpy(u->ssl_name.data, server_name->data, server_name->len);
 +                ngx_memcpy(u->ssl_name.data, server_name->data,
 +                           server_name->len);
                  u->ssl_name.len = server_name->len;
- 
+
              } else {
--- 
+--
 2.20.1
 
