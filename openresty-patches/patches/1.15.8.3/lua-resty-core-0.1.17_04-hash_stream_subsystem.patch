@@ -1,0 +1,126 @@
+From cdb96165ac3cb2ca1202a6be1a28d297aadb4d12 Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Tue, 27 Aug 2019 10:44:54 -0700
+Subject: [PATCH] feature: enabled the FFI-based APIs for 'ngx.md5',
+ 'ngx.md5_bin', and 'ngx.sha1_bin' in the stream subsystem.
+
+---
+ lib/resty/core.lua      |  2 +-
+ lib/resty/core/hash.lua | 50 ++++++++++++++++++++++++++++++++---------
+ 2 files changed, 41 insertions(+), 11 deletions(-)
+
+diff --git a/lua-resty-core-0.1.17/lib/resty/core.lua b/lua-resty-core-0.1.17/lib/resty/core.lua
+index 57c9d17..4d2249f 100644
+--- a/lua-resty-core-0.1.17/lib/resty/core.lua
++++ b/lua-resty-core-0.1.17/lib/resty/core.lua
+@@ -7,11 +7,11 @@ require "resty.core.regex"
+ require "resty.core.shdict"
+ require "resty.core.time"
+ require "resty.core.misc"
++require "resty.core.hash"
+ 
+ 
+ if subsystem == 'http' then
+     require "resty.core.uri"
+-    require "resty.core.hash"
+     require "resty.core.base64"
+     require "resty.core.exit"
+     require "resty.core.var"
+diff --git a/lua-resty-core-0.1.17/lib/resty/core/hash.lua b/lua-resty-core-0.1.17/lib/resty/core/hash.lua
+index de97270..4a09b00 100644
+--- a/lua-resty-core-0.1.17/lib/resty/core/hash.lua
++++ b/lua-resty-core-0.1.17/lib/resty/core/hash.lua
+@@ -1,18 +1,27 @@
+ -- Copyright (C) Yichun Zhang (agentzh)
+ 
+ 
+-local ffi = require 'ffi'
+-local ffi_string = ffi.string
+-local ffi_new = ffi.new
++local ffi = require "ffi"
++local base = require "resty.core.base"
++
++
+ local C = ffi.C
++local ffi_new = ffi.new
++local ffi_string = ffi.string
+ local ngx = ngx
+ local type = type
+-local tostring = tostring
+ local error = error
+-local base = require "resty.core.base"
++local tostring = tostring
++local subsystem = ngx.config.subsystem
++
++
++local ngx_lua_ffi_md5
++local ngx_lua_ffi_md5_bin
++local ngx_lua_ffi_sha1_bin
+ 
+ 
+-ffi.cdef[[
++if subsystem == "http" then
++    ffi.cdef[[
+     void ngx_http_lua_ffi_md5_bin(const unsigned char *src, size_t len,
+                                   unsigned char *dst);
+ 
+@@ -21,7 +30,28 @@ ffi.cdef[[
+ 
+     int ngx_http_lua_ffi_sha1_bin(const unsigned char *src, size_t len,
+                                   unsigned char *dst);
+-]]
++    ]]
++
++    ngx_lua_ffi_md5 = C.ngx_http_lua_ffi_md5
++    ngx_lua_ffi_md5_bin = C.ngx_http_lua_ffi_md5_bin
++    ngx_lua_ffi_sha1_bin = C.ngx_http_lua_ffi_sha1_bin
++
++elseif subsystem == "stream" then
++    ffi.cdef[[
++    void ngx_stream_lua_ffi_md5_bin(const unsigned char *src, size_t len,
++                                    unsigned char *dst);
++
++    void ngx_stream_lua_ffi_md5(const unsigned char *src, size_t len,
++                                unsigned char *dst);
++
++    int ngx_stream_lua_ffi_sha1_bin(const unsigned char *src, size_t len,
++                                    unsigned char *dst);
++    ]]
++
++    ngx_lua_ffi_md5 = C.ngx_stream_lua_ffi_md5
++    ngx_lua_ffi_md5_bin = C.ngx_stream_lua_ffi_md5_bin
++    ngx_lua_ffi_sha1_bin = C.ngx_stream_lua_ffi_sha1_bin
++end
+ 
+ 
+ local MD5_DIGEST_LEN = 16
+@@ -35,7 +65,7 @@ ngx.md5_bin = function (s)
+             s = tostring(s)
+         end
+     end
+-    C.ngx_http_lua_ffi_md5_bin(s, #s, md5_buf)
++    ngx_lua_ffi_md5_bin(s, #s, md5_buf)
+     return ffi_string(md5_buf, MD5_DIGEST_LEN)
+ end
+ 
+@@ -51,7 +81,7 @@ ngx.md5 = function (s)
+             s = tostring(s)
+         end
+     end
+-    C.ngx_http_lua_ffi_md5(s, #s, md5_hex_buf)
++    ngx_lua_ffi_md5(s, #s, md5_hex_buf)
+     return ffi_string(md5_hex_buf, MD5_HEX_DIGEST_LEN)
+ end
+ 
+@@ -67,7 +97,7 @@ ngx.sha1_bin = function (s)
+             s = tostring(s)
+         end
+     end
+-    local ok = C.ngx_http_lua_ffi_sha1_bin(s, #s, sha_buf)
++    local ok = ngx_lua_ffi_sha1_bin(s, #s, sha_buf)
+     if ok == 0 then
+         error("SHA-1 support missing in Nginx")
+     end
+-- 
+2.26.2
+

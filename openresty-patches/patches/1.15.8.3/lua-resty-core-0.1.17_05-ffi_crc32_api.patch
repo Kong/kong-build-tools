@@ -1,0 +1,99 @@
+From e3f3fad22b086f5079e2ca2cea0fa21a2634a355 Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Tue, 10 Sep 2019 11:47:32 -0700
+Subject: [PATCH] feature: implemented 'ngx.crc32_short()' and
+ 'ngx.crc32_long()' via FFI.
+
+---
+ lib/resty/core/hash.lua | 44 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/lua-resty-core-0.1.17/lib/resty/core/hash.lua b/lua-resty-core-0.1.17/lib/resty/core/hash.lua
+index 4a09b00..062f3ff 100644
+--- a/lua-resty-core-0.1.17/lib/resty/core/hash.lua
++++ b/lua-resty-core-0.1.17/lib/resty/core/hash.lua
+@@ -18,6 +18,8 @@ local subsystem = ngx.config.subsystem
+ local ngx_lua_ffi_md5
+ local ngx_lua_ffi_md5_bin
+ local ngx_lua_ffi_sha1_bin
++local ngx_lua_ffi_crc32_long
++local ngx_lua_ffi_crc32_short
+ 
+ 
+ if subsystem == "http" then
+@@ -30,11 +32,19 @@ if subsystem == "http" then
+ 
+     int ngx_http_lua_ffi_sha1_bin(const unsigned char *src, size_t len,
+                                   unsigned char *dst);
++
++    unsigned int ngx_http_lua_ffi_crc32_long(const unsigned char *src,
++                                             size_t len);
++
++    unsigned int ngx_http_lua_ffi_crc32_short(const unsigned char *src,
++                                              size_t len);
+     ]]
+ 
+     ngx_lua_ffi_md5 = C.ngx_http_lua_ffi_md5
+     ngx_lua_ffi_md5_bin = C.ngx_http_lua_ffi_md5_bin
+     ngx_lua_ffi_sha1_bin = C.ngx_http_lua_ffi_sha1_bin
++    ngx_lua_ffi_crc32_short = C.ngx_http_lua_ffi_crc32_short
++    ngx_lua_ffi_crc32_long = C.ngx_http_lua_ffi_crc32_long
+ 
+ elseif subsystem == "stream" then
+     ffi.cdef[[
+@@ -46,11 +56,19 @@ elseif subsystem == "stream" then
+ 
+     int ngx_stream_lua_ffi_sha1_bin(const unsigned char *src, size_t len,
+                                     unsigned char *dst);
++
++    unsigned int ngx_stream_lua_ffi_crc32_long(const unsigned char *src,
++                                               size_t len);
++
++    unsigned int ngx_stream_lua_ffi_crc32_short(const unsigned char *src,
++                                                size_t len);
+     ]]
+ 
+     ngx_lua_ffi_md5 = C.ngx_stream_lua_ffi_md5
+     ngx_lua_ffi_md5_bin = C.ngx_stream_lua_ffi_md5_bin
+     ngx_lua_ffi_sha1_bin = C.ngx_stream_lua_ffi_sha1_bin
++    ngx_lua_ffi_crc32_short = C.ngx_stream_lua_ffi_crc32_short
++    ngx_lua_ffi_crc32_long = C.ngx_stream_lua_ffi_crc32_long
+ end
+ 
+ 
+@@ -105,6 +123,32 @@ ngx.sha1_bin = function (s)
+ end
+ 
+ 
++ngx.crc32_short = function (s)
++    if type(s) ~= "string" then
++        if not s then
++            s = ""
++        else
++            s = tostring(s)
++        end
++    end
++
++    return ngx_lua_ffi_crc32_short(s, #s)
++end
++
++
++ngx.crc32_long = function (s)
++    if type(s) ~= "string" then
++        if not s then
++            s = ""
++        else
++            s = tostring(s)
++        end
++    end
++
++    return ngx_lua_ffi_crc32_long(s, #s)
++end
++
++
+ return {
+     version = base.version
+ }
+-- 
+2.26.2
+
