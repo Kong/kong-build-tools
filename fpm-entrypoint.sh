@@ -7,26 +7,21 @@ cd /tmp/build
 FPM_PARAMS=""
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   PACKAGE_TYPE="deb"
-  FPM_PARAMS="-d libpcre3 -d perl -d zlibc -d zlib1g-dev"
+  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
-elif [ "$RESTY_IMAGE_BASE" == "centos" ]; then
+elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "rhel" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   PACKAGE_TYPE="rpm"
-  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib"
-  OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
-elif [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-  PACKAGE_TYPE="rpm"
-  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib"
+  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib-devel"
   OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
     FPM_PARAMS="$FPM_PARAMS -d hostname"
   fi
-elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
-  PACKAGE_TYPE="rpm"
-  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes"
-  OUTPUT_FILE_SUFFIX=".aws"
-fi
-if [ "$RESTY_IMAGE_TAG" == "bullseye" ]; then
-  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
+  if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+    OUTPUT_FILE_SUFFIX=".aws"
+  fi
+  if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
+    OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
+  fi
 fi
 OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo ${BUILDPLATFORM} | awk -F "/" '{ print $2}')
 
