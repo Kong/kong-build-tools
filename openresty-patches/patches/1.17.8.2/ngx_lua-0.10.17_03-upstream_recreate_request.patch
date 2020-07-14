@@ -1,0 +1,59 @@
+From 200cf83dbd180bc015e3e1b5b4344abc665d096a Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Tue, 23 Jun 2020 17:33:09 -0700
+Subject: [PATCH] feature: added the
+ `ngx_http_lua_ffi_balancer_recreate_request` FFI function to allow recreation
+ of request buffer in balancer phase.
+
+---
+ ngx_lua-0.10.17/src/ngx_http_lua_balancer.c | 39 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
+index 3ea1f067..19a785e5 100644
+--- a/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
++++ b/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
+@@ -1250,4 +1250,43 @@ ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
+ }
+
+
++int
++ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
++    char **err)
++{
++    ngx_http_lua_ctx_t    *ctx;
++    ngx_http_upstream_t   *u;
++
++    if (r == NULL) {
++        *err = "no request found";
++        return NGX_ERROR;
++    }
++
++    u = r->upstream;
++
++    if (u == NULL) {
++        *err = "no upstream found";
++        return NGX_ERROR;
++    }
++
++    ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
++    if (ctx == NULL) {
++        *err = "no ctx found";
++        return NGX_ERROR;
++    }
++
++    if ((ctx->context & NGX_HTTP_LUA_CONTEXT_BALANCER) == 0) {
++        *err = "API disabled in the current context";
++        return NGX_ERROR;
++    }
++
++    /* u->create_request can not be NULL since we are in balancer phase */
++    ngx_http_lua_assert(u->create_request != NULL);
++
++    *err = NULL;
++
++    return u->create_request(r);
++}
++
++
+ /* vi:set ft=c ts=4 sw=4 et fdm=marker: */
