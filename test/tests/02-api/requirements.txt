@@ -6,7 +6,7 @@ chardet==3.0.4
 contextlib2==0.6.0.post1
 docopt==0.6.2
 future==0.18.2
-idna==2.9
+idna==2.10
 importlib-metadata==1.7.0
 jmespath==0.10.0
 more-itertools==8.4.0
