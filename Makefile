@@ -50,6 +50,8 @@ ifndef AWS_ACCESS_KEY
 	BUILDX=false
 else ifeq ($(RESTY_IMAGE_TAG),xenial)
 	BUILDX=true
+else ifeq ($(RESTY_IMAGE_BASE),alpine)
+	BUILDX=true
 endif
 
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
