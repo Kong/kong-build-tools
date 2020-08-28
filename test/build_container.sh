@@ -16,6 +16,11 @@ elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinu
   BUILD_DIR="centos"
 fi
 
+if [ "$RESTY_IMAGE_TAG" == "stretch" ] || [ "$RESTY_IMAGE_TAG" == "jessie" ]; then
+  sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
+  sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
+fi
+
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   sed -i 's/^FROM .*/FROM registry.access.redhat.com\/ubi'${RESTY_IMAGE_TAG}'\/ubi/' docker-kong/rhel/Dockerfile
   sed -i 's/rhel7/rhel'${RESTY_IMAGE_TAG}'/' docker-kong/rhel/Dockerfile
