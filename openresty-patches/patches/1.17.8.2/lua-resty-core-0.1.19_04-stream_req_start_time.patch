@@ -1,0 +1,183 @@
+From 674ef93db9595694459777d928f0aee7f6822cd1 Mon Sep 17 00:00:00 2001
+From: Thibault Charbonnier <thibaultcha@me.com>
+Date: Mon, 13 Jul 2020 15:41:10 -0700
+Subject: [PATCH] bugfix: added the missing 'ngx.req.start_time' to the stream
+ subsystem.
+
+The `ngx.req.start_time()` API is part of `request.lua` which is was
+understandably not loaded for the stream subsystem. There existed no
+tests for this API in the stream subsystem, so the removal of its
+underlying CFunction resulted in `ngx.req.start_time` being `nil` with
+no test cases to realize it.
+---
+ lib/resty/core.lua         |  2 +-
+ lib/resty/core/request.lua | 48 +++++++++++++++++++++++++++-----------
+ lib/resty/core/utils.lua   | 36 ++++++++++++++--------------
+ 3 files changed, 55 insertions(+), 31 deletions(-)
+
+diff --git a/lua-resty-core-0.1.19/lib/resty/core.lua b/lua-resty-core-0.1.19/lib/resty/core.lua
+index 54d9756..be287a9 100644
+--- a/lua-resty-core-0.1.19/lib/resty/core.lua
++++ b/lua-resty-core-0.1.19/lib/resty/core.lua
+@@ -12,10 +12,10 @@ require "resty.core.hash"
+ require "resty.core.uri"
+ require "resty.core.exit"
+ require "resty.core.base64"
++require "resty.core.request"
+ 
+ 
+ if subsystem == 'http' then
+-    require "resty.core.request"
+     require "resty.core.response"
+     require "resty.core.phase"
+     require "resty.core.ndk"
+diff --git a/lua-resty-core-0.1.19/lib/resty/core/request.lua b/lua-resty-core-0.1.19/lib/resty/core/request.lua
+index f912bfa..747b8c2 100644
+--- a/lua-resty-core-0.1.19/lib/resty/core/request.lua
++++ b/lua-resty-core-0.1.19/lib/resty/core/request.lua
+@@ -3,10 +3,10 @@
+ 
+ local ffi = require 'ffi'
+ local base = require "resty.core.base"
+-base.allows_subsystem("http")
+ local utils = require "resty.core.utils"
+ 
+ 
++local subsystem = ngx.config.subsystem
+ local FFI_BAD_CONTEXT = base.FFI_BAD_CONTEXT
+ local FFI_DECLINED = base.FFI_DECLINED
+ local FFI_OK = base.FFI_OK
+@@ -34,6 +34,40 @@ local _M = {
+ }
+ 
+ 
++local ngx_lua_ffi_req_start_time
++
++
++if subsystem == "stream" then
++    ffi.cdef[[
++    double ngx_stream_lua_ffi_req_start_time(ngx_stream_lua_request_t *r);
++    ]]
++
++    ngx_lua_ffi_req_start_time = C.ngx_stream_lua_ffi_req_start_time
++
++elseif subsystem == "http" then
++    ffi.cdef[[
++    double ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r);
++    ]]
++
++    ngx_lua_ffi_req_start_time = C.ngx_http_lua_ffi_req_start_time
++end
++
++
++function ngx.req.start_time()
++    local r = get_request()
++    if not r then
++        error("no request found")
++    end
++
++    return tonumber(ngx_lua_ffi_req_start_time(r))
++end
++
++
++if subsystem == "stream" then
++    return _M
++end
++
++
+ local errmsg = base.get_errmsg_ptr()
+ local ffi_str_type = ffi.typeof("ngx_http_lua_ffi_str_t*")
+ local ffi_str_size = ffi.sizeof("ngx_http_lua_ffi_str_t")
+@@ -59,8 +93,6 @@ ffi.cdef[[
+     int ngx_http_lua_ffi_req_get_uri_args(ngx_http_request_t *r,
+         unsigned char *buf, ngx_http_lua_ffi_table_elt_t *out, int count);
+ 
+-    double ngx_http_lua_ffi_req_start_time(ngx_http_request_t *r);
+-
+     int ngx_http_lua_ffi_req_get_method(ngx_http_request_t *r);
+ 
+     int ngx_http_lua_ffi_req_get_method_name(ngx_http_request_t *r,
+@@ -222,16 +254,6 @@ function ngx.req.get_uri_args(max_args)
+ end
+ 
+ 
+-function ngx.req.start_time()
+-    local r = get_request()
+-    if not r then
+-        error("no request found")
+-    end
+-
+-    return tonumber(C.ngx_http_lua_ffi_req_start_time(r))
+-end
+-
+-
+ do
+     local methods = {
+         [0x0002] = "GET",
+diff --git a/lua-resty-core-0.1.19/lib/resty/core/utils.lua b/lua-resty-core-0.1.19/lib/resty/core/utils.lua
+index 398d7d5..98a0cac 100644
+--- a/lua-resty-core-0.1.19/lib/resty/core/utils.lua
++++ b/lua-resty-core-0.1.19/lib/resty/core/utils.lua
+@@ -3,7 +3,6 @@
+ 
+ local ffi = require "ffi"
+ local base = require "resty.core.base"
+-base.allows_subsystem("http")
+ 
+ 
+ local C = ffi.C
+@@ -12,12 +11,7 @@ local ffi_copy = ffi.copy
+ local byte = string.byte
+ local str_find = string.find
+ local get_string_buf = base.get_string_buf
+-
+-
+-ffi.cdef[[
+-    void ngx_http_lua_ffi_str_replace_char(unsigned char *buf, size_t len,
+-        const unsigned char find, const unsigned char replace);
+-]]
++local subsystem = ngx.config.subsystem
+ 
+ 
+ local _M = {
+@@ -25,19 +19,27 @@ local _M = {
+ }
+ 
+ 
+-function _M.str_replace_char(str, find, replace)
+-    if not str_find(str, find, nil, true) then
+-        return str
+-    end
++if subsystem == "http" then
++    ffi.cdef[[
++    void ngx_http_lua_ffi_str_replace_char(unsigned char *buf, size_t len,
++        const unsigned char find, const unsigned char replace);
++    ]]
++
+ 
+-    local len = #str
+-    local buf = get_string_buf(len)
+-    ffi_copy(buf, str)
++    function _M.str_replace_char(str, find, replace)
++        if not str_find(str, find, nil, true) then
++            return str
++        end
+ 
+-    C.ngx_http_lua_ffi_str_replace_char(buf, len, byte(find),
+-                                        byte(replace))
++        local len = #str
++        local buf = get_string_buf(len)
++        ffi_copy(buf, str)
+ 
+-    return ffi_str(buf, len)
++        C.ngx_http_lua_ffi_str_replace_char(buf, len, byte(find),
++                                            byte(replace))
++
++        return ffi_str(buf, len)
++    end
+ end
+ 
+ 
+-- 
+2.26.2
+
