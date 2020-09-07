@@ -13,7 +13,7 @@ diff --git a/lua-resty-core-0.1.19/lib/ngx/balancer.lua b/lua-resty-core-0.1.19/
 index d584639..2bc16e1 100644
 --- a/lua-resty-core-0.1.19/lib/ngx/balancer.lua
 +++ b/lua-resty-core-0.1.19/lib/ngx/balancer.lua
-@@ -38,6 +38,10 @@ if subsystem == 'http' then
+@@ -45,6 +45,10 @@ if subsystem == 'http' then
      int ngx_http_lua_ffi_balancer_set_timeouts(ngx_http_request_t *r,
          long connect_timeout, long send_timeout,
          long read_timeout, char **err);
@@ -24,7 +24,7 @@ index d584639..2bc16e1 100644
      ]]
  
      ngx_lua_ffi_balancer_set_current_peer =
-@@ -207,4 +211,25 @@ function _M.set_timeouts(connect_timeout, send_timeout, read_timeout)
+@@ -344,4 +348,25 @@ function _M.set_timeouts(connect_timeout, send_timeout, read_timeout)
  end
  
  

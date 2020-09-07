@@ -52,7 +52,7 @@ diff --git a/LuaJIT-2.1-20200102/src/lj_arch.h b/LuaJIT-2.1-20200102/src/lj_arch
 index 8f6bc52..cf1c641 100644
 --- a/LuaJIT-2.1-20200102/src/lj_arch.h
 +++ b/LuaJIT-2.1-20200102/src/lj_arch.h
-@@ -237,6 +237,7 @@
+@@ -241,6 +241,7 @@
  #define LJ_TARGET_MASKROT	1
  #define LJ_TARGET_UNIFYROT	2	/* Want only IR_BROR. */
  #define LJ_TARGET_GC64		1
@@ -77,7 +77,7 @@ diff --git a/LuaJIT-2.1-20200102/src/lj_obj.h b/LuaJIT-2.1-20200102/src/lj_obj.h
 index a89ea0d..77a157b 100644
 --- a/LuaJIT-2.1-20200102/src/lj_obj.h
 +++ b/LuaJIT-2.1-20200102/src/lj_obj.h
-@@ -830,6 +830,21 @@ typedef union GCobj {
+@@ -831,6 +831,21 @@ typedef union GCobj {
  #define setpriV(o, i)		(setitype((o), (i)))
  #endif
  
