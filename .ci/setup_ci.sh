@@ -2,7 +2,7 @@
 
 set -x
 
-if [ "$RESTY_IMAGE_TAG" != "xenial" ]; then
+if [ "$RESTY_IMAGE_TAG" != "xenial" ] && [ "$RESTY_IMAGE_BASE" != "alpine" ]; then
     exit 0
 fi
 
