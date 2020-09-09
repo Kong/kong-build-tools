@@ -1,5 +1,9 @@
 set -e
 
+if [ "$RESTY_IMAGE_BASE" == "src" ]; then
+  exit 0
+fi
+
 if docker image inspect $KONG_TEST_IMAGE_NAME; then exit 0; fi
 
 rm -rf docker-kong || true
@@ -9,7 +13,7 @@ if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; t
   cp output/*${RESTY_IMAGE_TAG}.amd64.deb docker-kong/ubuntu/kong.deb
   BUILD_DIR="ubuntu"
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  cp output/*.amd64.apk.tar.gz docker-kong/alpine/kong.tar.gz
+  cp output/*.${ARCHITECTURE}.apk.tar.gz docker-kong/alpine/kong.tar.gz
   BUILD_DIR="alpine"
 elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   cp output/*.amd64.rpm docker-kong/centos/kong.rpm
@@ -34,6 +38,7 @@ pushd docker-kong/${BUILD_DIR}
     docker build -t $KONG_TEST_IMAGE_NAME \
     --no-cache \
     --build-arg ASSET=local .
+    docker run -t $KONG_TEST_IMAGE_NAME kong version
 popd
 
 rm -rf docker-kong || true

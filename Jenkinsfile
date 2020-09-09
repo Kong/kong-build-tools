@@ -9,6 +9,7 @@ pipeline {
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
         DOCKERHUB = credentials('dockerhub')
+        DOCKER_CLI_EXPERIMENTAL = "enabled"
     }
     stages {
         stage('Build Kong') {
@@ -207,7 +208,7 @@ pipeline {
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        USER = 'travis'
+                        USER = 'jenkins-kbt'
                         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
                         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
                     }
