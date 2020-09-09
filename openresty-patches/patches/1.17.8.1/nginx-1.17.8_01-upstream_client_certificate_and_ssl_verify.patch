@@ -12,7 +12,7 @@ index 90710557..539a4db9 100644
 
 
  #if (NGX_HTTP_CACHE)
-@@ -1691,7 +1691,14 @@
+@@ -1688,7 +1688,14 @@
      c->sendfile = 0;
      u->output.sendfile = 0;
 
@@ -27,7 +27,7 @@ index 90710557..539a4db9 100644
          if (ngx_http_upstream_ssl_name(r, u, c) != NGX_OK) {
              ngx_http_upstream_finalize_request(r, u,
                                                 NGX_HTTP_INTERNAL_SERVER_ERROR);
-@@ -1719,6 +1722,10 @@ ngx_http_upstream_ssl_init_connection(ngx_http_request_t *r,
+@@ -1716,6 +1719,10 @@ ngx_http_upstream_ssl_init_connection(ngx_http_request_t *r,
          }
      }
 
@@ -38,7 +38,7 @@ index 90710557..539a4db9 100644
      r->connection->log->action = "SSL handshaking to upstream";
 
      rc = ngx_ssl_handshake(c);
-@@ -1768,7 +1768,11 @@
+@@ -1765,7 +1765,11 @@
 
      if (c->ssl->handshaked) {
 
