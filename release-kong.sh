@@ -49,15 +49,13 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   
-  export DOCKER_CLI_EXPERIMENTAL=enabled && \
-  docker manifest create -a ${DOCKER_REPOSITORY}:${DOCKER_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION} || \
+  docker manifest create -a ${DOCKER_REPOSITORY}:${KONG_VERSION} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   docker manifest push ${DOCKER_REPOSITORY}:${KONG_VERSION}
 
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   
-  export DOCKER_CLI_EXPERIMENTAL=enabled && \
-  docker manifest create -a ${DOCKER_REPOSITORY}:${DOCKER_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG} || \
+  docker manifest create -a ${DOCKER_REPOSITORY}:${DOCKER_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   docker manifest push ${DOCKER_REPOSITORY}:${DOCKER_TAG}
 elif [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
   BINTRAY_DIRECTORY="amazonlinux/amazonlinux"
