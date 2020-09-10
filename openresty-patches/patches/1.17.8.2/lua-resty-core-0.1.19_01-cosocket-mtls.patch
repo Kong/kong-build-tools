@@ -392,8 +392,8 @@ diff --git a/lua-resty-core-0.1.19/lib/resty/core.lua b/lua-resty-core-0.1.19/li
 index 57c9d17..7e8aca4 100644
 --- a/lua-resty-core-0.1.19/lib/resty/core.lua
 +++ b/lua-resty-core-0.1.19/lib/resty/core.lua
-@@ -21,6 +21,7 @@ if subsystem == 'http' then
-     require "resty.core.worker"
+@@ -19,6 +19,7 @@ if subsystem == 'http' then
+     require "resty.core.response"
      require "resty.core.phase"
      require "resty.core.ndk"
 +    require "resty.core.socket_tcp"
