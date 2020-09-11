@@ -1,0 +1,23 @@
+--- a/ngx_stream_lua-0.0.7/src/ngx_stream_lua_string.c	2020-09-11 14:37:29.412493657 -0300
++++ b/ngx_stream_lua-0.0.7/src/ngx_stream_lua_string.c	2020-09-11 14:38:01.924492324 -0300
+@@ -460,6 +460,20 @@
+ }
+ 
+ 
++unsigned int
++ngx_stream_lua_ffi_crc32_short(const u_char *src, size_t len)
++{
++    return ngx_crc32_short((u_char *) src, len);
++}
++
++
++unsigned int
++ngx_stream_lua_ffi_crc32_long(const u_char *src, size_t len)
++{
++    return ngx_crc32_long((u_char *) src, len);
++}
++
++
+ static void
+ ngx_stream_lua_encode_base64(ngx_str_t *dst, ngx_str_t *src, int no_padding)
+ {
