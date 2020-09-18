@@ -39,7 +39,7 @@ KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requir
 KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 LIBYAML_VERSION ?= 0.2.3
-DOCKER_KONG_VERSION ?= 'master'
+DOCKER_KONG_VERSION ?= 'chore/alpine-multi-arch'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
@@ -285,7 +285,11 @@ release-kong: test
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
-	@ARCHITECTURE=arm64 \
+	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
+	DOCKER_TLS_VERIFY=1 \
+	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
+	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
+	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
@@ -337,8 +341,21 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-test-container:
-ifneq ($(RESTY_IMAGE_BASE),src)
 	touch test/kong_license.private
+	ARCHITECTURE=amd64 \
+	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
+	KONG_VERSION=$(KONG_VERSION) \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
+	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
+	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
+	test/build_container.sh
+ifeq ($(BUILDX),true)
+	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
+	DOCKER_TLS_VERIFY=1 \
+	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
+	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
+	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \

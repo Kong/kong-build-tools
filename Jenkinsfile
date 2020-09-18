@@ -9,6 +9,7 @@ pipeline {
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
         DOCKERHUB = credentials('dockerhub')
+        DOCKER_CLI_EXPERIMENTAL = "enabled"
     }
     stages {
         stage('Build Kong') {
@@ -121,12 +122,16 @@ pipeline {
                             label 'bionic'
                         }
                     }
+                    environment {
+                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
+                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                    }
                     steps {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('RedHat Builds'){
@@ -203,7 +208,7 @@ pipeline {
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        USER = 'travis'
+                        USER = 'jenkins-kbt'
                         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
                         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
                     }

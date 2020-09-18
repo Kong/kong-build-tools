@@ -1,25 +1,25 @@
-From 22945d38da972613a171231ba16f7c759d4512a1 Mon Sep 17 00:00:00 2001
+From b2814e8b3cceeb1269a0b421c8cd0ffeab8c617f Mon Sep 17 00:00:00 2001
 From: Javier Guerra <javier.guerra@konghq.com>
 Date: Tue, 13 Aug 2019 05:05:17 -0700
 Subject: [PATCH] Dynamic remapping of lightuserdata values
-
-To allow architectures with VA larger than 47 bits, splits the space in 8 sections, each of 2^LJ_LUV_SECT_SHIFT bytes
-(2^45 on ARM64 (32TiB), VA is 48 bits).  Since the lightuserdata value must have zeros on all bits above 47, only
-sections [0..3] are valid.  The table `luv_sect_map[]` must map any section used by the memory layout into a valid
+​
+To allow architectures with VA larger than 47 bits, splits the space in sections, each of 2^LJ_LUV_SECT_SHIFT bytes
+(2^44 on ARM64 (32TiB), VA is 48 bits).  Since the lightuserdata value must have zeros on all bits above 47, only
+half of the sections are valid.  The table `luv_sect_map[]` must map any section used by the memory layout into a valid
 section.  It should also be a symetric mapping, so a repeat of the transformation returns the original value.
-
-The `luv_init_map()` function uses a sample of different types of pointers to determine with sections are actually
+​
+The `luv_init_map()` function uses a sample of different types of pointers to determine which sections are actually
 used, and constructs the required table.
 ---
  src/lj_api.c   |  5 +--
- src/lj_arch.h  |  1 +
+ src/lj_arch.h  |  2 ++
  src/lj_cconv.c |  2 +-
  src/lj_obj.h   | 15 +++++++++
  src/lj_state.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 105 insertions(+), 3 deletions(-)
-
+ 5 files changed, 106 insertions(+), 3 deletions(-)
+​
 diff --git a/LuaJIT-2.1-20200102/src/lj_api.c b/LuaJIT-2.1-20200102/src/lj_api.c
-index 9c4864d..0a3f778 100644
+index 9c4864d7..0a3f778c 100644
 --- a/LuaJIT-2.1-20200102/src/lj_api.c
 +++ b/LuaJIT-2.1-20200102/src/lj_api.c
 @@ -595,7 +595,7 @@ LUA_API void *lua_touserdata(lua_State *L, int idx)
@@ -49,19 +49,20 @@ index 9c4864d..0a3f778 100644
    L->top = top;
    return top-1;  /* Now call the newly allocated C function. */
 diff --git a/LuaJIT-2.1-20200102/src/lj_arch.h b/LuaJIT-2.1-20200102/src/lj_arch.h
-index 8f6bc52..cf1c641 100644
+index 0232ebe6..9474b19a 100644
 --- a/LuaJIT-2.1-20200102/src/lj_arch.h
 +++ b/LuaJIT-2.1-20200102/src/lj_arch.h
-@@ -241,6 +241,7 @@
+@@ -241,6 +241,8 @@
  #define LJ_TARGET_MASKROT	1
  #define LJ_TARGET_UNIFYROT	2	/* Want only IR_BROR. */
  #define LJ_TARGET_GC64		1
-+#define LJ_LUV_SECT_SHIFT	45
++#define LJ_LUV_SECT_BITS	4
++#define LJ_LUV_SECT_SHIFT	44
  #define LJ_ARCH_NUMMODE		LJ_NUMMODE_DUAL
  
  #define LJ_ARCH_VERSION		80
 diff --git a/LuaJIT-2.1-20200102/src/lj_cconv.c b/LuaJIT-2.1-20200102/src/lj_cconv.c
-index 13b8230..05eed3a 100644
+index 13b8230d..05eed3ac 100644
 --- a/LuaJIT-2.1-20200102/src/lj_cconv.c
 +++ b/LuaJIT-2.1-20200102/src/lj_cconv.c
 @@ -611,7 +611,7 @@ void lj_cconv_ct_tv(CTState *cts, CType *d,
@@ -74,7 +75,7 @@ index 13b8230..05eed3a 100644
      void *p = lj_ccallback_new(cts, d, funcV(o));
      if (p) {
 diff --git a/LuaJIT-2.1-20200102/src/lj_obj.h b/LuaJIT-2.1-20200102/src/lj_obj.h
-index a89ea0d..77a157b 100644
+index 6c60ebdd..309c1997 100644
 --- a/LuaJIT-2.1-20200102/src/lj_obj.h
 +++ b/LuaJIT-2.1-20200102/src/lj_obj.h
 @@ -831,6 +831,21 @@ typedef union GCobj {
@@ -82,25 +83,25 @@ index a89ea0d..77a157b 100644
  #endif
  
 +#ifdef LJ_LUV_SECT_SHIFT
-+#define LJ_LUV_SECT_MASK (7UL << LJ_LUV_SECT_SHIFT)
-+extern uint8_t luv_sect_map[8];
++#define LJ_LUV_NUM_SECTS (1 << LJ_LUV_SECT_BITS)
++#define LJ_LUV_SECT_MASK (((1UL << LJ_LUV_SECT_BITS) -1UL) << LJ_LUV_SECT_SHIFT)
++extern uint8_t luv_sect_map[LJ_LUV_NUM_SECTS];
 +#endif
 +
 +static LJ_AINLINE void *lightuvmap(void *p)
 +{
 +#ifdef LJ_LUV_SECT_SHIFT
-+  uintptr_t section = luv_sect_map[((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & 7];
++  uintptr_t section = luv_sect_map[((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & (LJ_LUV_NUM_SECTS - 1)];
 +  p = (void *)(((uintptr_t)p & ~LJ_LUV_SECT_MASK) | (section << LJ_LUV_SECT_SHIFT));
 +#endif
 +  return p;
 +}
 +
-+#include <stdio.h>
  static LJ_AINLINE void setlightudV(TValue *o, void *p)
  {
  #if LJ_GC64
 diff --git a/LuaJIT-2.1-20200102/src/lj_state.c b/LuaJIT-2.1-20200102/src/lj_state.c
-index a0fba2a..1ab3097 100644
+index a0fba2ac..a9ceb00b 100644
 --- a/LuaJIT-2.1-20200102/src/lj_state.c
 +++ b/LuaJIT-2.1-20200102/src/lj_state.c
 @@ -29,6 +29,90 @@
@@ -113,26 +114,23 @@ index a0fba2a..1ab3097 100644
 +
 +static char checked_layout = 0;
 +
-+#define LJ_LUV_SECT_MASK (7UL << LJ_LUV_SECT_SHIFT)
-+uint8_t luv_sect_map[8] = {
-+  0, 1, 7, 3, 4, 5, 6, 2,		/*  111 <-> 010  */
-+};
++uint8_t luv_sect_map[LJ_LUV_NUM_SECTS];
 +
 +
 +static void luvmap_mark_need(void *p)
 +{
-+  int index = ((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & 7;
++  int index = ((uintptr_t)p >> LJ_LUV_SECT_SHIFT) & (LJ_LUV_NUM_SECTS - 1);
 +
-+  luv_sect_map[index] = index < 4 ? index : 128;
++  luv_sect_map[index] = index < (LJ_LUV_NUM_SECTS / 2) ? index : 128;
 +}
 +
-+static void luvmap_fold(void)
++static const uint8_t *luvmap_fold(void)
 +{
 +  int i, j;
 +
-+  for (i = 0; i < 8; ++i) {
++  for (i = 0; i < LJ_LUV_NUM_SECTS; ++i) {
 +    if (luv_sect_map[i] == 128) {		/* needed but invalid */
-+      for (j = 3; j >= 0; --j) {
++      for (j = (LJ_LUV_NUM_SECTS / 2 - 1); j >= 0; --j) {
 +	if (luv_sect_map[j] == 255) {		/* found unused, swap */
 +	  luv_sect_map[i] = j;
 +	  luv_sect_map[j] = i;
@@ -142,13 +140,14 @@ index a0fba2a..1ab3097 100644
 +    }
 +  }
 +
-+  for (i = 0; i < 8; ++i) {
++  for (i = 0; i < LJ_LUV_NUM_SECTS; ++i) {
 +    if (luv_sect_map[i] == 128)
-+      abort();		/* unfixed section */
++      return NULL;		/* unfixed section */
 +
 +    if (luv_sect_map[i] == 255)
 +      luv_sect_map[i] = i;
 +  }
++  return luv_sect_map;
 +}
 +
 +static void luv_init_map() {
@@ -157,7 +156,7 @@ index a0fba2a..1ab3097 100644
 +  if (checked_layout != 0)
 +    return;
 +
-+  for (i = 0; i < 8; ++i)
++  for (i = 0; i < LJ_LUV_NUM_SECTS; ++i)
 +    luv_sect_map[i] = 255;
 +
 +  char unused_local = 0;
@@ -182,7 +181,9 @@ index a0fba2a..1ab3097 100644
 +
 +  free(p);
 +
-+  luvmap_fold();
++  if (!luvmap_fold()) {
++    exit(60);
++  }
 +  checked_layout = 1;
 +}
 +
@@ -204,4 +205,3 @@ index a0fba2a..1ab3097 100644
    global_State *g = &GG->g;
 -- 
 2.17.1
-
