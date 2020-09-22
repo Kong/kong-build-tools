@@ -67,7 +67,7 @@ CACHE_BUSTER?=`date +%V`
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
-REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
+REQUIREMENTS_SHA=$$(cat $(KONG_SOURCE_LOCATION)/.requirements $(KONG_SOURCE_LOCATION)/Makefile $(KONG_SOURCE_LOCATION)/kong*.rockspec | md5sum | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
