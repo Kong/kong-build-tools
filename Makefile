@@ -375,6 +375,7 @@ cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
 	docker-compose -f test/kong-tests-compose.yaml rm -f
+	docker volume prune -f
 endif
 
 cleanup: cleanup-tests cleanup-build
