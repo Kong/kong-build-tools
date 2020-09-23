@@ -11,6 +11,11 @@ pipeline {
         DOCKERHUB = credentials('dockerhub')
         DOCKER_CLI_EXPERIMENTAL = "enabled"
     }
+    options {
+        timeout(time: 120, unit: 'MINUTES')
+        parallelsAlwaysFailFast()
+        retry(2)
+    }
     stages {
         stage('Build Kong') {
             when {
@@ -54,8 +59,11 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                        sh 'make test-kong'
+                        retry(2) {
+                            sh 'make cleanup'
+                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                            sh 'make test-kong'
+                        }
                     }
                 }
                 stage('postgres') {
@@ -69,8 +77,11 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                        sh 'make test-kong'
+                        retry(2) {
+                            sh 'make cleanup'
+                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                            sh 'make test-kong'
+                        }
                     }
                 }
                 stage('postgres plugins') {
@@ -85,8 +96,11 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                        sh 'make test-kong'
+                        retry(2) {
+                            sh 'make cleanup'
+                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                            sh 'make test-kong'
+                        }
                     }
                 }
                 stage('cassandra') {
@@ -100,8 +114,11 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                        sh 'make test-kong'
+                        retry(2) {
+                            sh 'make cleanup'
+                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                            sh 'make test-kong'
+                        }
                     }
                 }
             }
