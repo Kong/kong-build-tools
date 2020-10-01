@@ -39,7 +39,7 @@ KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requir
 KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 LIBYAML_VERSION ?= `grep LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
-DOCKER_KONG_VERSION ?= 'chore/alpine-multi-arch'
+DOCKER_KONG_VERSION = 'chore/kong-user'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
