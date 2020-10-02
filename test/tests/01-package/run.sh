@@ -1,5 +1,20 @@
 set -x
 
+# verify if the files are owned by the kong user/group
+# todo: do this for every file owned by the kong package
+export f=/etc/kong/kong.conf.default
+docker run ${USE_TTY} --user=root --rm -e f=$f ${KONG_TEST_IMAGE_NAME} /bin/sh -c '[ "`stat -c %U:%G $f`" == "kong:kong" ]'
+
+# check if 'useradd -U -m -s /bin/sh kong' worked
+if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "getent passwd kong"
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "getent group kong"
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "test -d /home/kong/"
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
+fi
+
+# todo: write tests for cases where kong is started as root and as the kong user
+
 # openresty
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -v 2>&1 | grep -q ${RESTY_VERSION}"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/kong/lib/libssl.so.1.1"
