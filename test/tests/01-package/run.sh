@@ -11,13 +11,12 @@ fi
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
   cp $PACKAGE_LOCATION/*.deb kong.deb
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt install --yes /src/kong.deb"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 fi
 
 if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
-
-  # these files should have 'kong:kong' ownership
+  # These files should have 'kong:kong' ownership
   files=(
     "/etc/kong/"
     "/usr/local/bin/json2lua"
@@ -49,18 +48,18 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
   if [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]]; then
-    # needed for `su`
+    # Needed to run `su`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
 
-    # needed for `find`
+    # Needed to run `find`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y findutils"
 
-    # needed for `ps`
+    # Needed to run `ps`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y procps"
   fi
 
   if [[ "$PACKAGE_TYPE" == "deb" ]]; then
-    # needed for `ps`
+    # Needed to run `ps`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get -y install procps"
   fi
 
