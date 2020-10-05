@@ -48,6 +48,22 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "test -d /home/kong/"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
+  if [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]]; then
+    # needed for `su`
+    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
+
+    # needed for `find`
+    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y findutils"
+
+    # needed for `ps`
+    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y procps"
+  fi
+
+  if [[ "$PACKAGE_TYPE" == "deb" ]]; then
+    # needed for `ps`
+    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get -y install procps"
+  fi
+
   # We're capable of running as the kong user
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong start'"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong health'"
