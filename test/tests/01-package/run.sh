@@ -3,13 +3,13 @@ set -x
 docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
 
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
-  cp $PACKAGE_LOCATION/*.rpm kong.rpm
+  cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 fi
 
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
-  cp $PACKAGE_LOCATION/*.deb kong.deb
+  cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
@@ -102,7 +102,7 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/
 
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
-  cp $PACKAGE_LOCATION/*.deb kong.deb
+  cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:18.04
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt install --yes /src/kong.deb"
