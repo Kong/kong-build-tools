@@ -33,6 +33,7 @@ pushd /kong
 
   mkdir -p /tmp/plugin
   
+  luarocks purge --tree=/tmp/build/usr/local --old-versions || true
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
