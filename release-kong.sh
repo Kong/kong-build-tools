@@ -47,12 +47,22 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   OUTPUT_FILE_SUFFIX=".${ARCHITECTURE}.apk.tar.gz"
 
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
+  echo "FROM ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}" | docker build \
+    --label org.opencontainers.image.version="${KONG_VERSION}" \
+    --label org.opencontainers.created="${DOCKER_LABEL_CREATED}" \
+    --label org.opencontainers.revision="${DOCKER_LABEL_REVISION}" \
+    -t "${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}" -
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   
   docker manifest create -a ${DOCKER_REPOSITORY}:${KONG_VERSION} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   docker manifest push ${DOCKER_REPOSITORY}:${KONG_VERSION}
 
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
+  echo "FROM ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" | docker build \
+    --label org.opencontainers.image.version="${KONG_VERSION}" \
+    --label org.opencontainers.created="${DOCKER_LABEL_CREATED}" \
+    --label org.opencontainers.revision="${DOCKER_LABEL_REVISION}" \
+    -t "${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" -
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   
   docker manifest create -a ${DOCKER_REPOSITORY}:${DOCKER_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
