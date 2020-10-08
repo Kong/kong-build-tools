@@ -172,11 +172,6 @@ main() {
   OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
 
-  if version_lt $NGINX_CORE_VER 1.13.6 || version_lt $OPENSSL_VER 1.1; then
-    # unconditionally disable module in older core since they are never tested
-    KONG_NGINX_MODULE=0
-  fi
-
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
@@ -304,60 +299,6 @@ main() {
         fatal "missing .patch_applied file; some OpenResty patches may not have been applied"
       fi
     fi
-
-    # apply non Kong-specific patches
-
-    if version_lt $NGINX_CORE_VER 1.15.0; then # this is fixed in Nginx 1.15.0
-      if [[ $DIST == "Fedora" && $DIST_VER -gt 28 ]]; then
-        warn "Fedora 28 or above detected, applying the 'rm_glibc_crypt_r_workaround' patch..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-rm_glibc_crypt_r_workaround.patch || true
-        popd
-      fi
-    fi
-
-    if version_eq $OPENRESTY_VER 1.15.8; then # this occurs in OpenResty 1.15.8.x
-      if [ ! -z "$PCRE_VER" ]; then
-        warn "Building OpenResty $OPENRESTY_VER with static libpcre, applying the fix_static_libpcre_linking patch..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/ngx_lua-0.10.15
-          patch --forward -p1 < $SCRIPT_PATH/patches/openresty-1.15.8.x-fix_static_libpcre_linking.patch || true
-        popd
-      fi
-    fi
-
-    # CVEs - http://nginx.org/en/security_advisories.html
-
-    if version_lt $NGINX_CORE_VER 1.15.6; then # fixed in NGINX 1.15.6+
-      #if version_lt $OPENRESTY_VER 1.13.6.3; then # also included in OpenResty 1.13.6.3+ (not yet released)
-        warn "Applying the patch for CVE-2018-16843 CVE-2018-16844..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch ]; then
-            fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch"
-          fi
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch || true
-        popd
-
-        warn "Applying the patch for CVE-2018-16845..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt ]; then
-            fatal "Missing patch nginx-patch.2018.mp4.txt"
-          fi
-          patch --forward -p0 < $SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt || true
-        popd
-      #fi
-    fi
-
-    if version_lt $NGINX_CORE_VER 1.17.3 \
-       && version_lt $OPENRESTY_VER 1.15.8.2; then
-        warn "Applying the patch for CVE-2019-9511 CVE-2019-9513 CVE-2019-9516..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch ]; then
-            fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch"
-          fi
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch || true
-        popd
-      #fi
-    fi
   fi
 
   notice "Building the components now..."
@@ -368,7 +309,7 @@ main() {
     notice "Building OpenSSL..."
 
     pushd $OPENSSL_DOWNLOAD
-      if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
+      if [[ ! -f Makefile ]]; then
           OPENSSL_OPTS=(
             "-g"
             "shared"
@@ -378,14 +319,9 @@ main() {
             "--openssldir=$OPENSSL_PREFIX"
           )
 
-          if version_gte $OPENSSL_VER 1.1.0; then
-            OPENSSL_OPTS+=('no-unit-test')
+          OPENSSL_OPTS+=('no-unit-test')
 
-          else
-            OPENSSL_OPTS+=('no-tests')
-          fi
-
-          if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
+          if [[ $CC == "clang" ]] || [[ $CC != "clang" ]]; then
             local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
             if [[ $OS != "Darwin" ]]; then
               ld_opts="$ld_opts,--enable-new-dtags"
@@ -401,11 +337,7 @@ main() {
         eval ./config ${OPENSSL_OPTS[*]}
       fi
 
-      if version_gte $OPENSSL_VER 1.1.0; then
-        make -j$NPROC
-      else
-        make
-      fi
+      make -j$NPROC
 
       make install_sw DESTDIR=${OPENSSL_DESTDIR}
     popd
@@ -452,13 +384,8 @@ main() {
           OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
         fi
 
-        if version_gte $NGINX_CORE_VER 1.11.4; then
-          OPENRESTY_OPTS+=('--with-stream_realip_module')
-        fi
-
-        if version_gte $NGINX_CORE_VER 1.11.5; then
-          OPENRESTY_OPTS+=('--with-stream_ssl_preread_module')
-        fi
+        OPENRESTY_OPTS+=('--with-stream_realip_module')
+        OPENRESTY_OPTS+=('--with-stream_ssl_preread_module')
 
         if [ ! -z "$PCRE_VER" ]; then
           OPENRESTY_OPTS+=("--with-pcre=$PCRE_DOWNLOAD")
@@ -564,55 +491,6 @@ parse_nginx_core_version() {
   parse_version $1 nginx_ver
 
   echo "${nginx_ver[0]}.${nginx_ver[1]}.${nginx_ver[2]}"
-}
-
-version_eq() {
-  local version_a version_b
-
-  parse_version $1 version_a
-  parse_version $2 version_b
-
-  # Note that we are indexing on the b components, ie: 1.11.100 == 1.11
-  for index in "${!version_b[@]}"; do
-    [[ "${version_a[index]}" != "${version_b[index]}" ]] && return 1
-  done
-
-  return 0
-}
-
-version_lt() {
-  local version_a version_b
-
-  parse_version $1 version_a
-  parse_version $2 version_b
-
-  for index in "${!version_a[@]}"; do
-    if [[ ${version_a[index]} =~ ^[0-9]+$ ]]; then
-      [[ "${version_a[index]}" -lt "${version_b[index]}" ]] && return 0
-      [[ "${version_a[index]}" -gt "${version_b[index]}" ]] && return 1
-
-    else
-      [[ "${version_a[index]}" < "${version_b[index]}" ]] && return 0
-      [[ "${version_a[index]}" > "${version_b[index]}" ]] && return 1
-    fi
-  done
-
-  return 1
-}
-
-version_gt() {
-  (version_eq $1 $2 || version_lt $1 $2) && return 1
-  return 0
-}
-
-version_lte() {
-  (version_lt $1 $2 || version_eq $1 $2) && return 0
-  return 1
-}
-
-version_gte() {
-  (version_gt $1 $2 || version_eq $1 $2) && return 0
-  return 1
 }
 
 canon_path() {
