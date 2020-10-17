@@ -26,4 +26,4 @@ stevedore==3.2.2
 tavern==0.34.0
 urllib3==1.25.10
 wcwidth==0.2.5
-zipp==3.3.0
+zipp==3.3.1
