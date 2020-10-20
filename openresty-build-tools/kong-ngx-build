@@ -13,6 +13,7 @@ FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
 DEBUG=0
+POWERPC=0
 NPROC=
 OS=
 DIST=
@@ -88,7 +89,11 @@ main() {
       --debug)
         DEBUG=1
         shift 1
-        ;;
+	;;
+      --powerpc)
+	POWERPC=1
+	shift 1
+	;;
       --work)
         DOWNLOAD_CACHE=$2
         shift 2
@@ -217,6 +222,14 @@ main() {
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
+	if [ $POWERPC == 1 ]; then
+                rm -rf openresty-${OPENRESTY_VER}/bundle/LuaJIT-*/
+                mkdir openresty-${OPENRESTY_VER}/bundle/LuaJIT-2.1-20190507
+                git clone https://github.com/openresty/luajit2.git openresty-${OPENRESTY_VER}/bundle/LuaJIT-2.1-20190507
+                cd openresty-${OPENRESTY_VER}/bundle/LuaJIT-2.1-20190507
+                git checkout 2763a421d6219c8cb2bbd39246de619dc796bab6
+                cd -
+        fi
       fi
     fi
 
