@@ -1,6 +1,10 @@
 set -x
 
-docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
+if [[ "$RESTY_IMAGE_BASE" == "rhel" ]]; then
+  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi tail -f /dev/null
+else
+  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
+fi
 
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
