@@ -26,7 +26,6 @@ if [ "$RESTY_IMAGE_TAG" == "stretch" ] || [ "$RESTY_IMAGE_TAG" == "jessie" ]; th
 fi
 
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-  sed -i 's/^FROM .*/FROM registry.access.redhat.com\/ubi'${RESTY_IMAGE_TAG}'\/ubi/' docker-kong/rhel/Dockerfile
   sed -i 's/rhel7/rhel'${RESTY_IMAGE_TAG}'/' docker-kong/rhel/Dockerfile
   cp output/*.rhel${RESTY_IMAGE_TAG}.${ARCHITECTURE}.rpm docker-kong/rhel/kong.rpm
   BUILD_DIR="rhel"
