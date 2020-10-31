@@ -9,7 +9,7 @@ future==0.18.2
 idna==2.10
 importlib-metadata==2.0.0
 jmespath==0.10.0
-more-itertools==8.5.0
+more-itertools==8.6.0
 paho-mqtt==1.5.1
 pbr==5.5.1
 pluggy==0.13.1
