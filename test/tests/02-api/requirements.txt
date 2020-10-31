@@ -17,7 +17,7 @@ py==1.9.0
 PyJWT==1.7.1
 pykwalify==1.7.0
 pytest==6.0.2
-python-box==5.1.1
+python-box==5.2.0
 python-dateutil==2.8.1
 PyYAML==5.3.1
 requests==2.24.0
