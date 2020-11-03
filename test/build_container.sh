@@ -1,5 +1,7 @@
 set -e
 
+DOCKER_BUILD_ARGS=()
+
 if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 fi
@@ -26,18 +28,21 @@ if [ "$RESTY_IMAGE_TAG" == "stretch" ] || [ "$RESTY_IMAGE_TAG" == "jessie" ]; th
 fi
 
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
-  sed -i 's/rhel7/rhel'${RESTY_IMAGE_TAG}'/' docker-kong/rhel/Dockerfile
   cp output/*.rhel${RESTY_IMAGE_TAG}.${ARCHITECTURE}.rpm docker-kong/rhel/kong.rpm
   BUILD_DIR="rhel"
+  DOCKER_BUILD_ARGS+=(--build-arg RHEL_VERSION=$RESTY_IMAGE_TAG)
 else
   sed -i 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
 fi
 
 pushd docker-kong/${BUILD_DIR}
-    docker build -t $KONG_TEST_IMAGE_NAME \
-    --no-cache \
-    --build-arg ASSET=local .
-    docker run -t $KONG_TEST_IMAGE_NAME kong version
+  DOCKER_BUILD_ARGS+=(--no-cache)
+  DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
+
+  docker build -t $KONG_TEST_IMAGE_NAME \
+    "${DOCKER_BUILD_ARGS[@]}"
+
+  docker run -t $KONG_TEST_IMAGE_NAME kong version
 popd
 
 rm -rf docker-kong || true

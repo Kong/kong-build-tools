@@ -51,7 +51,7 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "test -d /home/kong/"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
-  if [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]]; then
+  if [[ "$RESTY_IMAGE_BASE" == "amazonlinux" || "$RESTY_IMAGE_BASE" == "rhel" ]]; then
     # Needed to run `su`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
 
