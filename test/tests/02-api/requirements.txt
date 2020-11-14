@@ -23,7 +23,7 @@ PyYAML==5.3.1
 requests==2.25.0
 six==1.15.0
 stevedore==3.2.2
-tavern==0.34.0
+tavern==1.11.1
 urllib3==1.26.2
 wcwidth==0.2.5
 zipp==3.4.0
