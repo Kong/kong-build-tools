@@ -50,7 +50,7 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   echo "FROM ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}" | docker build \
     --label org.opencontainers.image.version="${KONG_VERSION}" \
     --label org.opencontainers.created="${DOCKER_LABEL_CREATED}" \
-    --label org.opencontainers.revision="${DOCKER_LABEL_REVISION}" \
+    --label org.opencontainers.image.revision="${DOCKER_LABEL_REVISION}" \
     -t "${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}" -
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${KONG_VERSION}
   
@@ -61,7 +61,7 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   echo "FROM ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" | docker build \
     --label org.opencontainers.image.version="${KONG_VERSION}" \
     --label org.opencontainers.created="${DOCKER_LABEL_CREATED}" \
-    --label org.opencontainers.revision="${DOCKER_LABEL_REVISION}" \
+    --label org.opencontainers.image.revision="${DOCKER_LABEL_REVISION}" \
     -t "${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" -
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   
