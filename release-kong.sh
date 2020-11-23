@@ -60,7 +60,7 @@ elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
   docker tag localhost:5000/kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG} ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
   echo "FROM ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" | docker build \
     --label org.opencontainers.image.version="${KONG_VERSION}" \
-    --label org.opencontainers.created="${DOCKER_LABEL_CREATED}" \
+    --label org.opencontainers.image.created="${DOCKER_LABEL_CREATED}" \
     --label org.opencontainers.image.revision="${DOCKER_LABEL_REVISION}" \
     -t "${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}" -
   docker push ${DOCKER_REPOSITORY}:${ARCHITECTURE}-${DOCKER_TAG}
