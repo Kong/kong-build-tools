@@ -33,7 +33,9 @@ RUN curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz \
 	-o /tmp/go.tar.gz && \
 	cd /tmp && tar -xf go.tar.gz
 
-ENV GOPATH=/tmp/go
+ENV GOROOT=/tmp/go
+ENV PATH $GOROOT/bin:$PATH
+ENV GOPATH=/tmp/gopath
 ENV PATH $GOPATH/bin:$PATH
 
 RUN go version ; \
@@ -41,12 +43,13 @@ RUN go version ; \
 	go mod init go-pluginserver ; \
 	go get -d -v github.com/Kong/go-pluginserver@${KONG_GO_PLUGINSERVER_VERSION} ; \
 	go install -ldflags="-s -w -X main.version=${KONG_GO_PLUGINSERVER_VERSION}" ... ; \
-	cp /tmp/go/bin/go-pluginserver /usr/local/bin/ ;\
+	cp /tmp/gopath/bin/go-pluginserver /usr/local/bin/ ;\
 	cd ; rm -r /gps; \
 	go-pluginserver --version
 
 RUN rm -rf /kong/* || true
 COPY kong /kong
+RUN rm -rf /kong/bin/grpcurl
 RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
 WORKDIR /kong
