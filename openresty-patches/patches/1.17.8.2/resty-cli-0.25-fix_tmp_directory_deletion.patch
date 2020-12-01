@@ -1,0 +1,11 @@
+--- bundle/resty-cli-0.25/bin/resty
++++ bundle/resty-cli-0.25/bin/resty
+@@ -623,7 +623,7 @@
+ my $child_pid;
+ 
+ END {
+-    if (!$is_win32 && !defined($child_pid) && defined $prefix_dir) {
++    if (!$is_win32 && defined($child_pid) && defined $prefix_dir) {
+         my $saved_status = $?;
+         system("rm -rf $prefix_dir") == 0
+             or warn "failed to remove temp directory $prefix_dir: $!";
