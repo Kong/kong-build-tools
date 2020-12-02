@@ -7,7 +7,7 @@ contextlib2==0.6.0.post1
 docopt==0.6.2
 future==0.18.2
 idna==2.10
-importlib-metadata==2.0.0
+importlib-metadata==2.1.1
 jmespath==0.10.0
 more-itertools==8.5.0
 paho-mqtt==1.5.1
