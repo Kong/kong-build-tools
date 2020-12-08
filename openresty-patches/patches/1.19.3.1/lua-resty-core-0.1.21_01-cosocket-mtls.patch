@@ -1,0 +1,446 @@
+From ddf9dac29e0dd8376e51b369710e42c948e9d959 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Wed, 18 Sep 2019 16:41:56 -0700
+Subject: =?UTF-8?q?feature:=20implement=20the=20`tcpsock:tlshandshake`=20a?=
+ =?UTF-8?q?nd=20`tcpsock:sslhandshake`=0Afunctions=20using=20FFI.?=
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 172 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 173 insertions(+)
+ create mode 100644 lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+new file mode 100644
+index 0000000..fe81de5
+--- /dev/null
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -0,0 +1,172 @@
++local ffi = require("ffi")
++local base = require("resty.core.base")
++
++local C = ffi.C
++local ffi_string = ffi.string
++local ffi_gc = ffi.gc
++local FFI_ERROR = base.FFI_ERROR
++local FFI_DONE = base.FFI_DONE
++local FFI_OK = base.FFI_OK
++local FFI_AGAIN = base.FFI_AGAIN
++local get_request = base.get_request
++local error = error
++local assert = assert
++local getmetatable = getmetatable
++local type = type
++local select = select
++local co_yield = coroutine._yield
++local table_new = require("table.new")
++local table_clear = require("table.clear")
++
++if not pcall(ffi.typeof, "ngx_ssl_session_t") then
++    ffi.cdef[[
++        typedef struct SSL_SESSION ngx_ssl_session_t;
++    ]]
++end
++
++ffi.cdef[[
++typedef struct ngx_http_lua_socket_tcp_upstream_s ngx_http_lua_socket_tcp_upstream_t;
++
++int ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
++    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t *sess,
++    int enable_session_reuse, ngx_str_t *server_name, int verify,
++    int ocsp_status_req, char **errmsg);
++int ngx_http_lua_ffi_socket_tcp_get_tlshandshake_result(ngx_http_request_t *r,
++    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t **sess,
++    char **errmsg, int *openssl_error_code);
++void ngx_http_lua_ffi_tls_free_session(ngx_ssl_session_t *sess);
++]]
++
++
++local SOCKET_CTX_INDEX = 1
++
++
++local errmsg = base.get_errmsg_ptr()
++local session_ptr = ffi.new("ngx_ssl_session_t *[1]")
++local server_name_str = ffi.new("ngx_str_t[1]")
++local openssl_error_code = ffi.new("int[1]")
++local cached_options = table_new(0, 4)
++
++
++local function tlshandshake(self, options)
++    if not options then
++        table_clear(cached_options)
++        options = cached_options
++
++    elseif type(options) ~= "table" then
++        error("bad options table type")
++    end
++
++    local r = get_request()
++
++    if not r then
++        error("no request found")
++    end
++
++    local reused_session = options.reused_session
++    session_ptr[0] = type(reused_session) == "cdata" and reused_session or nil
++
++    if options.server_name then
++        server_name_str[0].data = options.server_name
++        server_name_str[0].len = #options.server_name
++
++    else
++        server_name_str[0].data = nil
++        server_name_str[0].len = 0
++    end
++
++    local rc =
++        C.ngx_http_lua_ffi_socket_tcp_tlshandshake(r, self[SOCKET_CTX_INDEX],
++                                                   session_ptr[0],
++                                                   reused_session ~= false,
++                                                   server_name_str,
++                                                   options.verify and 1 or 0,
++                                                   options.ocsp_status_req
++                                                       and 1 or 0,
++                                                   errmsg)
++
++::again::
++
++    if rc == FFI_ERROR then
++        if openssl_error_code[0] ~= 0 then
++            return nil, openssl_error_code[0] .. ": " .. ffi_string(errmsg[0])
++        end
++
++        return nil, ffi_string(errmsg[0])
++    end
++
++    if rc == FFI_DONE then
++        return options.reused_session
++    end
++
++    if rc == FFI_OK then
++        if options.reused_session == false then
++            return true
++        end
++
++        rc = C.ngx_http_lua_ffi_socket_tcp_get_tlshandshake_result(r,
++            self[SOCKET_CTX_INDEX], session_ptr, errmsg, openssl_error_code)
++
++        assert(rc == FFI_OK)
++
++        if session_ptr[0] == nil then
++            return session_ptr[0]
++        end
++
++        return ffi_gc(session_ptr[0], C.ngx_http_lua_ffi_tls_free_session)
++    end
++
++    assert(rc == FFI_AGAIN)
++
++    co_yield()
++
++    rc = C.ngx_http_lua_ffi_socket_tcp_get_tlshandshake_result(r,
++        self[SOCKET_CTX_INDEX], session_ptr, errmsg, openssl_error_code)
++
++    assert(rc == FFI_OK or rc  == FFI_ERROR)
++
++    goto again
++end
++
++
++local function sslhandshake(self, reused_session, server_name, ssl_verify,
++    send_status_req, ...)
++
++    local n = select("#", ...)
++    if not self or n > 1 then
++        error("ngx.socket sslhandshake: expecting 1 ~ 5 "
++              .. "arguments (including the object), but seen " .. n)
++    end
++
++    cached_options.reused_session = reused_session
++    cached_options.server_name = server_name
++    cached_options.verify = ssl_verify
++    cached_options.ocsp_status_req = send_status_req
++
++    local res, err = tlshandshake(self, cached_options)
++    table_clear(cached_options)
++
++    return res, err
++end
++
++
++do
++    local old_socket_tcp = ngx.socket.tcp
++
++    function ngx.socket.tcp()
++        local sock = old_socket_tcp()
++        local mt = getmetatable(sock)
++
++        mt.tlshandshake = tlshandshake
++        mt.sslhandshake = sslhandshake
++
++        ngx.socket.tcp = old_socket_tcp
++
++        return sock
++    end
++end
++
++
++return {
++    version = base.version
++}
+--
+2.20.1
+
+
+From 1b73826f746a9dd04f60c560d47e778fbec2c2d9 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Wed, 18 Sep 2019 16:55:05 -0700
+Subject: change: better error when request context couldn't be found.
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+index fe81de5..e18f40e 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -8,6 +8,7 @@ local FFI_ERROR = base.FFI_ERROR
+ local FFI_DONE = base.FFI_DONE
+ local FFI_OK = base.FFI_OK
+ local FFI_AGAIN = base.FFI_AGAIN
++local FFI_NO_REQ_CTX = base.FFI_NO_REQ_CTX
+ local get_request = base.get_request
+ local error = error
+ local assert = assert
+@@ -85,6 +86,10 @@ local function tlshandshake(self, options)
+                                                        and 1 or 0,
+                                                    errmsg)
+
++    if rc == FFI_NO_REQ_CTX then
++        error("no request ctx found", 2)
++    end
++
+ ::again::
+
+     if rc == FFI_ERROR then
+--
+2.20.1
+
+
+From 0fea325cd7d6ca479afbc8abbc297b4a046bc8c3 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Wed, 18 Sep 2019 17:23:08 -0700
+Subject: cosocket: added client certificate support with TLS handshake.
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 34 +++++++++++++++++++++++-----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+index e18f40e..ed45c8a 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -19,23 +19,18 @@ local co_yield = coroutine._yield
+ local table_new = require("table.new")
+ local table_clear = require("table.clear")
+
+-if not pcall(ffi.typeof, "ngx_ssl_session_t") then
+-    ffi.cdef[[
+-        typedef struct SSL_SESSION ngx_ssl_session_t;
+-    ]]
+-end
+-
+ ffi.cdef[[
+ typedef struct ngx_http_lua_socket_tcp_upstream_s ngx_http_lua_socket_tcp_upstream_t;
+
+ int ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+-    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t *sess,
++    ngx_http_lua_socket_tcp_upstream_t *u, void *sess,
+     int enable_session_reuse, ngx_str_t *server_name, int verify,
+-    int ocsp_status_req, char **errmsg);
++    int ocsp_status_req, void *chain, void *pkey,
++    char **errmsg);
+ int ngx_http_lua_ffi_socket_tcp_get_tlshandshake_result(ngx_http_request_t *r,
+-    ngx_http_lua_socket_tcp_upstream_t *u, ngx_ssl_session_t **sess,
++    ngx_http_lua_socket_tcp_upstream_t *u, void **sess,
+     char **errmsg, int *openssl_error_code);
+-void ngx_http_lua_ffi_tls_free_session(ngx_ssl_session_t *sess);
++void ngx_http_lua_ffi_tls_free_session(void *sess);
+ ]]
+
+
+@@ -43,7 +38,7 @@ local SOCKET_CTX_INDEX = 1
+
+
+ local errmsg = base.get_errmsg_ptr()
+-local session_ptr = ffi.new("ngx_ssl_session_t *[1]")
++local session_ptr = ffi.new("void *[1]")
+ local server_name_str = ffi.new("ngx_str_t[1]")
+ local openssl_error_code = ffi.new("int[1]")
+ local cached_options = table_new(0, 4)
+@@ -76,6 +71,21 @@ local function tlshandshake(self, options)
+         server_name_str[0].len = 0
+     end
+
++    local client_cert = options.client_cert
++    local client_priv_key = options.client_priv_key
++    if client_cert then
++        if not client_priv_key then
++            error("client certificate supplied without "
++                  .. "corresponding private key", 2)
++        end
++
++        if type(client_cert) ~= "cdata"
++           or type(client_priv_key) ~= "cdata"
++        then
++            error("wrong type of client certificate or private key supplied", 2)
++        end
++    end
++
+     local rc =
+         C.ngx_http_lua_ffi_socket_tcp_tlshandshake(r, self[SOCKET_CTX_INDEX],
+                                                    session_ptr[0],
+@@ -84,6 +94,8 @@ local function tlshandshake(self, options)
+                                                    options.verify and 1 or 0,
+                                                    options.ocsp_status_req
+                                                        and 1 or 0,
++                                                   client_cert,
++                                                   client_priv_key,
+                                                    errmsg)
+
+     if rc == FFI_NO_REQ_CTX then
+--
+2.20.1
+
+
+From 3ed719e95bc9a0fd1a768c6ead1ca0b8b777905a Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Wed, 18 Sep 2019 17:29:56 -0700
+Subject: style: fixed long line.
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+index ed45c8a..a867c73 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -20,7 +20,8 @@ local table_new = require("table.new")
+ local table_clear = require("table.clear")
+
+ ffi.cdef[[
+-typedef struct ngx_http_lua_socket_tcp_upstream_s ngx_http_lua_socket_tcp_upstream_t;
++typedef struct ngx_http_lua_socket_tcp_upstream_s
++    ngx_http_lua_socket_tcp_upstream_t;
+
+ int ngx_http_lua_ffi_socket_tcp_tlshandshake(ngx_http_request_t *r,
+     ngx_http_lua_socket_tcp_upstream_t *u, void *sess,
+--
+2.20.1
+
+
+From 036a7f9b431c7d00fb905533a8f57c7e93f8e0a2 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Tue, 24 Sep 2019 16:10:13 -0700
+Subject: =?UTF-8?q?fix:=20transparently=20propagate=20error=20message=20wh?=
+ =?UTF-8?q?en=20monkey=20patching=20TCP=0Asocket=20metatable.?=
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+index a867c73..a4f4eee 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -14,6 +14,7 @@ local error = error
+ local assert = assert
+ local getmetatable = getmetatable
+ local type = type
++local pcall = pcall
+ local select = select
+ local co_yield = coroutine._yield
+ local table_new = require("table.new")
+@@ -172,7 +173,11 @@ do
+     local old_socket_tcp = ngx.socket.tcp
+
+     function ngx.socket.tcp()
+-        local sock = old_socket_tcp()
++        local ok, sock = pcall(old_socket_tcp)
++        if not ok then
++            error(sock, 2)
++        end
++
+         local mt = getmetatable(sock)
+
+         mt.tlshandshake = tlshandshake
+--
+2.20.1
+
+
+From 75251e09f9950261ce7e587950907ff2982b2e51 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Mon, 28 Oct 2019 14:13:08 -0700
+Subject: load resty.core.socket_tcp to monkypatch the socket metatable
+
+---
+ lua-resty-core-0.1.21/lib/resty/core.lua | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lua-resty-core-0.1.19/lib/resty/core.lua b/lua-resty-core-0.1.19/lib/resty/core.lua
+index 57c9d17..7e8aca4 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core.lua
+@@ -20,6 +20,7 @@ if subsystem == 'http' then
+     require "resty.core.phase"
+     require "resty.core.ndk"
+     require "resty.core.socket"
++    require "resty.core.socket_tcp"
+ end
+
+
+--
+2.20.1
+
+
+From 8d4d81b2fbfac93b270ef70f6441f0d1c70d999e Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Thu, 5 Dec 2019 14:28:24 -0800
+Subject: [PATCH] do not change metatable to avoid conflicts with possible
+ other monkypatches on `ngx.socket.tcp`
+
+---
+ lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+index a4f4eee..4cd2d77 100644
+--- a/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
++++ b/lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
+@@ -12,7 +12,6 @@ local FFI_NO_REQ_CTX = base.FFI_NO_REQ_CTX
+ local get_request = base.get_request
+ local error = error
+ local assert = assert
+-local getmetatable = getmetatable
+ local type = type
+ local pcall = pcall
+ local select = select
+@@ -178,12 +177,8 @@ do
+             error(sock, 2)
+         end
+
+-        local mt = getmetatable(sock)
+-
+-        mt.tlshandshake = tlshandshake
+-        mt.sslhandshake = sslhandshake
+-
+-        ngx.socket.tcp = old_socket_tcp
++        sock.tlshandshake = tlshandshake
++        sock.sslhandshake = sslhandshake
+
+         return sock
+     end
+--
+2.20.1
+
