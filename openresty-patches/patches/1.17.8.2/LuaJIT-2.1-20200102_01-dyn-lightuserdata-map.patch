@@ -1,13 +1,13 @@
-From b2814e8b3cceeb1269a0b421c8cd0ffeab8c617f Mon Sep 17 00:00:00 2001
+From 033fbd597b33e6423e9c1677c1bd14a169547614 Mon Sep 17 00:00:00 2001
 From: Javier Guerra <javier.guerra@konghq.com>
 Date: Tue, 13 Aug 2019 05:05:17 -0700
 Subject: [PATCH] Dynamic remapping of lightuserdata values
-​
+
 To allow architectures with VA larger than 47 bits, splits the space in sections, each of 2^LJ_LUV_SECT_SHIFT bytes
 (2^44 on ARM64 (32TiB), VA is 48 bits).  Since the lightuserdata value must have zeros on all bits above 47, only
 half of the sections are valid.  The table `luv_sect_map[]` must map any section used by the memory layout into a valid
 section.  It should also be a symetric mapping, so a repeat of the transformation returns the original value.
-​
+
 The `luv_init_map()` function uses a sample of different types of pointers to determine which sections are actually
 used, and constructs the required table.
 ---
@@ -17,12 +17,12 @@ used, and constructs the required table.
  src/lj_obj.h   | 15 +++++++++
  src/lj_state.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++++++
  5 files changed, 106 insertions(+), 3 deletions(-)
-​
-diff --git a/LuaJIT-2.1-20200102/src/lj_api.c b/LuaJIT-2.1-20200102/src/lj_api.c
-index 9c4864d7..0a3f778c 100644
---- a/LuaJIT-2.1-20200102/src/lj_api.c
-+++ b/LuaJIT-2.1-20200102/src/lj_api.c
-@@ -595,7 +595,7 @@ LUA_API void *lua_touserdata(lua_State *L, int idx)
+
+diff --git a/LuaJIT-2.1-20201008/src/lj_api.c b/LuaJIT-2.1-20201008/src/lj_api.c
+index 92f8049d..17e40c01 100644
+--- a/LuaJIT-2.1-20201008/src/lj_api.c
++++ b/LuaJIT-2.1-20201008/src/lj_api.c
+@@ -608,7 +608,7 @@ LUA_API void *lua_touserdata(lua_State *L, int idx)
    if (tvisudata(o))
      return uddata(udataV(o));
    else if (tvislightud(o))
@@ -31,7 +31,7 @@ index 9c4864d7..0a3f778c 100644
    else
      return NULL;
  }
-@@ -696,6 +696,7 @@ LUA_API void lua_pushboolean(lua_State *L, int b)
+@@ -709,6 +709,7 @@ LUA_API void lua_pushboolean(lua_State *L, int b)
  
  LUA_API void lua_pushlightuserdata(lua_State *L, void *p)
  {
@@ -39,7 +39,7 @@ index 9c4864d7..0a3f778c 100644
    setlightudV(L->top, checklightudptr(L, p));
    incr_top(L);
  }
-@@ -1138,7 +1139,7 @@ static TValue *cpcall(lua_State *L, lua_CFunction func, void *ud)
+@@ -1149,7 +1150,7 @@ static TValue *cpcall(lua_State *L, lua_CFunction func, void *ud)
    fn->c.f = func;
    setfuncV(L, top++, fn);
    if (LJ_FR2) setnilV(top++);
@@ -48,11 +48,11 @@ index 9c4864d7..0a3f778c 100644
    cframe_nres(L->cframe) = 1+0;  /* Zero results. */
    L->top = top;
    return top-1;  /* Now call the newly allocated C function. */
-diff --git a/LuaJIT-2.1-20200102/src/lj_arch.h b/LuaJIT-2.1-20200102/src/lj_arch.h
-index 0232ebe6..9474b19a 100644
---- a/LuaJIT-2.1-20200102/src/lj_arch.h
-+++ b/LuaJIT-2.1-20200102/src/lj_arch.h
-@@ -241,6 +241,8 @@
+diff --git a/LuaJIT-2.1-20201008/src/lj_arch.h b/LuaJIT-2.1-20201008/src/lj_arch.h
+index b72b0728..da31ccef 100644
+--- a/LuaJIT-2.1-20201008/src/lj_arch.h
++++ b/LuaJIT-2.1-20201008/src/lj_arch.h
+@@ -258,6 +258,8 @@
  #define LJ_TARGET_MASKROT	1
  #define LJ_TARGET_UNIFYROT	2	/* Want only IR_BROR. */
  #define LJ_TARGET_GC64		1
@@ -61,11 +61,11 @@ index 0232ebe6..9474b19a 100644
  #define LJ_ARCH_NUMMODE		LJ_NUMMODE_DUAL
  
  #define LJ_ARCH_VERSION		80
-diff --git a/LuaJIT-2.1-20200102/src/lj_cconv.c b/LuaJIT-2.1-20200102/src/lj_cconv.c
-index 13b8230d..05eed3ac 100644
---- a/LuaJIT-2.1-20200102/src/lj_cconv.c
-+++ b/LuaJIT-2.1-20200102/src/lj_cconv.c
-@@ -611,7 +611,7 @@ void lj_cconv_ct_tv(CTState *cts, CType *d,
+diff --git a/LuaJIT-2.1-20201008/src/lj_cconv.c b/LuaJIT-2.1-20201008/src/lj_cconv.c
+index 400c2ae6..a37549c7 100644
+--- a/LuaJIT-2.1-20201008/src/lj_cconv.c
++++ b/LuaJIT-2.1-20201008/src/lj_cconv.c
+@@ -620,7 +620,7 @@ void lj_cconv_ct_tv(CTState *cts, CType *d,
      if (ud->udtype == UDTYPE_IO_FILE)
        tmpptr = *(void **)tmpptr;
    } else if (tvislightud(o)) {
@@ -74,11 +74,11 @@ index 13b8230d..05eed3ac 100644
    } else if (tvisfunc(o)) {
      void *p = lj_ccallback_new(cts, d, funcV(o));
      if (p) {
-diff --git a/LuaJIT-2.1-20200102/src/lj_obj.h b/LuaJIT-2.1-20200102/src/lj_obj.h
-index 6c60ebdd..309c1997 100644
---- a/LuaJIT-2.1-20200102/src/lj_obj.h
-+++ b/LuaJIT-2.1-20200102/src/lj_obj.h
-@@ -831,6 +831,21 @@ typedef union GCobj {
+diff --git a/LuaJIT-2.1-20201008/src/lj_obj.h b/LuaJIT-2.1-20201008/src/lj_obj.h
+index 44dd3a42..2d3d6cdc 100644
+--- a/LuaJIT-2.1-20201008/src/lj_obj.h
++++ b/LuaJIT-2.1-20201008/src/lj_obj.h
+@@ -849,6 +849,21 @@ typedef union GCobj {
  #define setpriV(o, i)		(setitype((o), (i)))
  #endif
  
@@ -100,11 +100,11 @@ index 6c60ebdd..309c1997 100644
  static LJ_AINLINE void setlightudV(TValue *o, void *p)
  {
  #if LJ_GC64
-diff --git a/LuaJIT-2.1-20200102/src/lj_state.c b/LuaJIT-2.1-20200102/src/lj_state.c
-index a0fba2ac..a9ceb00b 100644
---- a/LuaJIT-2.1-20200102/src/lj_state.c
-+++ b/LuaJIT-2.1-20200102/src/lj_state.c
-@@ -29,6 +29,90 @@
+diff --git a/LuaJIT-2.1-20201008/src/lj_state.c b/LuaJIT-2.1-20201008/src/lj_state.c
+index 93db3d0b..385d0f7e 100644
+--- a/LuaJIT-2.1-20201008/src/lj_state.c
++++ b/LuaJIT-2.1-20201008/src/lj_state.c
+@@ -30,6 +30,90 @@
  #include "lj_alloc.h"
  #include "luajit.h"
  
@@ -160,7 +160,7 @@ index a0fba2ac..a9ceb00b 100644
 +    luv_sect_map[i] = 255;
 +
 +  char unused_local = 0;
-+  void *p = malloc(1); lua_assert(c != NULL);
++  void *p = malloc(1); lua_assert(p != NULL);
 +
 +  luvmap_mark_need(NULL);		/* common use */
 +  luvmap_mark_need(&checked_layout);	/* global space */
@@ -195,13 +195,14 @@ index a0fba2ac..a9ceb00b 100644
  /* -- Stack handling ------------------------------------------------------ */
  
  /* Stack sizes. */
-@@ -186,6 +270,7 @@ lua_State *lj_state_newstate(lua_Alloc f, void *ud)
- LUA_API lua_State *lua_newstate(lua_Alloc f, void *ud)
+@@ -191,6 +275,7 @@ lua_State *lj_state_newstate(lua_Alloc allocf, void *allocd)
+ LUA_API lua_State *lua_newstate(lua_Alloc allocf, void *allocd)
  #endif
  {
 +  luv_init_map();
-   GG_State *GG = (GG_State *)f(ud, NULL, 0, sizeof(GG_State));
-   lua_State *L = &GG->L;
-   global_State *g = &GG->g;
+   PRNGState prng;
+   GG_State *GG;
+   lua_State *L;
 -- 
-2.17.1
+2.25.1
+
