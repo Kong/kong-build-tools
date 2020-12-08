@@ -189,7 +189,6 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=6 && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('Debian Builds'){
