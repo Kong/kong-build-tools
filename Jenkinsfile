@@ -11,13 +11,8 @@ pipeline {
         DOCKERHUB = credentials('dockerhub')
         DOCKER_CLI_EXPERIMENTAL = "enabled"
     }
-    options {
-        timeout(time: 120, unit: 'MINUTES')
-        parallelsAlwaysFailFast()
-        retry(2)
-    }
     stages {
-        stage('Build Kong') {
+        stage('Test Builds - ARM64') {
             when {
                 beforeAgent true
                 anyOf {
@@ -26,20 +21,70 @@ pipeline {
                     changeRequest target: 'master'
                 }
             }
-            agent {
-                node {
-                    label 'bionic'
+            parallel {
+                stage('Alpine'){
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    environment {
+                        ARCHITECTURE = "aarch64"
+                    }
+                    steps {
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'docker run --rm --privileged multiarch/qemu-user-static --reset -p yes'
+                        sh 'docker run --rm -t arm64v8/ubuntu uname -m'
+                        sh 'export PACKAGE_TYPE=apk RESTY_IMAGE_TAG=3.12 && make package-kong && make test && make cleanup'
+                    }
+                }
+                stage('Debian Builds'){
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    environment {
+                        ARCHITECTURE = "aarch64"
+                        PACKAGE_TYPE = "deb"
+                        RESTY_IMAGE_BASE = "debian"
+                    }
+                    steps {
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'docker run --rm --privileged multiarch/qemu-user-static --reset -p yes'
+                        sh 'docker run --rm -t arm64v8/ubuntu uname -m'
+                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=jessie && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=buster && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong && make test && make cleanup'
+                    }
+                }
+                stage('Ubuntu Builds'){
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    options {
+                        retry(2)
+                    }
+                    environment {
+                        ARCHITECTURE = "aarch64"
+                        PACKAGE_TYPE = "deb"
+                        RESTY_IMAGE_BASE = "ubuntu"
+                    }
+                    steps {
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'docker run --rm --privileged multiarch/qemu-user-static --reset -p yes'
+                        sh 'docker run --rm -t arm64v8/ubuntu uname -m'
+                        sh 'RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
+                        sh 'RESTY_IMAGE_TAG=xenial && make package-kong && make test && make cleanup'
+                        sh 'RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
+                    }
                 }
             }
-            steps {
-                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                sh 'make cleanup'
-                sh 'rm -rf $KONG_SOURCE_LOCATION || true'
-                sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                sh 'make kong-test-container'
-            }
         }
-        stage('Test Builds') {
+        stage('Test Builds - AMD64') {
             when {
                 beforeAgent true
                 anyOf {
@@ -55,16 +100,12 @@ pipeline {
                             label 'bionic'
                         }
                     }
-                    environment {
-                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-                    }
                     steps {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
+                        sh 'export PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('RedHat Builds'){
@@ -74,13 +115,10 @@ pipeline {
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
@@ -93,13 +131,10 @@ pipeline {
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
@@ -112,13 +147,10 @@ pipeline {
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=jessie && make package-kong && make test && make cleanup'
@@ -136,25 +168,14 @@ pipeline {
                         retry(2)
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        USER = 'jenkins-kbt'
-                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
                     }
                     steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export BUILDX=false RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
-                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
-                        sh 'export BUILDX=false RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
-                    }
-                    post {
-                        always {
-                            sh 'make cleanup-build'
-                        }
+                        sh 'RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
+                        sh 'RESTY_IMAGE_TAG=xenial && make package-kong && make test && make cleanup'
+                        sh 'RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
                     }
                 }
             }

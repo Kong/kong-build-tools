@@ -144,6 +144,9 @@ endif
 build-base:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
+else ifeq ($(RESTY_IMAGE_BASE),centos)
+	docker pull centos:${RESTY_IMAGE_TAG}
+	docker tag centos:${RESTY_IMAGE_TAG} balenalib/${ARCHITECTURE}-centos:${RESTY_IMAGE_TAG}
 else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull centos:${RESTY_IMAGE_TAG}
 	docker tag centos:${RESTY_IMAGE_TAG} balenalib/${ARCHITECTURE}-rhel:${RESTY_IMAGE_TAG}
