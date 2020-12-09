@@ -148,6 +148,9 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull centos:${RESTY_IMAGE_TAG}
 	docker tag centos:${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
 	PACKAGE_TYPE=rpm
+else ifeq ($(RESTY_IMAGE_BASE),amazonlinux)
+	docker pull amazonlinux:${RESTY_IMAGE_TAG}
+	docker tag amazonlinux:${RESTY_IMAGE_TAG} balenalib/${ARCHITECTURE}-amazonlinux:${RESTY_IMAGE_TAG}
 endif
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):$(ARCHITECTURE)-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) \

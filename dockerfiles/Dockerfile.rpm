@@ -9,4 +9,6 @@ ARG RESTY_IMAGE_TAG="7"
 FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}-${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 RUN install_packages wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
+    zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git || \
+    yum install -y wget tar readline-devel pcre-devel openssl-devel gcc curl unzip \
     zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git
