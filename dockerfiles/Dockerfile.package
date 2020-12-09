@@ -1,12 +1,29 @@
+ARG ARCHITECTURE="amd64"
 ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 ARG DOCKER_KONG_SUFFIX
 ARG KONG_SHA
 ARG DOCKER_REPOSITORY
 
-FROM ${DOCKER_REPOSITORY}:kong-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
+FROM ${DOCKER_REPOSITORY}:kong-${ARCHITECTURE}-${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_KONG_SUFFIX} as KONG
 
-FROM kong/fpm:0.0.1 as FPM
+FROM balenalib/${ARCHITECTURE}-ubuntu as FPM
+
+RUN install_packages \
+		ruby \
+		ruby-dev \
+		gcc \
+		build-essential \
+		libffi-dev \
+		make \
+		ca-certificates \
+		libffi-dev \
+		ruby-ffi \
+		rpm \
+	&& apt-get install --reinstall -y bash
+
+RUN gem install fpm \
+	&& mkdir /src/
 
 COPY --from=KONG /tmp/build /tmp/build
 COPY fpm-entrypoint.sh /fpm-entrypoint.sh
