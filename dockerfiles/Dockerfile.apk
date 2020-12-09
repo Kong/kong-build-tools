@@ -1,8 +1,8 @@
 ARG DOCKER_NAMESPACE="balenalib"
-ARG ARCHITECTURE="amd64-"
+ARG ARCHITECTURE="amd64"
 ARG RESTY_IMAGE_TAG="3"
 
-FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}alpine:${RESTY_IMAGE_TAG}
+FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}-alpine:${RESTY_IMAGE_TAG}
 
 RUN install_packages make gcc g++ zlib-dev musl-dev pcre-dev \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \

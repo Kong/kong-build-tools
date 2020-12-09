@@ -2,11 +2,11 @@
 # Ubuntu base image with all prerequisites to compile / install openresty and Kong
 
 ARG DOCKER_NAMESPACE="balenalib"
-ARG ARCHITECTURE="amd64-"
+ARG ARCHITECTURE="amd64"
 ARG RESTY_IMAGE_BASE="ubuntu"
 ARG RESTY_IMAGE_TAG="bionic"
 
-FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
+FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}-${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 RUN install_packages build-essential \
     ca-certificates \
