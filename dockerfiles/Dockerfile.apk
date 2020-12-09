@@ -1,6 +1,8 @@
+ARG DOCKER_NAMESPACE="balenalib"
+ARG ARCHITECTURE="amd64"
 ARG RESTY_IMAGE_TAG="3"
 
-FROM alpine:${RESTY_IMAGE_TAG}
+FROM ${DOCKER_NAMESPACE}/${ARCHITECTURE}-alpine:${RESTY_IMAGE_TAG}
 
 RUN apk update \
   && apk add ca-certificates wget coreutils patch grep \
