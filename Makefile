@@ -150,8 +150,9 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 endif
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg ARCHITECTURE="$(ARCHITECTURE)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	-t $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
 
 build-openresty:
@@ -167,8 +168,9 @@ else
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
 	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg ARCHITECTURE="$(ARCHITECTURE)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
@@ -194,8 +196,9 @@ ifeq ($(DEBUG),1)
 endif
 	make build-kong
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg ARCHITECTURE="$(ARCHITECTURE)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg KONG_SHA=$(KONG_SHA) \
@@ -214,8 +217,9 @@ ifeq ($(BUILDX),false)
 	rm -rf output/*/
 else
 	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg ARCHITECTURE="$(ARCHITECTURE)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg KONG_SHA=$(KONG_SHA) .
@@ -237,8 +241,9 @@ actual-build-kong:
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
+	--build-arg ARCHITECTURE="$(ARCHITECTURE)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
+	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	-t $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) . )
