@@ -146,8 +146,7 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(RESTY_IMAGE_BASE),rhel)
 	docker pull centos:${RESTY_IMAGE_TAG}
-	docker tag centos:${RESTY_IMAGE_TAG} rhel:${RESTY_IMAGE_TAG}
-	PACKAGE_TYPE=rpm
+	docker tag centos:${RESTY_IMAGE_TAG} balenalib/${ARCHITECTURE}-rhel:${RESTY_IMAGE_TAG}
 else ifeq ($(RESTY_IMAGE_BASE),amazonlinux)
 	docker pull amazonlinux:${RESTY_IMAGE_TAG}
 	docker tag amazonlinux:${RESTY_IMAGE_TAG} balenalib/${ARCHITECTURE}-amazonlinux:${RESTY_IMAGE_TAG}
