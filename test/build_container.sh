@@ -32,7 +32,7 @@ if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   BUILD_DIR="rhel"
   DOCKER_BUILD_ARGS+=(--build-arg RHEL_VERSION=$RESTY_IMAGE_TAG)
 else
-  sed -i 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
+  sed -i 's/^FROM .*/FROM '${DOCKER_NAMESPACE}'\/'${ARCHITECTURE}-${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
 fi
 
 pushd docker-kong/${BUILD_DIR}
