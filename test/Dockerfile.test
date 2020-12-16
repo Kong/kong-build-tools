@@ -65,6 +65,10 @@ RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest Test::Nginx \
     && cpanm --notest local::lib
 
+RUN go version ; \
+    go get -u github.com/tsenart/vegeta ; \
+    vegeta -version
+
 RUN rm -rf /tmp/build
 
 CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
