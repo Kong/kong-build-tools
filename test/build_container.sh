@@ -28,9 +28,12 @@ if [ "$RESTY_IMAGE_TAG" == "stretch" ] || [ "$RESTY_IMAGE_TAG" == "jessie" ]; th
 fi
 
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+  sed -i.bak 's/ubi7/ubi'${RESTY_IMAGE_TAG}'/' docker-kong/rhel/Dockerfile
   cp output/*.rhel${RESTY_IMAGE_TAG}.${ARCHITECTURE}.rpm docker-kong/rhel/kong.rpm
   BUILD_DIR="rhel"
-  DOCKER_BUILD_ARGS+=(--build-arg RHEL_VERSION=$RESTY_IMAGE_TAG)
+  # XXX rhel builder does not support build-time variables with default
+  # values; can be revisited in the future
+  #DOCKER_BUILD_ARGS+=(--build-arg RHEL_VERSION=$RESTY_IMAGE_TAG)
 else
   sed -i 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
 fi

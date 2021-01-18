@@ -2,3 +2,4 @@ kong
 docker-kong
 id_rsa.private
 kong_license.private
+test/tests/01-package/kong.rpm
