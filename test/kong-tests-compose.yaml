@@ -15,6 +15,8 @@ services:
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
     restart: on-failure
+    networks:
+      - kong-net
 
   kong-migrations-up:
     image: "${KONG_TEST_IMAGE_NAME:-kong:latest}"
@@ -29,6 +31,8 @@ services:
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
     restart: on-failure
+    networks:
+      - kong-net
 
   kong:
     image: "${KONG_TEST_IMAGE_NAME:-kong:latest}"
@@ -40,23 +44,31 @@ services:
     environment:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_PLUGINS: "${KONG_PLUGINS:-bundled}"
       KONG_CASSANDRA_CONTACT_POINTS: db
       KONG_DATABASE: postgres
       KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
-      KONG_PG_HOST: 127.0.0.1
+      KONG_PG_HOST: db
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
-    network_mode: "host"
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
       timeout: 10s
       retries: 10
     restart: on-failure
-    
+    networks:
+      - kong-net
+    ports:
+      - "8000:8000/tcp"
+      - "127.0.0.1:8001:8001/tcp"
+      - "8443:8443/tcp"
+      - "127.0.0.1:8444:8444/tcp"
+
   db:
     image: postgres:9.5
     ports:
@@ -80,3 +92,10 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+    networks:
+      - kong-net
+
+networks:
+  kong-net:
+    external: false
+

@@ -42,3 +42,7 @@ wait_kong() {
   done
 }
 
+assert_response() {
+  RES=`curl -s -o /dev/null -w %{http_code} $1`
+  [ $RES == $2 ]
+}
