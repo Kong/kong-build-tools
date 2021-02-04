@@ -1,0 +1,28 @@
+From 97b91899c996a459c88d313a0151663369525627 Mon Sep 17 00:00:00 2001
+From: Datong Sun <datong.sun@konghq.com>
+Date: Fri, 18 Sep 2020 18:26:28 +0800
+Subject: [PATCH] bugfix: when recreating balancer buffer, remove existing
+ buffers first (#1770)
+
+---
+ ngx_lua-0.10.17/src/ngx_http_lua_balancer.c |  7 +++++++
+ t/138-balancer.t            | 40 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+)
+
+diff --git a/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
+index eff9dc13f..e4ac57a30 100644
+--- a/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
++++ b/ngx_lua-0.10.17/src/ngx_http_lua_balancer.c
+@@ -788,6 +788,13 @@ ngx_http_lua_ffi_balancer_recreate_request(ngx_http_request_t *r,
+
+     *err = NULL;
+
++    if (u->request_bufs != NULL && u->request_bufs != r->request_body->bufs) {
++        /* u->request_bufs already contains a valid request buffer
++         * remove it from chain first
++         */
++        u->request_bufs = u->request_bufs->next;
++    }
++
+     return u->create_request(r);
+ }
