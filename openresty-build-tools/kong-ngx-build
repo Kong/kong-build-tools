@@ -12,6 +12,7 @@ PCRE_VER=
 FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
+GEOIP2_MODULE_VERSION=master
 DEBUG=0
 NPROC=
 OS=
@@ -79,6 +80,14 @@ main() {
         ;;
       --no-kong-nginx-module)
         KONG_NGINX_MODULE=0
+        shift 1
+        ;;
+      --geoip2)
+        GEOIP2_MODULE_VERSION=$2
+        shift 2
+        ;;
+      --no-geoip2)
+        GEOIP2_MODULE_VERSION=0
         shift 1
         ;;
       -f|--force)
@@ -271,6 +280,22 @@ main() {
         popd
       popd
     fi
+
+    # geoip2 module
+    if [ $GEOIP2_MODULE_VERSION != 0 ]; then
+      pushd $DOWNLOAD_CACHE
+        if [ ! -d geoip2-nginx-module ]; then
+          warn "geoip2-nginx-module source not found, cloning..."
+          git clone https://github.com/leev/ngx_http_geoip2_module geoip2-nginx-module
+        fi
+
+        pushd geoip2-nginx-module
+          git fetch
+          # Accept both tags, branches and SHAs
+          git reset --hard $GEOIP2_MODULE_VERSION || git reset --hard origin/$GEOIP2_MODULE_VERSION
+        popd
+      popd
+    fi
   popd
 
   notice "Patching the components now..."
@@ -444,6 +469,10 @@ main() {
           if [[ -d $DOWNLOAD_CACHE/lua-kong-nginx-module/stream ]]; then
             OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
           fi
+        fi
+
+        if [ $GEOIP2_MODULE_VERSION != 0 ]; then
+          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/geoip2-nginx-module")
         fi
 
         if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
@@ -661,6 +690,11 @@ show_usage() {
   echo ""
   echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
   echo "                                     not be build."
+  echo ""
+  echo "      --no-geoip2                    Do not include geoip2-nginx-module while compiling OpenResty."
+  echo ""
+  echo "      --geoip2 <branch>              Specify a geoip2-nginx-module version/branch to use when compiling."
+  echo "                                     (Defaults to \"master\")"
   echo ""
   echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
   echo "                                     repeated and will be passed to NGINX's configure in the order"

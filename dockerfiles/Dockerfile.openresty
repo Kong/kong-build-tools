@@ -79,6 +79,9 @@ LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
 ARG RESTY_LUAROCKS_VERSION=2.4.3
 LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 
+ARG GEOIP2_MODULE_VERSION=3.3
+LABEL geoip2_module_version="${GEOIP2_MODULE_VERSION}"
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
