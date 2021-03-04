@@ -267,14 +267,12 @@ test-kong: kong-test-container
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
 
-release-kong: test
+release-kong:
 	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_VERSION=$(KONG_VERSION) \
-	BINTRAY_USR=$(BINTRAY_USR) \
-	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
@@ -291,8 +289,6 @@ ifeq ($(BUILDX),true)
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_VERSION=$(KONG_VERSION) \
-	BINTRAY_USR=$(BINTRAY_USR) \
-	BINTRAY_KEY=$(BINTRAY_KEY) \
 	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \

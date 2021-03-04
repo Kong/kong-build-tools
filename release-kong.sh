@@ -102,128 +102,18 @@ function print_result {
   echo "$1: [status = $status] $result"
 }
 
-# create a repository
-# - arg 1: repo name
-# - arg 2: repo type - e.g., deb, rpm, docker
-function create_repo {
-  local repo_name=$1
-  local repo_type=$2
-
-  local repo_is_private=$PRIVATE_REPOSITORY
-
-  local metadata_depth_json
-  if [[ "$repo_type" == "rpm" ]]; then
-    metadata_depth_json='"yum_metadata_depth": 2,'
-  fi
-
-  # check if repo exists
-  local resp=$(curl -X GET --write-out =%{http_code} -s -o - \
-             -u $BINTRAY_USR:$BINTRAY_KEY \
-             "$BINTRAY_API/repos/$BINTRAY_ORG/$repo_name")
-
-  # retrieve status code and response body
-  local status=$(echo $resp | awk -F"=" '{print $2}')
-  local result=$(echo $resp | awk -F"=" '{print $1}')
-
-  # if repo does not exist, create
-  if [[ "$status" -ne "200" ]]; then
-
-    echo "Creating repo $repo_name..."
-
-    resp=$(curl -X POST --write-out =%{http_code} -s -o - \
-                -u $BINTRAY_USR:$BINTRAY_KEY \
-                "$BINTRAY_API/repos/$BINTRAY_ORG/$repo_name" \
-                -H "Content-type: application/json" \
-                -d @- << EOF
-                {
-                    "type": "$repo_type",
-                    "private": $repo_is_private,
-                    "gpg_sign_metadata": true,
-                    "gpg_sign_files": true,
-                    $metadata_depth_json
-                    "labels": ["API Gateway", "Kong"],
-                }
-EOF
-          )
-
-    status=$(echo $resp | awk -F"=" '{print $2}')
-    result=$(echo $resp | awk -F"=" '{print $1}')
-
-    echo "Repo creation status: [status: $status] $result"
-    
-    if [[ "$status" -ne "201" ]]; then
-        exit 1
-    fi
-  fi
-}
-
-# create a package inside a repo
-# - arg 1: repo name
-# - arg 2: package name
-function create_package {
-  local repo_name=$1
-  local package_name=$2
-
-  local package_stats_private=true
-  local package_license='"licenses": ["Apache-2.0"],'
-
-  # check if package exists
-  local resp=$(curl -X GET --write-out =%{http_code} -s -o - \
-             -u $BINTRAY_USR:$BINTRAY_KEY \
-             "$BINTRAY_API/packages/$BINTRAY_ORG/$repo_name/$package_name")
-
-  # retrieve status code and response body
-  local status=$(echo $resp | awk -F"=" '{print $2}')
-  local result=$(echo $resp | awk -F"=" '{print $1}')
-
-  # if package does not exist, create
-  if [[ "$status" -ne "200" ]]; then
-
-    echo "Creating package $package_name..."
-
-    resp=$(curl -X POST --write-out =%{http_code} -s -o - \
-                -u $BINTRAY_USR:$BINTRAY_KEY \
-                "https://api.bintray.com/packages/$BINTRAY_ORG/$repo_name" \
-                -H "Content-type: application/json" \
-                -d @- << EOF
-                {
-                    "name": "$package_name",
-                    $package_license
-                    "vcs_url": "https://github.com/Kong/kong/",
-                    "website_url": "https://getkong.org/",
-                    "issue_tracker_url": "https://github.com/Kong/kong/issues",
-                    "public_download_numbers": $package_stats_private,
-                    "public_stats": $package_stats_private
-                 }
-EOF
-          )
-
-    status=$(echo $resp | awk -F"=" '{print $2}')
-    result=$(echo $resp | awk -F"=" '{print $1}')
-
-    echo "Package creation status: [status: $status] $result"
-    
-    if [[ "$status" -ne "201" ]]; then
-        exit 1
-    fi
-  fi
-}
-
 echo $REPOSITORY_NAME
 echo $REPOSITORY_TYPE
 echo $REPOSITORY_OS_NAME
 echo $KONG_VERSION
 echo $DIST_FILE
 
-create_repo "$REPOSITORY_NAME" "$REPOSITORY_TYPE"
-create_package "$REPOSITORY_NAME" "$REPOSITORY_OS_NAME"
-
-RESPONSE=$(curl -X PUT --write-out =%{http_code} -s -o - \
-  -u $BINTRAY_USR:$BINTRAY_KEY \
-  "$BINTRAY_API/content/$BINTRAY_ORG/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$BINTRAY_DIRECTORY/$DIST_FILE$BINTRAY_PUT_ARGS" \
-  -T $DIR/$BUILD_DIR$DIST_FILE)
-
-print_result "$REPOSITORY_NAME artifact upload" "$RESPONSE"
+docker run -it \
+-e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+-e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+-e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+-v $PWD:/src \
+--rm amazon/aws-cli s3 cp /src/output/$DIST_FILE s3://colin-release/$REPOSITORY_OS_NAME/$DIST_FILE
 
 echo -e "\nVersion $KONG_VERSION release finished"
 
