@@ -1,0 +1,25 @@
+diff --git a/nginx-1.19.3/src/http/modules/ngx_http_grpc_module.c b/nginx-1.19.3/src/http/modules/ngx_http_grpc_module.c
+index d4af66db..10d3aaed 100644
+--- a/nginx-1.19.3/src/http/modules/ngx_http_grpc_module.c
++++ b/nginx-1.19.3/src/http/modules/ngx_http_grpc_module.c
+@@ -8,6 +8,9 @@
+ #include <ngx_config.h>
+ #include <ngx_core.h>
+ #include <ngx_http.h>
++#if (NGX_HTTP_LUA_KONG)
++#include <ngx_http_lua_kong_module.h>
++#endif
+
+
+ typedef struct {
+@@ -569,6 +572,10 @@ ngx_http_grpc_handler(ngx_http_request_t *r)
+         }
+     }
+
++#if (NGX_HTTP_LUA_KONG)
++    ngx_http_lua_kong_set_grpc_authority(r, &ctx->host);
++#endif
++
+     u->output.tag = (ngx_buf_tag_t) &ngx_http_grpc_module;
+
+     u->conf = &glcf->upstream;
