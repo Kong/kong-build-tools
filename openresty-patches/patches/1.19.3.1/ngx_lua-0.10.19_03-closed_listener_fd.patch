@@ -1,0 +1,28 @@
+From 99ea68a1353fb00b8b5deffb06272e216d46459c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E7=BD=97=E6=B3=BD=E8=BD=A9?= <spacewanderlzx@gmail.com>
+Date: Thu, 3 Dec 2020 08:51:40 +0800
+Subject: [PATCH] bugfix: we closed listener's fd which was closed. (#1832)
+
+fix #1806
+fix #1830
+---
+ ngx_lua-0.10.19/src/ngx_http_lua_pipe.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/ngx_lua-0.10.19/src/ngx_http_lua_pipe.c b/ngx_lua-0.10.19/src/ngx_http_lua_pipe.c
+index c0be9c9e0..c555d7bc9 100644
+--- a/ngx_lua-0.10.19/src/ngx_http_lua_pipe.c
++++ b/ngx_lua-0.10.19/src/ngx_http_lua_pipe.c
+@@ -688,8 +688,10 @@ ngx_http_lua_ffi_pipe_spawn(ngx_http_lua_ffi_pipe_proc_t *proc,
+         /* close listening socket fd */
+         ls = ngx_cycle->listening.elts;
+         for (i = 0; i < ngx_cycle->listening.nelts; i++) {
+-            if (ngx_close_socket(ls[i].fd) == -1) {
+-                ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, ngx_socket_errno,
++            if (ls[i].fd != (ngx_socket_t) -1 &&
++                ngx_close_socket(ls[i].fd) == -1)
++            {
++                ngx_log_error(NGX_LOG_WARN, ngx_cycle->log, ngx_socket_errno,
+                               "lua pipe child " ngx_close_socket_n
+                               " %V failed", &ls[i].addr_text);
+             }
