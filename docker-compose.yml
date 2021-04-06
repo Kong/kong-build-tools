@@ -75,7 +75,7 @@ services:
       retries: 10
     restart: on-failure
   postgres:
-    image: postgres:${POSTGRES_VERSION:-9.5}
+    image: postgres:${POSTGRES_VERSION:-13}
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
