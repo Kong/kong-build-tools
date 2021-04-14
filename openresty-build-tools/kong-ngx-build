@@ -254,7 +254,13 @@ main() {
         LUAROCKS_DOWNLOAD=$DOWNLOAD_CACHE/luarocks-$LUAROCKS_VER
         if [ ! -d $LUAROCKS_DOWNLOAD ]; then
           warn "LuaRocks source not found, downloading..."
-          curl -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+          set +e
+          curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+          if [ $? != 0 ]; then
+            curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
+            [ $? != 0 ] && err "Could not download luarocks source"
+          fi
+          set -e
           if [ ! -z ${LUAROCKS_SHA+x} ]; then
             echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
           fi
