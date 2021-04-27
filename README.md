@@ -133,7 +133,7 @@ sending REST requests to the Kong admin api and validating the expected response
 ## Releasing Kong
 
 The same defaults that applied when creating a packaged version of Kong apply to releasing said package
-to bintray and can be changed by environment variables. Presumes that the package you want to release
+to our internal server and can be changed by environment variables. Presumes that the package you want to release
 already exists in the output directory.
 
 ```
@@ -164,12 +164,4 @@ The defaults when the optional arguments aren't passed are (in the following ord
 REPOSITORY_TYPE=deb|deb|rpm|generic
 REPOSITORY_NAME=$KONG_PACKAGE_NAME-$REPOSITORY_TYPE
 REPOSITORY_OS_NAME=ubuntu|rhel|centos|alpine-tar
-
-bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAGE_NAME-$KONG_VERSION.$OUTPUT_FILE_SUFFIX
-```
-
-Using all defaults one would end up with
-
-```
-bintray.com/kong/kong-deb/ubuntu/0.0.0/kong-0.0.0.bionic.all.deb
 ```

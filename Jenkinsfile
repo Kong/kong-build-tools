@@ -49,7 +49,7 @@ pipeline {
                 }
             }
             parallel {
-                stage('Other Builds'){
+                stage('Amazonlinux'){
                     agent {
                         node {
                             label 'bionic'
@@ -63,11 +63,21 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
+                    }
+                }
+                stage('src & alpine'){
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    steps {
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('RedHat Builds'){
+                stage('RedHat'){
                     agent {
                         node {
                             label 'bionic'
@@ -86,7 +96,7 @@ pipeline {
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Centos Builds'){
+                stage('CentOS'){
                     agent {
                         node {
                             label 'bionic'
@@ -101,11 +111,11 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Debian Builds'){
+                stage('Debian oldstable'){
                     agent {
                         node {
                             label 'bionic'
@@ -120,13 +130,29 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=jessie && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
+                    }
+                }
+                stage('Debian Stable & Testing') {
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    environment {
+                        PACKAGE_TYPE = "deb"
+                        RESTY_IMAGE_BASE = "debian"
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                    }
+                    steps {
+                        sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=buster && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Ubuntu Builds'){
+                stage('Ubuntu') {
                     agent {
                         node {
                             label 'bionic'
