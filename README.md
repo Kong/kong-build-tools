@@ -137,8 +137,8 @@ to bintray and can be changed by environment variables. Presumes that the packag
 already exists in the output directory.
 
 ```
-export BINTRAY_USR=user
-export BINTRAY_KEY=key
+export PULP_USR=user
+export PULP_PSW=password
 export RESTY_IMAGE_BASE=seeabove
 export RESTY_IMAGE_TAG=seeabove
 export KONG_PACKAGE_NAME=somename
@@ -148,8 +148,8 @@ make release-kong
 
 Required release ENV variables:
 ```
-BINTRAY_USR
-BINTRAY_KEY
+PULP_USR
+PULP_PSW
 ```
 
 Optional release ENV variables:
