@@ -17,7 +17,7 @@ pipeline {
         retry(2)
     }
     stages {
-        stage('Build Kong') {
+        stage('Build Kong Test Container') {
             when {
                 beforeAgent true
                 anyOf {
@@ -37,92 +37,6 @@ pipeline {
                 sh 'rm -rf $KONG_SOURCE_LOCATION || true'
                 sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
                 sh 'make kong-test-container'
-            }
-        }
-        stage('Tests Kong') {
-            when {
-                beforeAgent true
-                anyOf {
-                    buildingTag()
-                    branch 'master'
-                    changeRequest target: 'master'
-                }
-            }
-            parallel {
-                stage('dbless') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        TEST_DATABASE = "off"
-                        TEST_SUITE = "dbless"
-                    }
-                    steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        retry(2) {
-                            sh 'make cleanup'
-                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                            sh 'make test-kong'
-                        }
-                    }
-                }
-                stage('postgres') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        TEST_DATABASE = 'postgres'
-                    }
-                    steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        retry(2) {
-                            sh 'make cleanup'
-                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                            sh 'make test-kong'
-                        }
-                    }
-                }
-                stage('postgres plugins') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        TEST_DATABASE = 'postgres'
-                        TEST_SUITE = 'plugins'
-                    }
-                    steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        retry(2) {
-                            sh 'make cleanup'
-                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                            sh 'make test-kong'
-                        }
-                    }
-                }
-                stage('cassandra') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        TEST_DATABASE = 'cassandra'
-                    }
-                    steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        retry(2) {
-                            sh 'make cleanup'
-                            sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                            sh 'make test-kong'
-                        }
-                    }
-                }
             }
         }
         stage('Test Builds') {
