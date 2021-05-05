@@ -127,8 +127,7 @@ Also does some rudimentary checks of the systemd and logrotate we include with o
 
 **02-api**
 
-Uses the python [tavern](https://taverntesting.github.io/) testing tool to run functional tests against Kong with Postgres by 
-sending REST requests to the Kong admin api and validating the expected responses / behaviour on the proxy ports.
+Functional Admin API and Proxy tests.
 
 ## Releasing Kong
 
