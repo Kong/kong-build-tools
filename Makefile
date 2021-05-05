@@ -114,7 +114,7 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
-	--amazonec2-instance-type a1.medium \
+	--amazonec2-instance-type a1.xlarge \
 	--amazonec2-region us-east-1 \
 	--amazonec2-ami ami-0c46f9f09e3a8c2b5 \
 	--amazonec2-vpc-id vpc-74f9ac0c \
