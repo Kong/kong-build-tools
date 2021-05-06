@@ -6,7 +6,11 @@ if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 fi
 
-if docker image inspect $KONG_TEST_IMAGE_NAME; then exit 0; fi
+image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME")
+if [ -n $image_id ]; then
+  msg_test "Tests image ID: $image_id"
+  exit 0;
+fi
 
 rm -rf docker-kong || true
 git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
