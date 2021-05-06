@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 msg_test() {
   builtin echo -en "\033[1;34m" >&1
@@ -42,7 +43,7 @@ wait_for() {
 }
 
 start_kong() {
-  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f $TEST_COMPOSE_PATH up -d
+  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" up -d
 }
 
 stop_kong() {
@@ -63,6 +64,9 @@ wait_kong() {
 }
 
 assert_response() {
-  RES=`curl -s -o /dev/null -w %{http_code} $1`
-  [ $RES == $2 ] || err_exit "  expected $2, got $RES"
+  local endpoint=$1
+  local expected_code=$2
+  local resp_code
+  resp_code=$(curl -s -o /dev/null -w "%{http_code}" $endpoint)
+  [ "$resp_code" == "$expected_code" ] || err_exit "  expected $2, got $resp_code"
 }
