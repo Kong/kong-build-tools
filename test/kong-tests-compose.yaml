@@ -95,6 +95,15 @@ services:
     networks:
       - kong-net
 
+  mockbin:
+    image: kennethreitz/httpbin
+    ports:
+      - '8080:80'
+    expose:
+      - 8000
+    networks:
+      - kong-net
+
 networks:
   kong-net:
     external: false
