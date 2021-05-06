@@ -84,7 +84,12 @@ function push_package() {
   local dist_version="--dist-version $RESTY_IMAGE_TAG"
   if [ "$RESTY_IMAGE_BASE" == "src" ]; then
     dist_version=
-    curl -L https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz -o output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX
+    curl -L "https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz" \
+      -o "output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
+  fi
+
+  if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+    dist_version=
   fi
 
   set -x
