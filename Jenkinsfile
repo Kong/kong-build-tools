@@ -10,6 +10,7 @@ pipeline {
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
         DOCKERHUB = credentials('dockerhub')
         DOCKER_CLI_EXPERIMENTAL = "enabled"
+        DEBUG = 0
     }
     options {
         timeout(time: 120, unit: 'MINUTES')
@@ -49,7 +50,7 @@ pipeline {
                 }
             }
             parallel {
-                stage('Amazonlinux'){
+                stage('AmazonLinux'){
                     agent {
                         node {
                             label 'bionic'
@@ -65,7 +66,7 @@ pipeline {
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('src & alpine'){
+                stage('src & Alpine'){
                     agent {
                         node {
                             label 'bionic'
@@ -84,7 +85,6 @@ pipeline {
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "rhel"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -103,7 +103,6 @@ pipeline {
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "rpm"
                         RESTY_IMAGE_BASE = "centos"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -115,14 +114,13 @@ pipeline {
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Debian oldstable'){
+                stage('Debian OldStable'){
                     agent {
                         node {
                             label 'bionic'
                         }
                     }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "debian"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -158,11 +156,7 @@ pipeline {
                             label 'bionic'
                         }
                     }
-                    options {
-                        retry(2)
-                    }
                     environment {
-                        DEBUG = 0
                         PACKAGE_TYPE = "deb"
                         RESTY_IMAGE_BASE = "ubuntu"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -173,9 +167,36 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export BUILDX=false RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
+                    }
+                    post {
+                        always {
+                            sh 'make cleanup-build'
+                        }
+                    }
+                }
+                stage('Ubuntu Xenial') {
+                    agent {
+                        node {
+                            label 'bionic'
+                        }
+                    }
+                    options {
+                        retry(2)
+                    }
+                    environment {
+                        PACKAGE_TYPE = "deb"
+                        RESTY_IMAGE_BASE = "ubuntu"
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        USER = 'jenkins-kbt'
+                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
+                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                    }
+                    steps {
+                        sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
-                        sh 'export BUILDX=false RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
                     }
                     post {
                         always {
