@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+
+source test/util.sh
 set -e
 
 DOCKER_BUILD_ARGS=()
@@ -6,8 +9,8 @@ if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 fi
 
-image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME")
-if [ -n $image_id ]; then
+image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME" || true)
+if [ -n "$image_id" ]; then
   msg_test "Tests image ID: $image_id"
   exit 0;
 fi
