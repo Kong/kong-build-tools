@@ -30,20 +30,35 @@ err_exit() {
   exit 1
 }
 
+wait_for() {
+  local i=$1
+  local char=${2:-.}
+  while [ "$i" -gt 0 ]; do
+    echo -n "$char"
+    i=$(( i-1 ))
+    sleep 1
+  done
+  echo
+}
+
 start_kong() {
   KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f $TEST_COMPOSE_PATH up -d
 }
 
 stop_kong() {
-  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f $TEST_COMPOSE_PATH down
+  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" down
+}
+
+kong_ready() {
+  [ "$(docker-compose -f "$TEST_COMPOSE_PATH" ps | grep -c healthy | tr -d ' ')" == "2" ]
 }
 
 wait_kong() {
-  while [[ "$(docker-compose -f $TEST_COMPOSE_PATH ps | grep healthy | wc -l | tr -d ' ')" != "2" ]]; do
-    msg_yellow "Waiting for Kong to be ready..."
-    docker-compose -f $TEST_COMPOSE_PATH ps
-    docker-compose -f $TEST_COMPOSE_PATH logs
-    sleep 15
+  while ! kong_ready; do
+    msg_test "Waiting for Kong to be ready "
+    docker-compose -f "$TEST_COMPOSE_PATH" ps
+    docker-compose -f "$TEST_COMPOSE_PATH" logs kong
+    wait_for 5
   done
 }
 
