@@ -5,9 +5,23 @@ set -eo pipefail
 CWD=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 BUILD_DIR="$CWD/output"
 
+PULP_HOST=
+PULP_USERNAME=
+PULP_PASSWORD=
 
-PULP_USERNAME="$PULP_USR"
-PULP_PASSWORD="$PULP_PSW"
+# release finals into prod, others into stage
+if [[ "$KONG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  PULP_HOST="$PULP_HOST_PROD"
+  PULP_USERNAME="$PULP_PROD_USR"
+  PULP_PASSWORD="$PULP_PROD_PSW"
+else
+  PULP_HOST="$PULP_HOST_STAGE"
+  PULP_USERNAME="$PULP_STAGE_USR"
+  PULP_PASSWORD="$PULP_STAGE_PSW"
+fi
+
+
+
 PULP_DOCKER_IMAGE="kong/release-script"
 
 
