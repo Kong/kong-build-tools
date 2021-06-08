@@ -1,0 +1,64 @@
+diff --git a/lua-resty-websocket-0.08/lib/resty/websocket/client.lua b/lua-resty-websocket-0.08/lib/resty/websocket/client.lua
+index 13d4b99..47dc4c2 100644
+--- a/lua-resty-websocket-0.08/lib/resty/websocket/client.lua
++++ b/lua-resty-websocket-0.08/lib/resty/websocket/client.lua
+@@ -98,7 +98,7 @@ function _M.connect(self, uri, opts)
+         path = "/"
+     end
+
+-    local ssl_verify, headers, proto_header, origin_header, sock_opts = false
++    local ssl_verify, headers, proto_header, origin_header, sock_opts, tls_opts = false
+
+     if opts then
+         local protos = opts.protocols
+@@ -122,11 +122,37 @@ function _M.connect(self, uri, opts)
+             sock_opts = { pool = pool }
+         end
+ 
++        local client_cert = opts.client_cert
++        local client_priv_key = opts.client_priv_key
++
++        if client_cert then
++            assert(client_priv_key,
++                   "client_priv_key must be provided with client_cert")
++
++            tls_opts = { client_cert = client_cert,
++                         client_priv_key = client_priv_key, }
++        end
++
+         if opts.ssl_verify then
+             if not ssl_support then
+                 return nil, "ngx_lua 0.9.11+ required for SSL sockets"
+             end
+-            ssl_verify = true
++
++            tls_opts = tls_opts or {}
++            tls_opts.verify = true
++        end
++
++        if opts.server_name then
++            if not ssl_support then
++                return nil, "ngx_lua 0.9.11+ required for SSL sockets"
++            end
++
++            tls_opts = tls_opts or {}
++            tls_opts.server_name = opts.server_name
++
++        elseif host then
++            tls_opts = tls_opts or {}
++            tls_opts.server_name = host
+         end
+ 
+         if opts.headers then
+@@ -151,9 +177,9 @@ function _M.connect(self, uri, opts)
+         if not ssl_support then
+             return nil, "ngx_lua 0.9.11+ required for SSL sockets"
+         end
+-        ok, err = sock:sslhandshake(false, host, ssl_verify)
++        ok, err = sock:tlshandshake(tls_opts)
+         if not ok then
+-            return nil, "ssl handshake failed: " .. err
++            return nil, "tls handshake failed: " .. err
+         end
+     end
+
