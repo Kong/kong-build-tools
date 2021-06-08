@@ -24,16 +24,17 @@ get them applied to other versions:
 * `1.17.8.1`
 * `1.17.8.2`
 * `1.19.3.1`
+* `1.19.3.2`
 
 Here are the instructions on how to build OpenResty with patches added to
-OpenResty version `1.19.3.1`:
+OpenResty version `1.19.3.2`:
 ```bash
-wget https://openresty.org/download/openresty-1.19.3.1.tar.gz
-tar zxvf openresty-1.19.3.1.tar.gz
+wget https://openresty.org/download/openresty-1.19.3.2.tar.gz
+tar zxvf openresty-1.19.3.2.tar.gz
 wget https://github.com/Kong/kong-build-tools/archive/master.tar.gz
 tar zxvf master.tar.gz
-cd openresty-1.19.3.1/bundle
-for i in ../../kong-build-tools/openresty-patches-master/patches/1.19.3.1/*.patch; do patch -p1 < $i; done
+cd openresty-1.19.3.2/bundle
+for i in ../../kong-build-tools/openresty-patches-master/patches/1.19.3.2/*.patch; do patch -p1 < $i; done
 ```
 And the output should contain:
 
@@ -71,7 +72,7 @@ After applying patches you can continue following [build Kong from sources docum
 ## License
 
 ```
-Copyright 2018-2020 Kong Inc.
+Copyright 2018-2021 Kong Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
