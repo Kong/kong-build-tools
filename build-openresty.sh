@@ -54,6 +54,7 @@ EDITION=$EDITION \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
+--geoip2 $GEOIP2_MODULE_VERSION 
 --work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
 
 # The build finished without returning an error so dump a tail of the output
