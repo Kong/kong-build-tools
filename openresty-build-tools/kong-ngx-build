@@ -222,8 +222,8 @@ main() {
         if version_eq $OPENRESTY_VER 1.19.3; then
           pushd openresty-$OPENRESTY_VER/bundle
             notice "Updating lua-resty-dns to unreleased version"
-            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz && \
-            tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1 && \
+            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
+            tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
             rm -f lua-resty-dns-0.21.tar.gz
           popd
         fi
