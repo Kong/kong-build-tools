@@ -19,14 +19,14 @@ pipeline {
     }
     stages {
         stage('Build Kong Test Container') {
-            when {
+            /*when {
                 beforeAgent true
                 anyOf {
                     buildingTag()
                     branch 'master'
                     changeRequest target: 'master'
                 }
-            }
+            }*/
             agent {
                 node {
                     label 'bionic'
@@ -41,14 +41,14 @@ pipeline {
             }
         }
         stage('Test Builds') {
-            when {
+            /*when {
                 beforeAgent true
                 anyOf {
                     buildingTag()
                     branch 'master'
                     changeRequest target: 'master'
                 }
-            }
+            }*/
             parallel {
                 stage('AmazonLinux'){
                     agent {
@@ -62,8 +62,24 @@ pipeline {
                     }
                     steps {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('src & Alpine'){
@@ -72,10 +88,24 @@ pipeline {
                             label 'bionic'
                         }
                     }
+                    environment {
+                        DOCKER_MACHINE_ARM64_NAME = """${sh(
+                              returnStdout: true,
+                              script: 'echo "jenkins-kong-"`cat /proc/sys/kernel/random/uuid`'
+                            )}"""
+                    }
                     steps {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true && make package-kong'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('RedHat'){
@@ -92,8 +122,24 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=7 && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('CentOS'){
@@ -110,8 +156,24 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=7 && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=7 KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=8 KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('Debian OldStable'){
@@ -128,8 +190,24 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=jessie && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=jessie && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=jessie KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=stretch KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('Debian Stable & Testing') {
@@ -146,8 +224,24 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=buster && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=buster && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=buster KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bullseye KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                 }
                 stage('Ubuntu') {
@@ -167,8 +261,24 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=bionic && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=bionic KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=focal && make package-kong'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres9 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres10 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres11 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres12 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres13 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=postgres14 && make test'
+                        sh 'export RESTY_IMAGE_TAG=focal KONG_DATABASE=cassandra3 && make test'
+                        sh 'make cleanup'
                     }
                     post {
                         always {
@@ -192,11 +302,22 @@ pipeline {
                         USER = 'jenkins-kbt'
                         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
                         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                        DOCKER_MACHINE_ARM64_NAME = """${sh(
+                              returnStdout: true,
+                              script: 'echo "jenkins-kong-"`cat /proc/sys/kernel/random/uuid`'
+                            )}"""
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial && make package-kong'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres9 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres10 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres11 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres12 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres13 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=postgres14 && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial KONG_DATABASE=cassandra3 && make test'
                     }
                     post {
                         always {

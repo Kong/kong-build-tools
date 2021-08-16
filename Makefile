@@ -256,9 +256,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
-	
+
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
-	
+
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX)
 endif
 
@@ -336,6 +336,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
 	TEST_COMPOSE_PATH=$(TEST_COMPOSE_PATH) \
 	KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
+	KONG_DATABASE=$(KONG_DATABASE) \
 	./test/run_tests.sh && make update-cache-images
 endif
 
@@ -373,25 +374,7 @@ ifeq ($(BUILDX),true)
 	test/build_container.sh
 endif
 
-setup-tests: cleanup-tests
-ifneq ($(RESTY_IMAGE_BASE),src)
-	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
-	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
-		docker-compose -f test/kong-tests-compose.yaml up -d
-	while ! curl localhost:8001; do \
-		echo "Waiting for Kong to be ready..."; \
-		sleep 5; \
-	done
-endif
-
-cleanup-tests:
-ifneq ($(RESTY_IMAGE_BASE),src)
-	docker-compose -f test/kong-tests-compose.yaml down
-	docker-compose -f test/kong-tests-compose.yaml rm -f
-	docker volume prune -f
-endif
-
-cleanup: cleanup-tests cleanup-build
+cleanup: cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*

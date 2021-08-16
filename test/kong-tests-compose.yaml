@@ -71,28 +71,17 @@ services:
       - "127.0.0.1:8444:8444/tcp"
 
   db:
-    image: postgres:13
+    image: ${KONG_DB_IMAGE:-postgres:9}
     ports:
-      - '5432:5432'
+      - ${KONG_DB_PORTS:-'5432:5432'}
     expose:
       - 5432
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
       POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${KONG_PG_USER:-kong}"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    restart: on-failure
     stdin_open: true
     tty: true
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${KONG_PG_USER:-kong}"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
     networks:
       - kong-net
 
