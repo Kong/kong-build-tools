@@ -12,14 +12,14 @@ index d4af66db..10d3aaed 100644
 
 
  typedef struct {
-@@ -569,6 +572,10 @@ ngx_http_grpc_handler(ngx_http_request_t *r)
-         }
-     }
+@@ -720,6 +723,10 @@ ngx_http_grpc_create_request(ngx_http_request_t *r)
+     len = sizeof(ngx_http_grpc_connection_start) - 1
+           + sizeof(ngx_http_grpc_frame_t);             /* headers frame */
 
 +#if (NGX_HTTP_LUA_KONG)
 +    ngx_http_lua_kong_set_grpc_authority(r, &ctx->host);
 +#endif
 +
-     u->output.tag = (ngx_buf_tag_t) &ngx_http_grpc_module;
+     /* :method header */
 
-     u->conf = &glcf->upstream;
+     if (r->method == NGX_HTTP_GET || r->method == NGX_HTTP_POST) {
