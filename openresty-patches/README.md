@@ -25,48 +25,48 @@ get them applied to other versions:
 * `1.17.8.2`
 * `1.19.3.1`
 * `1.19.3.2`
+* `1.19.9.1`
 
 Here are the instructions on how to build OpenResty with patches added to
-OpenResty version `1.19.3.2`:
+OpenResty version `1.19.9.1`:
 ```bash
-wget https://openresty.org/download/openresty-1.19.3.2.tar.gz
-tar zxvf openresty-1.19.3.2.tar.gz
+wget https://openresty.org/download/openresty-1.19.9.1.tar.gz
+tar zxvf openresty-1.19.9.1.tar.gz
 wget https://github.com/Kong/kong-build-tools/archive/master.tar.gz
 tar zxvf master.tar.gz
-cd openresty-1.19.3.2/bundle
-for i in ../../kong-build-tools/openresty-patches-master/patches/1.19.3.2/*.patch; do patch -p1 < $i; done
+cd openresty-1.19.9.1/bundle
+for i in ../../kong-build-tools/openresty-patches-master/patches/1.19.9.1/*.patch; do patch -p1 < $i; done
 ```
 And the output should contain:
 
 ```bash
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/resty/core.lua
-patching file lua-resty-core-0.1.21/lib/resty/core/socket_tcp.lua
-patching file lua-resty-core-0.1.21/lib/ngx/balancer.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/resty/core.lua
+patching file lua-resty-core-0.1.22/lib/resty/core/socket_tcp.lua
+patching file lua-resty-core-0.1.22/lib/ngx/balancer.lua
 patching file lua-resty-websocket-0.08/lib/resty/websocket/client.lua
-patching file nginx-1.19.3/src/http/ngx_http_upstream.c
-patching file nginx-1.19.3/src/http/ngx_http_special_response.c
-patching file nginx-1.19.3/src/stream/ngx_stream_proxy_module.c
-patching file nginx-1.19.3/src/http/modules/ngx_http_grpc_module.c
-patching file nginx-1.19.3/src/http/ngx_http_header_filter_module.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.h
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_socket_tcp.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_balancer.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_common.h
-patching file ngx_lua-0.10.19/src/ngx_http_lua_module.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_balancer.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_balancer.c
-patching file ngx_lua-0.10.19/src/ngx_http_lua_common.h
-patching file ngx_lua-0.10.19/src/ngx_http_lua_pipe.c
-patching file ngx_stream_lua-0.0.9/src/api/ngx_stream_lua_api.h
+patching file nginx-1.19.9/src/http/ngx_http_upstream.c
+patching file nginx-1.19.9/src/http/ngx_http_special_response.c
+patching file nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
+patching file nginx-1.19.9/src/http/modules/ngx_http_grpc_module.c
+patching file nginx-1.19.9/src/http/ngx_http_header_filter_module.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.h
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_socket_tcp.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_balancer.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_common.h
+patching file ngx_lua-0.10.20/src/ngx_http_lua_module.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_balancer.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_balancer.c
+patching file ngx_lua-0.10.20/src/ngx_http_lua_common.h
+patching file ngx_stream_lua-0.0.10/src/api/ngx_stream_lua_api.h
 ```
 
 After applying patches you can continue following [build Kong from sources documentation](https://getkong.org/install/source/):
