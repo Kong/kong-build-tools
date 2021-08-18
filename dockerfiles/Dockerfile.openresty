@@ -67,7 +67,7 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/passwdqc-${KONG_DEP
 
 ARG KONG_NGINX_MODULE=master
 
-ARG RESTY_VERSION=1.19.3.2
+ARG RESTY_VERSION=1.19.9.1
 LABEL resty_version="${RESTY_VERSION}"
 
 ARG RESTY_OPENSSL_VERSION=1.1.1k
