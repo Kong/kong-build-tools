@@ -1,6 +1,6 @@
 .PHONY: test build-kong
 
-export SHELL:=/bin/bash
+export SHELL:=/usr/bin/env bash
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
@@ -256,9 +256,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
-	
+
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
-	
+
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX)
 endif
 
