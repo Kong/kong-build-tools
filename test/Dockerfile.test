@@ -17,7 +17,10 @@ ENV KONG_GO_PLUGINSERVER_VERSION $KONG_GO_PLUGINSERVER_VERSION
 RUN cp -R /tmp/build/* / || true
 RUN rm -rf /usr/local/bin/kong
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
-    apt-get update && apt-get install -y \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+    ca-certificates \
     tzdata \
     vim \
     jq \
