@@ -31,7 +31,7 @@ fi
 
 if [ "$RESTY_IMAGE_TAG" == "stretch" ]; then
   sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
-  sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
+  sed -i 's/apt install unzip/apt-get install -y --no-install-recommends unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
 fi
 
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
