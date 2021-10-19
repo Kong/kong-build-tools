@@ -7,6 +7,7 @@ PREFIX=
 DOWNLOAD_CACHE=work
 OPENRESTY_VER=
 OPENSSL_VER=
+BORINGSSL_VER=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
@@ -59,6 +60,10 @@ main() {
         ;;
       --openssl_sha)
         OPENSSL_SHA=$2
+        shift 2
+        ;;
+      --boringssl)
+        BORINGSSL_VER="$2"
         shift 2
         ;;
       --luarocks)
@@ -135,9 +140,14 @@ main() {
     fatal "OpenResty version can not be empty"
   fi
 
-  if [ -z "$OPENSSL_VER" ]; then
+  if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
     show_usage
-    fatal "OpenSSL version can not be empty"
+    fatal "OpenSSL and BoringSSL version can not both be empty"
+  fi
+
+  if [ -n "$OPENSSL_VER" -a -n "$BORINGSSL_VER" ]; then
+    show_usage
+    fatal "OpenSSL and BoringSSL version can not both be present"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -158,21 +168,32 @@ main() {
 
   NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
 
-  OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
-  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
-
   mkdir -p $DOWNLOAD_CACHE $PREFIX
-
-  OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
   OPENRESTY_DESTDIR=${OPENRESTY_DESTDIR:-/}
-
-  OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
   OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
-
-  OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
 
-  if version_lt $NGINX_CORE_VER 1.13.6 || version_lt $OPENSSL_VER 1.1; then
+  if [ -n "$OPENSSL_VER" ]; then
+    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
+    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
+    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+
+    if version_lt $OPENSSL_VER 1.1; then
+      # unconditionally disable module in older core since they are never tested
+      KONG_NGINX_MODULE=0
+    fi
+  fi
+
+  if [ -n "$BORINGSSL_VER" ]; then
+    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
+#    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+#    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
+#    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+  fi
+
+  if version_lt $NGINX_CORE_VER 1.13.6; then
     # unconditionally disable module in older core since they are never tested
     KONG_NGINX_MODULE=0
   fi
@@ -180,22 +201,41 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
-    # OpenSSL
 
-    if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
-      warn "OpenSSL source not found, downloading..."
-      set +e
-      curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
-      if [[ $? != 0 ]]; then
-        curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
-        [[ $? != 0 ]] && err "Could not download OpenSSL"
-      fi
-      set -e
+    if [ -n "$OPENSSL_VER" ]; then
+      # OpenSSL
 
-      if [ ! -z ${OPENSSL_SHA+x} ]; then
-        echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+      if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
+        warn "OpenSSL source not found, downloading..."
+        set +e
+        curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+        if [[ $? != 0 ]]; then
+          curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+          [[ $? != 0 ]] && err "Could not download OpenSSL"
+        fi
+        set -e
+
+        if [ ! -z ${OPENSSL_SHA+x} ]; then
+          echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+        fi
+        tar -xzf openssl-$OPENSSL_VER.tar.gz
       fi
-      tar -xzf openssl-$OPENSSL_VER.tar.gz
+    fi
+
+    if [ -n "$BORINGSSL_VER" ]; then
+      # Boring SSL
+
+      if [[ ! -d "$OPENSSL_DOWNLOAD" ]]; then
+        warn "BoringSSL source not found, downloading..."
+        set +e
+        curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
+        [[ $? != 0 ]] && err "Could not download BoringSSL"
+        set -e
+
+        # -- check hash? --
+
+        unzip boringssl-${BORINGSSL_VER}.zip -d "$OPENSSL_DOWNLOAD"
+      fi
     fi
 
     # OpenResty
