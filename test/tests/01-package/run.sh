@@ -10,6 +10,8 @@ if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --import https://download.konghq.com/gateway-2.x-rhel-8/repodata/repomd.xml.key"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --checksig /src/kong.rpm"
 fi
 
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
