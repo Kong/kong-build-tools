@@ -6,7 +6,7 @@ RUN apk update \
   && apk upgrade \
   && apk add ca-certificates wget coreutils patch grep \
   && update-ca-certificates \
-  && apk add --virtual build-deps make gcc make g++ zlib-dev musl-dev pcre-dev \
+  && apk add --virtual build-deps cmake gcc make g++ zlib-dev musl-dev pcre-dev \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \
     libffi-dev git unzip tar openssh m4 xz gnupg openssl musl \
     linux-headers bsd-compat-headers bash go wget

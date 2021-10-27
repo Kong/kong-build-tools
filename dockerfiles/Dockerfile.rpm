@@ -8,6 +8,6 @@ FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 RUN yum update -y && \
   yum -y install ca-certificates wget tar readline-devel pcre-devel openssl-devel \
-  gcc curl unzip zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git wget
+  gcc curl unzip zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git wget cmake3
 
 RUN wget -O /usr/local/bin/yaml https://github.com/mikefarah/yq/releases/download/1.15.0/yq_linux_amd64 && chmod +x /usr/local/bin/yaml
