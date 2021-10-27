@@ -20,6 +20,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         libreadline-dev \
         libxslt1-dev \
         make \
+        cmake \
         perl \
         unzip \
         zlib1g-dev \

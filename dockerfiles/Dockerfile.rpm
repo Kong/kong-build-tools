@@ -8,4 +8,4 @@ FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 RUN yum update -y && \
   yum -y install ca-certificates wget tar readline-devel pcre-devel openssl-devel \
-  gcc curl unzip zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git
+  gcc curl unzip zlib-devel cmake make gcc gcc-c++ bzip2 patch perl m4 git
