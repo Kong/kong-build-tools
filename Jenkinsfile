@@ -144,8 +144,8 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=buster && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('Ubuntu') {
