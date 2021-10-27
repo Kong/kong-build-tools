@@ -29,7 +29,15 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         file \
         ssh \
         valgrind \
-        wget \
-        cmake
+        wget
 
-RUN wget -O /usr/local/bin/yaml https://github.com/mikefarah/yq/releases/download/1.15.0/yq_linux_amd64 && chmod +x /usr/local/bin/yaml
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.15.7/cmake-3.15.7.tar.gz \
+    && tar -xzvf cmake-3.15.7.tar.gz \ 
+    && cd cmake-3.15.7 \
+    && ./bootstrap \
+    && make -j 2 \
+    && make install
+
+RUN curl -o /usr/local/bin/yaml https://github.com/mikefarah/yq/releases/download/1.15.0/yq_linux_amd64 \
+    && chmod +x /usr/local/bin/yaml
+
