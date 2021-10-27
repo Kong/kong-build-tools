@@ -29,14 +29,28 @@ mkdir -p /tmp/build/usr/local/kong
 mkdir -p /tmp/build/
 mkdir -p /work
 
-if [ "$DEBUG" == 1 ]
-then
-  KONG_NGX_BUILD_ARGS="--debug"
-fi
-
 if [ -z "$KONG_NGINX_MODULE" ]
 then
   KONG_NGINX_MODULE="master"
+fi
+
+NGX_BUILD_FLAGS=(
+  "--openresty $RESTY_VERSION"
+  "--openssl $RESTY_OPENSSL_VERSION"
+  "--luarocks $RESTY_LUAROCKS_VERSION"
+  "--kong-nginx-module $KONG_NGINX_MODULE"
+  "--pcre $RESTY_PCRE_VERSION"
+  "--work /work"
+)
+
+if [ ! -z "$OPENTRACING_VERSION" ]
+then
+  NGX_BUILD_FLAGS+=("--opentracing $OPENTRACING_VERSION")
+fi
+
+if [ "$DEBUG" == 1 ]
+then
+  NGX_BUILD_FLAGS+=("--debug")
 fi
 
 LUAROCKS_PREFIX=/usr/local \
@@ -49,12 +63,7 @@ OPENRESTY_RPATH=/usr/local/kong/lib \
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES \
 EDITION=$EDITION \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
---openresty $RESTY_VERSION \
---openssl $RESTY_OPENSSL_VERSION \
---luarocks $RESTY_LUAROCKS_VERSION \
---kong-nginx-module $KONG_NGINX_MODULE \
---pcre $RESTY_PCRE_VERSION \
---work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
+  "${NGX_BUILD_FLAGS[*]}" >> $BUILD_OUTPUT 2>&1
 
 # The build finished without returning an error so dump a tail of the output
 dump_output

@@ -7,6 +7,7 @@ PREFIX=
 DOWNLOAD_CACHE=work
 OPENRESTY_VER=
 OPENSSL_VER=
+OPENTRACING_VERSION=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
@@ -59,6 +60,10 @@ main() {
         ;;
       --openssl_sha)
         OPENSSL_SHA=$2
+        shift 2
+        ;;
+      --opentracing)
+        OPENTRACING_VERSION=$2
         shift 2
         ;;
       --luarocks)
@@ -230,6 +235,21 @@ main() {
       fi
     fi
 
+    # OPENTRACING
+    
+    if [ ! -z "$OPENTRACING_VERSION" ]; then
+      OPENTRACING_DOWNLOAD=$DOWNLOAD_CACHE/opentracing-cpp-$OPENTRACING_VERSION
+      if [ ! -d $OPENTRACING_DOWNLOAD ]; then
+        warn "opentracing source not found, downloading..."
+        set +e
+        curl --fail -sSL https://github.com/opentracing/opentracing-cpp/archive/refs/tags/$OPENTRACING_VERSION.tar.gz -o opentracing-$OPENTRACING_VERSION.tar.gz
+        [ $? != 0 ] && err "Could not download opentracing source"
+        set -e
+        mkdir -p $OPENTRACING_DOWNLOAD
+        tar -xzf opentracing-$OPENTRACING_VERSION.tar.gz -C $OPENTRACING_DOWNLOAD
+      fi
+    fi
+
     # PCRE
 
     if [ ! -z "$PCRE_VER" ]; then
@@ -377,6 +397,28 @@ main() {
   fi
 
   notice "Building the components now..."
+
+  # Building Opentracing
+  
+  if [ ! -z "$OPENTRACING_VERSION" ]; then
+    notice "Building Opentracing..."
+    
+    pushd $OPENTRACING_DOWNLOAD
+      cd .build
+      mkdir -p /tmp/build/usr/local/kong/lib
+      cmake -DBUILD_MOCKTRACER=OFF \
+            -DLIB_INSTALL_DIR=/tmp/build/usr/local/kong/lib \
+            -DBUILD_TESTING=OFF ..
+      make && make install
+    popd
+    
+    cp -rf /tmp/build/usr/local/kong/lib/* /usr/local/lib
+    cp -rf /tmp/build/usr/local/kong/lib/* /usr/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/build/usr/local/kong/lib/
+    ldconfig /tmp/build/usr/local/kong/lib/
+    ldconfig /usr/local/lib
+    ldconfig /usr/lib
+  fi
 
   # Building OpenSSL
 
