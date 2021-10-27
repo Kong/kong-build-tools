@@ -9,4 +9,6 @@ RUN apk update \
   && apk add --virtual build-deps make gcc make g++ zlib-dev musl-dev pcre-dev \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \
     libffi-dev git unzip tar openssh m4 xz gnupg openssl musl \
-    linux-headers bsd-compat-headers bash go
+    linux-headers bsd-compat-headers bash go wget
+
+RUN wget -O /usr/local/bin/yaml https://github.com/mikefarah/yq/releases/download/1.15.0/yq_linux_amd64 &&  chmod +x /usr/local/bin/yaml
