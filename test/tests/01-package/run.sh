@@ -114,9 +114,9 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
+if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
-  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:18.04
+  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt install --yes /src/kong.deb"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "kong version"
