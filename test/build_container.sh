@@ -34,6 +34,11 @@ if [ "$RESTY_IMAGE_TAG" == "stretch" ]; then
   sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
 fi
 
+if [ "$RESTY_IMAGE_BASE" == "debian"] && [ "$RESTY_IMAGE_TAG" == "9" ]; then
+  sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
+  sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
+fi
+
 if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   cp output/*.rhel${RESTY_IMAGE_TAG}.${ARCHITECTURE}.rpm docker-kong/rhel/kong.rpm
   BUILD_DIR="rhel"
