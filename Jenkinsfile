@@ -62,7 +62,6 @@ pipeline {
                     }
                     steps {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=1 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                     }
                 }
