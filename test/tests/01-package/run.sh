@@ -103,6 +103,12 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luaro
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks config | grep -q /usr/local/openresty/luajit/lib"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks install version"
 
+# kong shipped files
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.logrotate"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/pluginsocket.proto"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
+
 # kong binaries
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 
@@ -124,16 +130,16 @@ EOD"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl restart kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl stop kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl status kong"
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong || true" # systemctl will exit with 3 if unit is not active
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg --remove $KONG_PACKAGE_NAME"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "! test -f /lib/systemd/system/kong.service"
   docker stop systemd-ubuntu

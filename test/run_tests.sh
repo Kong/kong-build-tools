@@ -13,7 +13,7 @@ fi
 USE_TTY="-t"
 test -t 1 && USE_TTY="-it"
 
-for dir in test/tests/02-*; do
+for dir in test/tests/*; do
   msg_test "Running '$dir' tests..."
   msg_test "======================================================================"
 
