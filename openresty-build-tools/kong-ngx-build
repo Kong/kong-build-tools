@@ -7,6 +7,7 @@ PREFIX=
 DOWNLOAD_CACHE=work
 OPENRESTY_VER=
 OPENSSL_VER=
+OPENSSL_DIR=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
@@ -59,6 +60,10 @@ main() {
         ;;
       --openssl_sha)
         OPENSSL_SHA=$2
+        shift 2
+        ;;
+      --openssl-dir)
+        OPENSSL_DIR=$2
         shift 2
         ;;
       --luarocks)
@@ -135,9 +140,9 @@ main() {
     fatal "OpenResty version can not be empty"
   fi
 
-  if [ -z "$OPENSSL_VER" ]; then
+  if [ -z "$OPENSSL_VER" ] && [ -z "$OPENSSL_DIR" ]; then
     show_usage
-    fatal "OpenSSL version can not be empty"
+    fatal "Either OpenSSL version, or OpenSSL installation must be supplied"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -171,6 +176,17 @@ main() {
 
   OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
+
+  if [[ ! -z "$OPENSSL_DIR"  \
+      && ( ! -f "$OPENSSL_DIR/include/openssl/ssl.h"  \
+         ||  ! -f "$OPENSSL_DIR/lib/libssl.so" ) ]]; then
+    fatal "failed to detect a usable OpenSSL installation at $OPENSSL_DIR"
+  else
+    # override the OPENSSL_ variables to point to the values from our installation
+    OPENSSL_VER=$(openssl_extract_version $OPENSSL_DIR)
+    OPENSSL_INSTALL=$OPENSSL_DIR
+    notice "Using preinstalled OpenSSL from $OPENSSL_INSTALL (version $OPENSSL_VER)"
+  fi
 
   if version_lt $NGINX_CORE_VER 1.13.6 || version_lt $OPENSSL_VER 1.1; then
     # unconditionally disable module in older core since they are never tested
@@ -652,6 +668,16 @@ n_proc() {
   fi
 }
 
+openssl_extract_version() {
+  local ver_full_string ver_string
+  
+  ver_full_string=$(export LD_LIBRARY_PATH=$1/lib; $1/bin/openssl version)
+  ver_string=$(echo "$ver_full_string" | cut -d " " -f 2)
+
+  echo "$ver_string"
+  }
+  
+
 show_usage() {
   echo "Build basic components (OpenResty, OpenSSL and LuaRocks) for Kong."
   echo ""
@@ -660,9 +686,13 @@ show_usage() {
   echo "Required arguments:"
   echo "  -p, --prefix <prefix>              Location where components should be installed."
   echo "      --openresty <openresty_ver>    Version of OpenResty to build, such as 1.13.6.2."
-  echo "      --openssl <openssl_ver>        Version of OpenSSL to build, such as 1.1.1c."
   echo ""
   echo "Optional arguments:"
+  echo "      --openssl <openssl_ver>        Version of OpenSSL to build, such as 1.1.1c."
+  echo ""
+  echo "      --openssl-dir <openssl_path>   Path to an existing OpenSSL installation."
+  echo "                                     At least one of --openssl or --openssl-dir must be supplied."
+  echo ""
   echo "      --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty."
   echo "                                     (Patching is enabled by default)"
   echo ""
