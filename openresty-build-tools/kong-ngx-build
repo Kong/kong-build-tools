@@ -236,7 +236,7 @@ main() {
       PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
       if [ ! -d $PCRE_DOWNLOAD ]; then
         warn "PCRE source not found, downloading..."
-        curl -sSLO https://ftp.pcre.org/pub/pcre/pcre-${PCRE_VER}.tar.gz
+        curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
         fi
