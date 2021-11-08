@@ -166,7 +166,7 @@ pipeline {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=xenial && make package-kong && make test && make cleanup'
                     }
                     post {
                         always {
@@ -174,7 +174,7 @@ pipeline {
                         }
                     }
                 }
-                stage('Ubuntu Xenial') {
+                stage('Ubuntu Focal') {
                     agent {
                         node {
                             label 'bionic'
@@ -194,7 +194,7 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=focal DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
                     }
                     post {
                         always {
