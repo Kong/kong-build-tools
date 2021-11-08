@@ -2,7 +2,7 @@
 
 set -x
 
-if [ "$RESTY_IMAGE_TAG" != "focal" ] && [ "$RESTY_IMAGE_BASE" != "alpine" ]; then
+if [ "$RESTY_IMAGE_BASE" != "ubuntu" ] && [ "$RESTY_IMAGE_BASE" != "centos" ] && [ "$RESTY_IMAGE_BASE" != "alpine" ]; then
     exit 0
 fi
 
