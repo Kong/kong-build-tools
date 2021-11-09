@@ -2,6 +2,8 @@ ARG RESTY_IMAGE_TAG="3"
 
 FROM alpine:${RESTY_IMAGE_TAG}
 
+ARG YQ_VERSION=1.15.0
+
 RUN apk update \
   && apk upgrade \
   && apk add ca-certificates wget coreutils patch grep \
@@ -9,6 +11,6 @@ RUN apk update \
   && apk add --virtual build-deps cmake gcc make g++ zlib-dev musl-dev pcre-dev \
     openssl-dev zlib-dev ncurses-dev readline-dev curl perl \
     libffi-dev git unzip tar openssh m4 xz gnupg openssl musl \
-    linux-headers bsd-compat-headers bash go wget
-
-RUN wget -O /usr/local/bin/yaml https://github.com/mikefarah/yq/releases/download/1.15.0/yq_linux_amd64 &&  chmod +x /usr/local/bin/yaml
+    linux-headers bsd-compat-headers bash go wget \
+  && curl -sSL https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64 -o /usr/local/bin/yaml \
+  && chmod +x /usr/local/bin/yaml
