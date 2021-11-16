@@ -4,7 +4,7 @@ export SHELL:=/bin/bash
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
-RESTY_IMAGE_TAG?=bionic
+RESTY_IMAGE_TAG?=focal
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
 
@@ -150,8 +150,6 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 endif
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) \
-	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
-	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
 
 build-openresty:
