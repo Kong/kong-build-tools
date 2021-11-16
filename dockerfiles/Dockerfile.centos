@@ -1,0 +1,8 @@
+# Dockerfile - Centos
+# Centos base image with all prerequisites to compile / install openresty and Kong
+
+FROM centos:7
+
+RUN yum update -y && \
+        yum -y install ca-certificates wget tar readline-devel pcre-devel openssl-devel \
+        gcc curl unzip zlib-devel make gcc gcc-c++ bzip2 patch perl m4 git

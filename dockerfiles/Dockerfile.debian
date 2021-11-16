@@ -1,10 +1,7 @@
 # Dockerfile - Ubuntu
 # Ubuntu base image with all prerequisites to compile / install openresty and Kong
 
-ARG RESTY_IMAGE_BASE="ubuntu"
-ARG RESTY_IMAGE_TAG="bionic"
-
-FROM ubuntu:focal
+FROM debian:stable
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
@@ -28,4 +25,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         m4 \
         file \
         ssh \
-        valgrind
+        valgrind \
+    && update-ca-certificates
