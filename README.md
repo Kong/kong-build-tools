@@ -42,7 +42,7 @@ The most common ones are the following:
 
 ```
 RESTY_IMAGE_BASE=ubuntu|centos|rhel|debian|alpine|amazonlinux
-RESTY_IMAGE_TAG=18.04|20.04|6|7|8|9|10|11|latest|latest
+RESTY_IMAGE_TAG=16.04|18.04|20.04|6|7|8|9|10|11|latest|latest
 PACKAGE_TYPE=deb|rpm|apk
 ```
 

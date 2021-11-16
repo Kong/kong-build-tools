@@ -30,12 +30,8 @@ elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinu
   BUILD_DIR="centos"
 fi
 
-if [ "$RESTY_IMAGE_TAG" == "stretch" ]; then
-  sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
-  sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
-fi
-
-if [ "$RESTY_IMAGE_BASE" == "debian"] && [ "$RESTY_IMAGE_TAG" == "9" ]; then
+if [ "$RESTY_IMAGE_TAG" == "stretch" ] ||
+  { [ "$RESTY_IMAGE_BASE" == "debian" ] && [ "$RESTY_IMAGE_TAG" == "9" ]; } then
   sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
   sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
 fi

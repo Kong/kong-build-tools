@@ -144,6 +144,8 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'
                     }
@@ -165,6 +167,7 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'export RESTY_IMAGE_TAG=16.04 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=18.04 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=20.04 && make package-kong && make test && make cleanup'
                     }
@@ -194,7 +197,7 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=16.04 DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
                     }
                     post {
                         always {
