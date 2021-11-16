@@ -35,11 +35,10 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
         wget \
     && curl -sSL https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64 -o /usr/local/bin/yaml \
     && chmod +x /usr/local/bin/yaml \
-    && curl -sSL https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz  -o /tmp/cmake-$CMAKE_VERSION.tar.gz \
+    && curl -sSL https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz -o /tmp/cmake-$CMAKE_VERSION.tar.gz \
     && tar -xzvf /tmp/cmake-$CMAKE_VERSION.tar.gz -C /tmp \ 
-    && pushd /tmp/cmake-$CMAKE_VERSION \
+    && cd /tmp/cmake-$CMAKE_VERSION \
     && ./bootstrap \
-    && make -j 2 \
+    && make -j 1 \
     && make install \
-    && popd \
     && rm -rf /tmp/cmake-$CMAKE_VERSION.tar.gz /tmp/cmake-$CMAKE_VERSION
