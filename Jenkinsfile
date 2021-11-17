@@ -113,7 +113,7 @@ pipeline {
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Debian OldStable'){
+                stage('Debian') {
                     agent {
                         node {
                             label 'bionic'
@@ -127,23 +127,7 @@ pipeline {
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
-                    }
-                }
-                stage('Debian Stable & Testing') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        PACKAGE_TYPE = "deb"
-                        RESTY_IMAGE_BASE = "debian"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
-                    }
-                    steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'

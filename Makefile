@@ -143,6 +143,10 @@ else ifeq ($(BUILDX),true)
 endif
 
 build-base:
+	docker pull centos:8
+	docker tag centos:8 centos:7
+	docker pull debian:9
+	docker tag debian:9 debian:8
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(RESTY_IMAGE_BASE),rhel)
@@ -152,7 +156,6 @@ else ifeq ($(RESTY_IMAGE_BASE),rhel)
 endif
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) \
-	--no-cache \
 	--build-arg RESTY_IMAGE_TAG="$(RESTY_IMAGE_TAG)" \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	-t $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) . )
