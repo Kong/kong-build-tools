@@ -187,10 +187,7 @@ main() {
   fi
 
   if [ -n "$BORINGSSL_VER" ]; then
-    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
-#    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
-#    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
-#    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+    BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
   fi
 
   if version_lt $NGINX_CORE_VER 1.13.6; then
@@ -225,7 +222,7 @@ main() {
     if [ -n "$BORINGSSL_VER" ]; then
       # Boring SSL
 
-      if [[ ! -d "$OPENSSL_DOWNLOAD" ]]; then
+      if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
         warn "BoringSSL source not found, downloading..."
         set +e
         curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
@@ -475,10 +472,10 @@ main() {
   fi
 
   if [ -n "$BORINGSSL_VER" ]; then
-    if [ ! -f "$OPENSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
+    if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
       notice "Building BoringSSL..."
 
-      pushd $OPENSSL_DOWNLOAD
+      pushd $BORINGSSL_DOWNLOAD
 
         mkdir -p build
         pushd build
