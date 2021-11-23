@@ -23,786 +23,786 @@ NGINX_EXTRA_MODULES=()
 PARAMS=""
 
 main() {
-  OS=$(uname -s)
-  NPROC=$(n_proc)
-  SCRIPT_PATH=$(dirname "$(canon_path $0)")
-  OPENRESTY_PATCHES_DIR=$(canon_path "$SCRIPT_PATH/../openresty-patches")
-
-  while (( "$#" )); do
-    case "$1" in
-      -p|--prefix)
-        PREFIX=$2
-        shift 2
-        ;;
-      -j|--jobs)
-        NPROC=$2
-        shift 2
-        ;;
-      --pcre)
-        PCRE_VER=$2
-        shift 2
-        ;;
-      --pcre_sha)
-        PCRE_SHA=$2
-        shift 2
-        ;;
-      --openresty)
-        OPENRESTY_VER=$2
-        shift 2
-        ;;
-      --openresty_sha)
-        OPENRESTY_SHA=$2
-        shift 2
-        ;;
-      --openssl)
-        OPENSSL_VER=$2
-        shift 2
-        ;;
-      --openssl_sha)
-        OPENSSL_SHA=$2
-        shift 2
-        ;;
-      --boringssl)
-        BORINGSSL_VER="$2"
-        shift 2
-        ;;
-      --luarocks)
-        LUAROCKS_VER=$2
-        shift 2
-        ;;
-      --luarocks_sha)
-        LUAROCKS_SHA=$2
-        shift 2
-        ;;
-      --no-openresty-patches)
-        OPENRESTY_PATCHES=0
-        shift 1
-        ;;
-      --kong-nginx-module)
-        KONG_NGINX_MODULE=$2
-        shift 2
-        ;;
-      --no-kong-nginx-module)
-        KONG_NGINX_MODULE=0
-        shift 1
-        ;;
-      -f|--force)
-        FORCE=1
-        shift 1
-        ;;
-      --debug)
-        DEBUG=1
-        shift 1
-        ;;
-      --work)
-        DOWNLOAD_CACHE=$2
-        shift 2
-        ;;
-      --add-module)
-        NGINX_EXTRA_MODULES+=("--add-module=$2")
-        shift 2
-        ;;
-      -h|--help)
-        show_usage
-        exit 0
-        ;;
-      --) # end argument parsing
-        shift
-        break
-        ;;
-      -*|--*=) # unsupported flags
-        echo "Error: Unsupported flag $1" >&2
-        exit 1
-        ;;
-      *) # preserve positional arguments
-        PARAMS="$PARAMS $1"
-        shift
-        ;;
-    esac
-  done
-  # set positional arguments in their proper place
-  eval set -- "$PARAMS"
-
-  if [ -z "$OPENRESTY_PATCHES" ]; then
-    OPENRESTY_PATCHES=master
-  fi
-
-  if [ -z "$PREFIX" ]; then
-    show_usage
-    fatal "prefix can not be empty"
-  fi
-
-  PREFIX=`canon_path $PREFIX`
-  DOWNLOAD_CACHE=`canon_path $DOWNLOAD_CACHE`
-
-  if [ -z "$OPENRESTY_VER" ]; then
-    show_usage
-    fatal "OpenResty version can not be empty"
-  fi
-
-  if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
-    show_usage
-    fatal "OpenSSL and BoringSSL version can not both be empty"
-  fi
-
-  if [ -n "$OPENSSL_VER" -a -n "$BORINGSSL_VER" ]; then
-    show_usage
-    fatal "OpenSSL and BoringSSL version can not both be present"
-  fi
-
-  # retrieve DIST info of DIST-specific patches
-
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    DIST=$NAME
-    DIST_VER=$VERSION_ID
-
-  elif type lsb_release >/dev/null 2>&1; then
-    DIST=$(lsb_release -si)
-    DIST_VER=$(lsb_release -sr)
-  fi
-
-  if [ $FORCE == 1 ]; then
-    rm -rf $PREFIX $DOWNLOAD_CACHE
-  fi
-
-  NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
-
-  mkdir -p $DOWNLOAD_CACHE $PREFIX
-  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
-  OPENRESTY_DESTDIR=${OPENRESTY_DESTDIR:-/}
-  OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
-  OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
-
-  if [ -n "$OPENSSL_VER" ]; then
-    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
-    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
-    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
-    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
-
-    if version_lt $OPENSSL_VER 1.1; then
-      # unconditionally disable module in older core since they are never tested
-      KONG_NGINX_MODULE=0
-    fi
-  fi
-
-  if [ -n "$BORINGSSL_VER" ]; then
-    BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
-  fi
-
-  if version_lt $NGINX_CORE_VER 1.13.6; then
-    # unconditionally disable module in older core since they are never tested
-    KONG_NGINX_MODULE=0
-  fi
-
-  notice "Downloading the components now..."
-
-  pushd $DOWNLOAD_CACHE
-
-    if [ -n "$OPENSSL_VER" ]; then
-      # OpenSSL
-
-      if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
-        warn "OpenSSL source not found, downloading..."
-        set +e
-        curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
-        if [[ $? != 0 ]]; then
-          curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
-          [[ $? != 0 ]] && err "Could not download OpenSSL"
-        fi
-        set -e
-
-        if [ ! -z ${OPENSSL_SHA+x} ]; then
-          echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
-        fi
-        tar -xzf openssl-$OPENSSL_VER.tar.gz
-      fi
-    fi
-
-    if [ -n "$BORINGSSL_VER" ]; then
-      # Boring SSL
-
-      if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
-        warn "BoringSSL source not found, downloading..."
-        set +e
-        curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
-        [[ $? != 0 ]] && err "Could not download BoringSSL"
-        set -e
-
-        # -- check hash? --
-
-        unzip -q boringssl-${BORINGSSL_VER}.zip
-      fi
-    fi
-
-    # OpenResty
-
-    if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
-      if [[ $OPENRESTY_PATCHES == 0 && -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]]; then
-        warn "Patched OpenResty found but vanilla requested, removing source..."
-        rm -rf $OPENRESTY_DOWNLOAD
-
-      elif [[ $OPENRESTY_PATCHES != 0 && ! -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]]; then
-        warn "Vanilla OpenResty found but patches requested, removing Makefile..."
-        rm -f $OPENRESTY_DOWNLOAD/Makefile
-      fi
-
-      if [ ! -d $OPENRESTY_DOWNLOAD ]; then
-        warn "OpenResty source not found, downloading..."
-        curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
-        if [ ! -z ${OPENRESTY_SHA+x} ]; then
-          echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
-        fi
-        tar -xzf openresty-$OPENRESTY_VER.tar.gz
-
-        # use unreleased version of lua-resty-dns
-        if version_eq $OPENRESTY_VER 1.19.3; then
-          pushd openresty-$OPENRESTY_VER/bundle
-            notice "Updating lua-resty-dns to unreleased version"
-            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
-            tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
-            rm -f lua-resty-dns-0.21.tar.gz
-          popd
-        fi
-      fi
-    fi
-
-    # PCRE
-
-    if [ ! -z "$PCRE_VER" ]; then
-      PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
-      if [ ! -d $PCRE_DOWNLOAD ]; then
-        warn "PCRE source not found, downloading..."
-        curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
-        if [ ! -z ${PCRE_SHA+x} ]; then
-          echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
-        fi
-        tar -xzf pcre-${PCRE_VER}.tar.gz
-      fi
-    fi
-
-    # LuaRocks
-
-    if [ ! -z "$LUAROCKS_VER" ]; then
-      LUAROCKS_DESTDIR=${LUAROCKS_DESTDIR:-/}
-      LUAROCKS_PREFIX=${LUAROCKS_PREFIX:-$PREFIX/luarocks}
-      LUAROCKS_INSTALL=$(canon_path $LUAROCKS_DESTDIR/$LUAROCKS_PREFIX)
-      if [ ! -f $LUAROCKS_INSTALL/bin/luarocks ]; then
-        LUAROCKS_DOWNLOAD=$DOWNLOAD_CACHE/luarocks-$LUAROCKS_VER
-        if [ ! -d $LUAROCKS_DOWNLOAD ]; then
-          warn "LuaRocks source not found, downloading..."
-          set +e
-          curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
-          if [ $? != 0 ]; then
-            curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
-            [ $? != 0 ] && err "Could not download luarocks source"
-          fi
-          set -e
-          if [ ! -z ${LUAROCKS_SHA+x} ]; then
-            echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
-          fi
-          tar -xzf luarocks-$LUAROCKS_VER.tar.gz
-        fi
-      fi
-    fi
-
-    # lua-kong-nginx-module
-    if [ $KONG_NGINX_MODULE != 0 ]; then
-      if [[ $KONG_NGINX_MODULE == "master" ]]; then
-        KONG_NGINX_MODULE="origin/master"
-      fi
-      pushd $DOWNLOAD_CACHE
-        if [ ! -d lua-kong-nginx-module ]; then
-          warn "lua-kong-nginx-module source not found, cloning..."
-          git clone https://github.com/Kong/lua-kong-nginx-module
-        fi
-
-        pushd lua-kong-nginx-module
-          git fetch
-          # Accept both tags, branches and SHAs
-          git reset --hard $KONG_NGINX_MODULE || git reset --hard origin/$KONG_NGINX_MODULE
-        popd
-      popd
-    fi
-  popd
-
-  notice "Patching the components now..."
-
-  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
-    notice "Patching OpenResty..."
-
-    if [[ $OPENRESTY_PATCHES != 0 ]]; then
-
-      if [[ ! -d "$OPENRESTY_PATCHES_DIR" ]]; then
-        fatal "directory does not exist: $OPENRESTY_PATCHES_DIR"
-      fi
-
-      if [[ ! -d "$OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER" ]]; then
-        fatal "no patches for OpenResty $OPENRESTY_VER (missing directory $OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER)"
-      fi
-
-      pushd $OPENRESTY_DOWNLOAD/bundle
-        if [ ! -f .patch_applied ]; then
-          for patch_file in $(ls -1 $OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER/*.patch); do
-            notice "Applying OpenResty patch $patch_file"
-            patch -p1 < $patch_file \
-              || fatal "failed to apply patch: $patch_file"
-          done
-
-          touch .patch_applied
-        fi
-      popd
-
-      if [ ! -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]; then
-        fatal "missing .patch_applied file; some OpenResty patches may not have been applied"
-      fi
-    fi
-
-    # apply non Kong-specific patches
-
-    if version_lt $NGINX_CORE_VER 1.15.0; then # this is fixed in Nginx 1.15.0
-      if [[ $DIST == "Fedora" && $DIST_VER -gt 28 ]]; then
-        warn "Fedora 28 or above detected, applying the 'rm_glibc_crypt_r_workaround' patch..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-rm_glibc_crypt_r_workaround.patch || true
-        popd
-      fi
-    fi
-
-    if version_eq $OPENRESTY_VER 1.15.8; then # this occurs in OpenResty 1.15.8.x
-      if [ ! -z "$PCRE_VER" ]; then
-        warn "Building OpenResty $OPENRESTY_VER with static libpcre, applying the fix_static_libpcre_linking patch..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/ngx_lua-0.10.15
-          patch --forward -p1 < $SCRIPT_PATH/patches/openresty-1.15.8.x-fix_static_libpcre_linking.patch || true
-        popd
-      fi
-    fi
-
-    # CVEs - http://nginx.org/en/security_advisories.html
-
-    if version_lt $NGINX_CORE_VER 1.15.6; then # fixed in NGINX 1.15.6+
-      #if version_lt $OPENRESTY_VER 1.13.6.3; then # also included in OpenResty 1.13.6.3+ (not yet released)
-        warn "Applying the patch for CVE-2018-16843 CVE-2018-16844..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch ]; then
-            fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch"
-          fi
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch || true
-        popd
-
-        warn "Applying the patch for CVE-2018-16845..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt ]; then
-            fatal "Missing patch nginx-patch.2018.mp4.txt"
-          fi
-          patch --forward -p0 < $SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt || true
-        popd
-      #fi
-    fi
-
-    if version_lt $NGINX_CORE_VER 1.17.3 \
-       && version_lt $OPENRESTY_VER 1.15.8.2; then
-        warn "Applying the patch for CVE-2019-9511 CVE-2019-9513 CVE-2019-9516..."
-        pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
-          if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch ]; then
-            fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch"
-          fi
-          patch --forward -p1 < $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch || true
-        popd
-      #fi
-    fi
-  fi
-
-  notice "Building the components now..."
-
-  # Building OpenSSL
-
-  if [ -n "$OPENSSL_VER" ]; then
-    if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
-      notice "Building OpenSSL..."
-
-      pushd $OPENSSL_DOWNLOAD
-        if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
-            OPENSSL_OPTS=(
-              "-g"
-              "shared"
-              "-DPURIFY"
-              "no-threads"
-              "--prefix=$OPENSSL_PREFIX"
-              "--openssldir=$OPENSSL_PREFIX"
-            )
-
-            if version_gte $OPENSSL_VER 1.1.0; then
-              OPENSSL_OPTS+=('no-unit-test')
-
-            else
-              OPENSSL_OPTS+=('no-tests')
-            fi
-
-            if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
-              local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
-              if [[ $OS != "Darwin" ]]; then
-                ld_opts="$ld_opts,--enable-new-dtags"
-              fi
-
-              OPENSSL_OPTS+=("$ld_opts")
-            fi
-
-            if [ $DEBUG == 1 ]; then
-              OPENSSL_OPTS+=('-d')
-            fi
-
-          eval ./config ${OPENSSL_OPTS[*]}
-        fi
-
-        if version_gte $OPENSSL_VER 1.1.0; then
-          make -j$NPROC
-        else
-          make
-        fi
-
-        make install_sw DESTDIR=${OPENSSL_DESTDIR}
-      popd
-
-      succ "OpenSSL $OPENSSL_VER has been built successfully!"
-
-    else
-      succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
-    fi
-  fi
-
-  if [ -n "$BORINGSSL_VER" ]; then
-    if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
-      notice "Building BoringSSL..."
-
-      pushd $BORINGSSL_DOWNLOAD
-
-        mkdir -p build
-        pushd build
-          CC=/usr/bin/clang \
-          CXX=/usr/bin/clang++ \
-          CPP=/usr/bin/clang-cpp \
-          LD=/usr/bin/ld.lld \
-          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
-          ninja
-        popd #build
-
-        mkdir -p .openssl/lib
-        cp build/crypto/libcrypto.so build/ssl/libssl.so .openssl/lib
-        pushd .openssl
-          ln -s ../include .
-        popd #.openssl
-
-      popd # $OPENRESTY_DOWNLOAD
-      succ "BoringSSL $BORINGSSL_VER has been built successfully!"
-
-    else
-      succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
-    fi
-  fi
-
-  # Building OpenResty
-
-  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
-    notice "Building OpenResty..."
-
-    pushd $OPENRESTY_DOWNLOAD
-      if [ ! -f Makefile ]; then
-        OPENRESTY_OPTS=(
-          "--prefix=$OPENRESTY_PREFIX"
-          "--with-pcre-jit"
-          "--with-http_ssl_module"
-          "--with-http_realip_module"
-          "--with-http_stub_status_module"
-          "--with-http_v2_module"
-          "--without-http_encrypted_session_module"
-          "-j$NPROC"
-        )
-
-        if [ "$EDITION" == 'enterprise' ]; then
-          OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
-        fi
-
-        if [ $KONG_NGINX_MODULE != 0 ]; then
-          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module")
-          if [[ -d $DOWNLOAD_CACHE/lua-kong-nginx-module/stream ]]; then
-            OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
-          fi
-        fi
-
-        if version_gte $NGINX_CORE_VER 1.11.4; then
-          OPENRESTY_OPTS+=('--with-stream_realip_module')
-        fi
-
-        if version_gte $NGINX_CORE_VER 1.11.5; then
-          OPENRESTY_OPTS+=('--with-stream_ssl_preread_module')
-        fi
-
-        if [ ! -z "$PCRE_VER" ]; then
-          OPENRESTY_OPTS+=("--with-pcre=$PCRE_DOWNLOAD")
-
-        else
-          OPENRESTY_OPTS+=('--with-pcre')
-        fi
-
-        OPENRESTY_OPTS+=(${NGINX_EXTRA_MODULES[@]})
-
-        OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
-
-        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
-        else
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
-        fi
-
-        OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
-
-        if [ $DEBUG == 1 ]; then
-          OPENRESTY_OPTS+=('--with-debug')
-          OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
-        fi
-
-        eval ./configure ${OPENRESTY_OPTS[*]}
-      fi
-
-      make -j$NPROC
-      make -j$NPROC install DESTDIR=${OPENRESTY_DESTDIR}
-
-      if [ $KONG_NGINX_MODULE != 0 ]; then
-        pushd $DOWNLOAD_CACHE/lua-kong-nginx-module
-          warn "installing library files for lua-kong-nginx-module..."
-          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
-        popd
-      fi
-    popd
-
-    succ "OpenResty $OPENRESTY_VER has been built successfully!"
-
-  else
-    succ "OpenResty $OPENRESTY_VER has been built successfully (cached)!"
-  fi
-
-  # Building LuaRocks
-
-  if [ ! -z "$LUAROCKS_VER" ]; then
-    if [ ! -f $LUAROCKS_INSTALL/bin/luarocks ]; then
-      notice "Building LuaRocks..."
-
-      pushd $LUAROCKS_DOWNLOAD
-        if [ ! -f config.unix ]; then
-          ./configure \
-            --prefix=$LUAROCKS_PREFIX \
-            --lua-suffix=jit \
-            --with-lua=$OPENRESTY_INSTALL/luajit \
-            --with-lua-include=$OPENRESTY_INSTALL/luajit/include/luajit-2.1
-        fi
-
-        make build -j$NPROC
-        make install DESTDIR=${LUAROCKS_DESTDIR}
-      popd
-
-      succ "LuaRocks $LUAROCKS_VER has been built successfully!"
-
-    else
-      succ "LuaRocks $LUAROCKS_VER has been built successfully (cached)!"
-    fi
-  fi
-
-  succ "Build finished in $SECONDS seconds. Enjoy!"
+	OS=$(uname -s)
+	NPROC=$(n_proc)
+	SCRIPT_PATH=$(dirname "$(canon_path $0)")
+	OPENRESTY_PATCHES_DIR=$(canon_path "$SCRIPT_PATH/../openresty-patches")
+
+	while (("$#")); do
+		case "$1" in
+		-p | --prefix)
+			PREFIX=$2
+			shift 2
+			;;
+		-j | --jobs)
+			NPROC=$2
+			shift 2
+			;;
+		--pcre)
+			PCRE_VER=$2
+			shift 2
+			;;
+		--pcre_sha)
+			PCRE_SHA=$2
+			shift 2
+			;;
+		--openresty)
+			OPENRESTY_VER=$2
+			shift 2
+			;;
+		--openresty_sha)
+			OPENRESTY_SHA=$2
+			shift 2
+			;;
+		--openssl)
+			OPENSSL_VER=$2
+			shift 2
+			;;
+		--openssl_sha)
+			OPENSSL_SHA=$2
+			shift 2
+			;;
+		--boringssl)
+			BORINGSSL_VER="$2"
+			shift 2
+			;;
+		--luarocks)
+			LUAROCKS_VER=$2
+			shift 2
+			;;
+		--luarocks_sha)
+			LUAROCKS_SHA=$2
+			shift 2
+			;;
+		--no-openresty-patches)
+			OPENRESTY_PATCHES=0
+			shift 1
+			;;
+		--kong-nginx-module)
+			KONG_NGINX_MODULE=$2
+			shift 2
+			;;
+		--no-kong-nginx-module)
+			KONG_NGINX_MODULE=0
+			shift 1
+			;;
+		-f | --force)
+			FORCE=1
+			shift 1
+			;;
+		--debug)
+			DEBUG=1
+			shift 1
+			;;
+		--work)
+			DOWNLOAD_CACHE=$2
+			shift 2
+			;;
+		--add-module)
+			NGINX_EXTRA_MODULES+=("--add-module=$2")
+			shift 2
+			;;
+		-h | --help)
+			show_usage
+			exit 0
+			;;
+		--) # end argument parsing
+			shift
+			break
+			;;
+		-* | --*=) # unsupported flags
+			echo "Error: Unsupported flag $1" >&2
+			exit 1
+			;;
+		*) # preserve positional arguments
+			PARAMS="$PARAMS $1"
+			shift
+			;;
+		esac
+	done
+	# set positional arguments in their proper place
+	eval set -- "$PARAMS"
+
+	if [ -z "$OPENRESTY_PATCHES" ]; then
+		OPENRESTY_PATCHES=master
+	fi
+
+	if [ -z "$PREFIX" ]; then
+		show_usage
+		fatal "prefix can not be empty"
+	fi
+
+	PREFIX=$(canon_path $PREFIX)
+	DOWNLOAD_CACHE=$(canon_path $DOWNLOAD_CACHE)
+
+	if [ -z "$OPENRESTY_VER" ]; then
+		show_usage
+		fatal "OpenResty version can not be empty"
+	fi
+
+	if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
+		show_usage
+		fatal "OpenSSL and BoringSSL version can not both be empty"
+	fi
+
+	if [ -n "$OPENSSL_VER" -a -n "$BORINGSSL_VER" ]; then
+		show_usage
+		fatal "OpenSSL and BoringSSL version can not both be present"
+	fi
+
+	# retrieve DIST info of DIST-specific patches
+
+	if [ -f /etc/os-release ]; then
+		. /etc/os-release
+		DIST=$NAME
+		DIST_VER=$VERSION_ID
+
+	elif type lsb_release >/dev/null 2>&1; then
+		DIST=$(lsb_release -si)
+		DIST_VER=$(lsb_release -sr)
+	fi
+
+	if [ $FORCE == 1 ]; then
+		rm -rf $PREFIX $DOWNLOAD_CACHE
+	fi
+
+	NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
+
+	mkdir -p $DOWNLOAD_CACHE $PREFIX
+	OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
+	OPENRESTY_DESTDIR=${OPENRESTY_DESTDIR:-/}
+	OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
+	OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
+
+	if [ -n "$OPENSSL_VER" ]; then
+		OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
+		OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+		OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
+		OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+
+		if version_lt $OPENSSL_VER 1.1; then
+			# unconditionally disable module in older core since they are never tested
+			KONG_NGINX_MODULE=0
+		fi
+	fi
+
+	if [ -n "$BORINGSSL_VER" ]; then
+		BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
+	fi
+
+	if version_lt $NGINX_CORE_VER 1.13.6; then
+		# unconditionally disable module in older core since they are never tested
+		KONG_NGINX_MODULE=0
+	fi
+
+	notice "Downloading the components now..."
+
+	pushd $DOWNLOAD_CACHE
+
+	if [ -n "$OPENSSL_VER" ]; then
+		# OpenSSL
+
+		if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
+			warn "OpenSSL source not found, downloading..."
+			set +e
+			curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+			if [[ $? != 0 ]]; then
+				curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+				[[ $? != 0 ]] && err "Could not download OpenSSL"
+			fi
+			set -e
+
+			if [ ! -z ${OPENSSL_SHA+x} ]; then
+				echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+			fi
+			tar -xzf openssl-$OPENSSL_VER.tar.gz
+		fi
+	fi
+
+	if [ -n "$BORINGSSL_VER" ]; then
+		# Boring SSL
+
+		if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
+			warn "BoringSSL source not found, downloading..."
+			set +e
+			curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
+			[[ $? != 0 ]] && err "Could not download BoringSSL"
+			set -e
+
+			# -- check hash? --
+
+			unzip -q boringssl-${BORINGSSL_VER}.zip
+		fi
+	fi
+
+	# OpenResty
+
+	if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+		if [[ $OPENRESTY_PATCHES == 0 && -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]]; then
+			warn "Patched OpenResty found but vanilla requested, removing source..."
+			rm -rf $OPENRESTY_DOWNLOAD
+
+		elif [[ $OPENRESTY_PATCHES != 0 && ! -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]]; then
+			warn "Vanilla OpenResty found but patches requested, removing Makefile..."
+			rm -f $OPENRESTY_DOWNLOAD/Makefile
+		fi
+
+		if [ ! -d $OPENRESTY_DOWNLOAD ]; then
+			warn "OpenResty source not found, downloading..."
+			curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
+			if [ ! -z ${OPENRESTY_SHA+x} ]; then
+				echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
+			fi
+			tar -xzf openresty-$OPENRESTY_VER.tar.gz
+
+			# use unreleased version of lua-resty-dns
+			if version_eq $OPENRESTY_VER 1.19.3; then
+				pushd openresty-$OPENRESTY_VER/bundle
+				notice "Updating lua-resty-dns to unreleased version"
+				curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
+				tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
+				rm -f lua-resty-dns-0.21.tar.gz
+				popd
+			fi
+		fi
+	fi
+
+	# PCRE
+
+	if [ ! -z "$PCRE_VER" ]; then
+		PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
+		if [ ! -d $PCRE_DOWNLOAD ]; then
+			warn "PCRE source not found, downloading..."
+			curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
+			if [ ! -z ${PCRE_SHA+x} ]; then
+				echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
+			fi
+			tar -xzf pcre-${PCRE_VER}.tar.gz
+		fi
+	fi
+
+	# LuaRocks
+
+	if [ ! -z "$LUAROCKS_VER" ]; then
+		LUAROCKS_DESTDIR=${LUAROCKS_DESTDIR:-/}
+		LUAROCKS_PREFIX=${LUAROCKS_PREFIX:-$PREFIX/luarocks}
+		LUAROCKS_INSTALL=$(canon_path $LUAROCKS_DESTDIR/$LUAROCKS_PREFIX)
+		if [ ! -f $LUAROCKS_INSTALL/bin/luarocks ]; then
+			LUAROCKS_DOWNLOAD=$DOWNLOAD_CACHE/luarocks-$LUAROCKS_VER
+			if [ ! -d $LUAROCKS_DOWNLOAD ]; then
+				warn "LuaRocks source not found, downloading..."
+				set +e
+				curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+				if [ $? != 0 ]; then
+					curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
+					[ $? != 0 ] && err "Could not download luarocks source"
+				fi
+				set -e
+				if [ ! -z ${LUAROCKS_SHA+x} ]; then
+					echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
+				fi
+				tar -xzf luarocks-$LUAROCKS_VER.tar.gz
+			fi
+		fi
+	fi
+
+	# lua-kong-nginx-module
+	if [ $KONG_NGINX_MODULE != 0 ]; then
+		if [[ $KONG_NGINX_MODULE == "master" ]]; then
+			KONG_NGINX_MODULE="origin/master"
+		fi
+		pushd $DOWNLOAD_CACHE
+		if [ ! -d lua-kong-nginx-module ]; then
+			warn "lua-kong-nginx-module source not found, cloning..."
+			git clone https://github.com/Kong/lua-kong-nginx-module
+		fi
+
+		pushd lua-kong-nginx-module
+		git fetch
+		# Accept both tags, branches and SHAs
+		git reset --hard $KONG_NGINX_MODULE || git reset --hard origin/$KONG_NGINX_MODULE
+		popd
+		popd
+	fi
+	popd
+
+	notice "Patching the components now..."
+
+	if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+		notice "Patching OpenResty..."
+
+		if [[ $OPENRESTY_PATCHES != 0 ]]; then
+
+			if [[ ! -d "$OPENRESTY_PATCHES_DIR" ]]; then
+				fatal "directory does not exist: $OPENRESTY_PATCHES_DIR"
+			fi
+
+			if [[ ! -d "$OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER" ]]; then
+				fatal "no patches for OpenResty $OPENRESTY_VER (missing directory $OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER)"
+			fi
+
+			pushd $OPENRESTY_DOWNLOAD/bundle
+			if [ ! -f .patch_applied ]; then
+				for patch_file in $(ls -1 $OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER/*.patch); do
+					notice "Applying OpenResty patch $patch_file"
+					patch -p1 <$patch_file ||
+						fatal "failed to apply patch: $patch_file"
+				done
+
+				touch .patch_applied
+			fi
+			popd
+
+			if [ ! -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]; then
+				fatal "missing .patch_applied file; some OpenResty patches may not have been applied"
+			fi
+		fi
+
+		# apply non Kong-specific patches
+
+		if version_lt $NGINX_CORE_VER 1.15.0; then # this is fixed in Nginx 1.15.0
+			if [[ $DIST == "Fedora" && $DIST_VER -gt 28 ]]; then
+				warn "Fedora 28 or above detected, applying the 'rm_glibc_crypt_r_workaround' patch..."
+				pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
+				patch --forward -p1 <$SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-rm_glibc_crypt_r_workaround.patch || true
+				popd
+			fi
+		fi
+
+		if version_eq $OPENRESTY_VER 1.15.8; then # this occurs in OpenResty 1.15.8.x
+			if [ ! -z "$PCRE_VER" ]; then
+				warn "Building OpenResty $OPENRESTY_VER with static libpcre, applying the fix_static_libpcre_linking patch..."
+				pushd $OPENRESTY_DOWNLOAD/bundle/ngx_lua-0.10.15
+				patch --forward -p1 <$SCRIPT_PATH/patches/openresty-1.15.8.x-fix_static_libpcre_linking.patch || true
+				popd
+			fi
+		fi
+
+		# CVEs - http://nginx.org/en/security_advisories.html
+
+		if version_lt $NGINX_CORE_VER 1.15.6; then # fixed in NGINX 1.15.6+
+			#if version_lt $OPENRESTY_VER 1.13.6.3; then # also included in OpenResty 1.13.6.3+ (not yet released)
+			warn "Applying the patch for CVE-2018-16843 CVE-2018-16844..."
+			pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
+			if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch ]; then
+				fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch"
+			fi
+			patch --forward -p1 <$SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2018_16843_cve_2018_16844.patch || true
+			popd
+
+			warn "Applying the patch for CVE-2018-16845..."
+			pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
+			if [ ! -f $SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt ]; then
+				fatal "Missing patch nginx-patch.2018.mp4.txt"
+			fi
+			patch --forward -p0 <$SCRIPT_PATH/patches/nginx-patch.2018.mp4.txt || true
+			popd
+			#fi
+		fi
+
+		if version_lt $NGINX_CORE_VER 1.17.3 &&
+			version_lt $OPENRESTY_VER 1.15.8.2; then
+			warn "Applying the patch for CVE-2019-9511 CVE-2019-9513 CVE-2019-9516..."
+			pushd $OPENRESTY_DOWNLOAD/bundle/nginx-$NGINX_CORE_VER
+			if [ ! -f $SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch ]; then
+				fatal "Missing patch nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch"
+			fi
+			patch --forward -p1 <$SCRIPT_PATH/patches/nginx-$NGINX_CORE_VER-cve_2019_9511_cve_2019_9513_cve_2019_9516.patch || true
+			popd
+			#fi
+		fi
+	fi
+
+	notice "Building the components now..."
+
+	# Building OpenSSL
+
+	if [ -n "$OPENSSL_VER" ]; then
+		if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
+			notice "Building OpenSSL..."
+
+			pushd $OPENSSL_DOWNLOAD
+			if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
+				OPENSSL_OPTS=(
+					"-g"
+					"shared"
+					"-DPURIFY"
+					"no-threads"
+					"--prefix=$OPENSSL_PREFIX"
+					"--openssldir=$OPENSSL_PREFIX"
+				)
+
+				if version_gte $OPENSSL_VER 1.1.0; then
+					OPENSSL_OPTS+=('no-unit-test')
+
+				else
+					OPENSSL_OPTS+=('no-tests')
+				fi
+
+				if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
+					local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
+					if [[ $OS != "Darwin" ]]; then
+						ld_opts="$ld_opts,--enable-new-dtags"
+					fi
+
+					OPENSSL_OPTS+=("$ld_opts")
+				fi
+
+				if [ $DEBUG == 1 ]; then
+					OPENSSL_OPTS+=('-d')
+				fi
+
+				eval ./config ${OPENSSL_OPTS[*]}
+			fi
+
+			if version_gte $OPENSSL_VER 1.1.0; then
+				make -j$NPROC
+			else
+				make
+			fi
+
+			make install_sw DESTDIR=${OPENSSL_DESTDIR}
+			popd
+
+			succ "OpenSSL $OPENSSL_VER has been built successfully!"
+
+		else
+			succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
+		fi
+	fi
+
+	if [ -n "$BORINGSSL_VER" ]; then
+		if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
+			notice "Building BoringSSL..."
+
+			pushd $BORINGSSL_DOWNLOAD
+
+			mkdir -p build
+			pushd build
+			CC=/usr/bin/clang \
+				CXX=/usr/bin/clang++ \
+				CPP=/usr/bin/clang-cpp \
+				LD=/usr/bin/ld.lld \
+				cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1 ..
+			ninja
+			popd #build
+
+			mkdir -p .openssl/lib
+			cp build/crypto/libcrypto.so build/ssl/libssl.so .openssl/lib
+			pushd .openssl
+			ln -s ../include .
+			popd #.openssl
+
+			popd # $OPENRESTY_DOWNLOAD
+			succ "BoringSSL $BORINGSSL_VER has been built successfully!"
+
+		else
+			succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
+		fi
+	fi
+
+	# Building OpenResty
+
+	if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+		notice "Building OpenResty..."
+
+		pushd $OPENRESTY_DOWNLOAD
+		if [ ! -f Makefile ]; then
+			OPENRESTY_OPTS=(
+				"--prefix=$OPENRESTY_PREFIX"
+				"--with-pcre-jit"
+				"--with-http_ssl_module"
+				"--with-http_realip_module"
+				"--with-http_stub_status_module"
+				"--with-http_v2_module"
+				"--without-http_encrypted_session_module"
+				"-j$NPROC"
+			)
+
+			if [ "$EDITION" == 'enterprise' ]; then
+				OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
+			fi
+
+			if [ $KONG_NGINX_MODULE != 0 ]; then
+				OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module")
+				if [[ -d $DOWNLOAD_CACHE/lua-kong-nginx-module/stream ]]; then
+					OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
+				fi
+			fi
+
+			if version_gte $NGINX_CORE_VER 1.11.4; then
+				OPENRESTY_OPTS+=('--with-stream_realip_module')
+			fi
+
+			if version_gte $NGINX_CORE_VER 1.11.5; then
+				OPENRESTY_OPTS+=('--with-stream_ssl_preread_module')
+			fi
+
+			if [ ! -z "$PCRE_VER" ]; then
+				OPENRESTY_OPTS+=("--with-pcre=$PCRE_DOWNLOAD")
+
+			else
+				OPENRESTY_OPTS+=('--with-pcre')
+			fi
+
+			OPENRESTY_OPTS+=(${NGINX_EXTRA_MODULES[@]})
+
+			OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
+
+			if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
+				OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
+			else
+				OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+			fi
+
+			OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+
+			if [ $DEBUG == 1 ]; then
+				OPENRESTY_OPTS+=('--with-debug')
+				OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
+			fi
+
+			eval ./configure ${OPENRESTY_OPTS[*]}
+		fi
+
+		make -j$NPROC
+		make -j$NPROC install DESTDIR=${OPENRESTY_DESTDIR}
+
+		if [ $KONG_NGINX_MODULE != 0 ]; then
+			pushd $DOWNLOAD_CACHE/lua-kong-nginx-module
+			warn "installing library files for lua-kong-nginx-module..."
+			make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+			popd
+		fi
+		popd
+
+		succ "OpenResty $OPENRESTY_VER has been built successfully!"
+
+	else
+		succ "OpenResty $OPENRESTY_VER has been built successfully (cached)!"
+	fi
+
+	# Building LuaRocks
+
+	if [ ! -z "$LUAROCKS_VER" ]; then
+		if [ ! -f $LUAROCKS_INSTALL/bin/luarocks ]; then
+			notice "Building LuaRocks..."
+
+			pushd $LUAROCKS_DOWNLOAD
+			if [ ! -f config.unix ]; then
+				./configure \
+					--prefix=$LUAROCKS_PREFIX \
+					--lua-suffix=jit \
+					--with-lua=$OPENRESTY_INSTALL/luajit \
+					--with-lua-include=$OPENRESTY_INSTALL/luajit/include/luajit-2.1
+			fi
+
+			make build -j$NPROC
+			make install DESTDIR=${LUAROCKS_DESTDIR}
+			popd
+
+			succ "LuaRocks $LUAROCKS_VER has been built successfully!"
+
+		else
+			succ "LuaRocks $LUAROCKS_VER has been built successfully (cached)!"
+		fi
+	fi
+
+	succ "Build finished in $SECONDS seconds. Enjoy!"
 }
 
 parse_version() {
-  [[ -z $1 ]] && fatal 'missing arg $1 when invoking parse_version()'
-  [[ -z $2 ]] && fatal 'missing arg $2 when invoking parse_version()'
+	[[ -z $1 ]] && fatal 'missing arg $1 when invoking parse_version()'
+	[[ -z $2 ]] && fatal 'missing arg $2 when invoking parse_version()'
 
-  local ver
-  local subj=$1
+	local ver
+	local subj=$1
 
-  if [[ $subj =~ ^[^0-9]*(.*) ]]; then
-    subj=${BASH_REMATCH[1]}
+	if [[ $subj =~ ^[^0-9]*(.*) ]]; then
+		subj=${BASH_REMATCH[1]}
 
-    local re='^(-rc[0-9]+$)?[.]?([0-9]+|[a-zA-Z]+)?(.*)$'
+		local re='^(-rc[0-9]+$)?[.]?([0-9]+|[a-zA-Z]+)?(.*)$'
 
-    while [[ $subj =~ $re ]]; do
-      if [[ ${BASH_REMATCH[1]} != "" ]]; then
-        ver="$ver.${BASH_REMATCH[1]}"
-      fi
+		while [[ $subj =~ $re ]]; do
+			if [[ ${BASH_REMATCH[1]} != "" ]]; then
+				ver="$ver.${BASH_REMATCH[1]}"
+			fi
 
-      if [[ ${BASH_REMATCH[2]} != "" ]]; then
-        ver="$ver.${BASH_REMATCH[2]}"
-      fi
+			if [[ ${BASH_REMATCH[2]} != "" ]]; then
+				ver="$ver.${BASH_REMATCH[2]}"
+			fi
 
-      subj="${BASH_REMATCH[3]}"
-      if [[ $subj == "" ]]; then
-        break
-      fi
-    done
+			subj="${BASH_REMATCH[3]}"
+			if [[ $subj == "" ]]; then
+				break
+			fi
+		done
 
-    ver="${ver:1}"
+		ver="${ver:1}"
 
-    IFS='.' read -r -a $2 <<< "$ver"
-  fi
+		IFS='.' read -r -a $2 <<<"$ver"
+	fi
 }
 
 parse_nginx_core_version() {
-  [[ -z $1 ]] && fatal 'missing arg $1 when invoking parse_nginx_core_version()'
+	[[ -z $1 ]] && fatal 'missing arg $1 when invoking parse_nginx_core_version()'
 
-  local nginx_ver
+	local nginx_ver
 
-  parse_version $1 nginx_ver
+	parse_version $1 nginx_ver
 
-  echo "${nginx_ver[0]}.${nginx_ver[1]}.${nginx_ver[2]}"
+	echo "${nginx_ver[0]}.${nginx_ver[1]}.${nginx_ver[2]}"
 }
 
 version_eq() {
-  local version_a version_b
+	local version_a version_b
 
-  parse_version $1 version_a
-  parse_version $2 version_b
+	parse_version $1 version_a
+	parse_version $2 version_b
 
-  # Note that we are indexing on the b components, ie: 1.11.100 == 1.11
-  for index in "${!version_b[@]}"; do
-    [[ "${version_a[index]}" != "${version_b[index]}" ]] && return 1
-  done
+	# Note that we are indexing on the b components, ie: 1.11.100 == 1.11
+	for index in "${!version_b[@]}"; do
+		[[ "${version_a[index]}" != "${version_b[index]}" ]] && return 1
+	done
 
-  return 0
+	return 0
 }
 
 version_lt() {
-  local version_a version_b
+	local version_a version_b
 
-  parse_version $1 version_a
-  parse_version $2 version_b
+	parse_version $1 version_a
+	parse_version $2 version_b
 
-  for index in "${!version_a[@]}"; do
-    if [[ ${version_a[index]} =~ ^[0-9]+$ ]]; then
-      [[ "${version_a[index]}" -lt "${version_b[index]}" ]] && return 0
-      [[ "${version_a[index]}" -gt "${version_b[index]}" ]] && return 1
+	for index in "${!version_a[@]}"; do
+		if [[ ${version_a[index]} =~ ^[0-9]+$ ]]; then
+			[[ "${version_a[index]}" -lt "${version_b[index]}" ]] && return 0
+			[[ "${version_a[index]}" -gt "${version_b[index]}" ]] && return 1
 
-    else
-      [[ "${version_a[index]}" < "${version_b[index]}" ]] && return 0
-      [[ "${version_a[index]}" > "${version_b[index]}" ]] && return 1
-    fi
-  done
+		else
+			[[ "${version_a[index]}" < "${version_b[index]}" ]] && return 0
+			[[ "${version_a[index]}" > "${version_b[index]}" ]] && return 1
+		fi
+	done
 
-  return 1
+	return 1
 }
 
 version_gt() {
-  (version_eq $1 $2 || version_lt $1 $2) && return 1
-  return 0
+	(version_eq $1 $2 || version_lt $1 $2) && return 1
+	return 0
 }
 
 version_lte() {
-  (version_lt $1 $2 || version_eq $1 $2) && return 0
-  return 1
+	(version_lt $1 $2 || version_eq $1 $2) && return 0
+	return 1
 }
 
 version_gte() {
-  (version_gt $1 $2 || version_eq $1 $2) && return 0
-  return 1
+	(version_gt $1 $2 || version_eq $1 $2) && return 0
+	return 1
 }
 
 canon_path() {
-  if realpath -m -- $1 2>/dev/null >&2; then
-    realpath -m -- $1
+	if realpath -m -- $1 2>/dev/null >&2; then
+		realpath -m -- $1
 
-  else
-    readlink -f -- $1
-  fi
+	else
+		readlink -f -- $1
+	fi
 }
 
 n_proc() {
-  if nproc 2>/dev/null >&2;  then
-    nproc
+	if nproc 2>/dev/null >&2; then
+		nproc
 
-  elif [[ $OS == "Darwin" ]]; then
-    sysctl -n hw.physicalcpu
+	elif [[ $OS == "Darwin" ]]; then
+		sysctl -n hw.physicalcpu
 
-  else
-    echo "1"
-  fi
+	else
+		echo "1"
+	fi
 }
 
 show_usage() {
-  echo "Build basic components (OpenResty, OpenSSL and LuaRocks) for Kong."
-  echo ""
-  echo "Usage: $0 [options...] -p <prefix> --openresty <openresty_ver> --openssl <openssl_ver>"
-  echo ""
-  echo "Required arguments:"
-  echo "  -p, --prefix <prefix>              Location where components should be installed."
-  echo "      --openresty <openresty_ver>    Version of OpenResty to build, such as 1.13.6.2."
-  echo "      --openssl <openssl_ver>        Version of OpenSSL to build, such as 1.1.1c."
-  echo ""
-  echo "Optional arguments:"
-  echo "      --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty."
-  echo "                                     (Patching is enabled by default)"
-  echo ""
-  echo "      --no-kong-nginx-module         Do not include lua-kong-nginx-module while patching and compiling OpenResty."
-  echo "                                     (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
-  echo ""
-  echo "      --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling."
-  echo "                                     (Defaults to \"master\")"
-  echo ""
-  echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"
-  echo "                                     will not be built."
-  echo ""
-  echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
-  echo "                                     not be build."
-  echo ""
-  echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
-  echo "                                     repeated and will be passed to NGINX's configure in the order"
-  echo "                                     they were specified."
-  echo ""
-  echo "      --debug                        Disable compile-time optimizations and memory pooling for NGINX,"
-  echo "                                     LuaJIT and OpenSSL to help debugging."
-  echo ""
-  echo "  -j, --jobs                         Concurrency level to use when building."
-  echo "                                     (Defaults to number of CPU cores available: $NPROC)"
-  echo ""
-  echo "      --work <work>                  The working directory to use while compiling."
-  echo "                                     (Defaults to \"work\")"
-  echo ""
-  echo "  -f, --force                        Build from scratch."
-  echo -e "                                     \033[1;31mWARNING:\033[0m This permanently removes everything inside the <work> and <prefix> directories."
-  echo ""
-  echo "  -h, --help                         Show this message."
+	echo "Build basic components (OpenResty, OpenSSL and LuaRocks) for Kong."
+	echo ""
+	echo "Usage: $0 [options...] -p <prefix> --openresty <openresty_ver> --openssl <openssl_ver>"
+	echo ""
+	echo "Required arguments:"
+	echo "  -p, --prefix <prefix>              Location where components should be installed."
+	echo "      --openresty <openresty_ver>    Version of OpenResty to build, such as 1.13.6.2."
+	echo "      --openssl <openssl_ver>        Version of OpenSSL to build, such as 1.1.1c."
+	echo ""
+	echo "Optional arguments:"
+	echo "      --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty."
+	echo "                                     (Patching is enabled by default)"
+	echo ""
+	echo "      --no-kong-nginx-module         Do not include lua-kong-nginx-module while patching and compiling OpenResty."
+	echo "                                     (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
+	echo ""
+	echo "      --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling."
+	echo "                                     (Defaults to \"master\")"
+	echo ""
+	echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"
+	echo "                                     will not be built."
+	echo ""
+	echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
+	echo "                                     not be build."
+	echo ""
+	echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
+	echo "                                     repeated and will be passed to NGINX's configure in the order"
+	echo "                                     they were specified."
+	echo ""
+	echo "      --debug                        Disable compile-time optimizations and memory pooling for NGINX,"
+	echo "                                     LuaJIT and OpenSSL to help debugging."
+	echo ""
+	echo "  -j, --jobs                         Concurrency level to use when building."
+	echo "                                     (Defaults to number of CPU cores available: $NPROC)"
+	echo ""
+	echo "      --work <work>                  The working directory to use while compiling."
+	echo "                                     (Defaults to \"work\")"
+	echo ""
+	echo "  -f, --force                        Build from scratch."
+	echo -e "                                     \033[1;31mWARNING:\033[0m This permanently removes everything inside the <work> and <prefix> directories."
+	echo ""
+	echo "  -h, --help                         Show this message."
 }
 
 notice() {
-  builtin echo -en "\033[1m"
-  echo "NOTICE: $@"
-  builtin echo -en "\033[0m"
+	builtin echo -en "\033[1m"
+	echo "NOTICE: $@"
+	builtin echo -en "\033[0m"
 }
 
 succ() {
-  builtin echo -en "\033[1;32m"
-  echo "SUCCESS: $@"
-  builtin echo -en "\033[0m"
+	builtin echo -en "\033[1;32m"
+	echo "SUCCESS: $@"
+	builtin echo -en "\033[0m"
 }
 
 warn() {
-  builtin echo -en "\033[1;33m"
-  echo "WARN: $@"
-  builtin echo -en "\033[0m"
+	builtin echo -en "\033[1;33m"
+	echo "WARN: $@"
+	builtin echo -en "\033[0m"
 }
 
 fatal() {
-  builtin echo -en "\033[1;31m"
-  echo "FATAL: $@"
-  builtin echo -en "\033[0m"
-  exit 1
+	builtin echo -en "\033[1;31m"
+	echo "FATAL: $@"
+	builtin echo -en "\033[0m"
+	exit 1
 }
 
 err() {
-  builtin echo -en "\033[1;31m"
-  echo "ERR: $@"
-  builtin echo -en "\033[0m"
-  exit 1
+	builtin echo -en "\033[1;31m"
+	echo "ERR: $@"
+	builtin echo -en "\033[0m"
+	exit 1
 }
 
 if [[ $(basename $(canon_path $0)) == "kong-ngx-build" ]]; then
-  main $@
+	main $@
 fi
 
 # vi: ts=2 sts=2 sw=2 et
