@@ -1,27 +1,27 @@
 create_user() {
-  useradd -U -m -s /bin/sh kong
+	useradd -U -m -s /bin/sh kong
 
-  FILES=""
-  FILES="${FILES} /etc/kong/"
-  FILES="${FILES} /usr/local/bin/json2lua"
-  FILES="${FILES} /usr/local/bin/kong"
-  FILES="${FILES} /usr/local/bin/lapis"
-  FILES="${FILES} /usr/local/bin/lua2json"
-  FILES="${FILES} /usr/local/bin/luarocks"
-  FILES="${FILES} /usr/local/bin/luarocks-admin"
-  FILES="${FILES} /usr/local/etc/luarocks/"
-  FILES="${FILES} /usr/local/kong/"
-  FILES="${FILES} /usr/local/lib/lua/"
-  FILES="${FILES} /usr/local/lib/luarocks/"
-  FILES="${FILES} /usr/local/openresty/"
-  FILES="${FILES} /usr/local/share/lua/"
+	FILES=""
+	FILES="${FILES} /etc/kong/"
+	FILES="${FILES} /usr/local/bin/json2lua"
+	FILES="${FILES} /usr/local/bin/kong"
+	FILES="${FILES} /usr/local/bin/lapis"
+	FILES="${FILES} /usr/local/bin/lua2json"
+	FILES="${FILES} /usr/local/bin/luarocks"
+	FILES="${FILES} /usr/local/bin/luarocks-admin"
+	FILES="${FILES} /usr/local/etc/luarocks/"
+	FILES="${FILES} /usr/local/kong/"
+	FILES="${FILES} /usr/local/lib/lua/"
+	FILES="${FILES} /usr/local/lib/luarocks/"
+	FILES="${FILES} /usr/local/openresty/"
+	FILES="${FILES} /usr/local/share/lua/"
 
-  for FILE in ${FILES}; do
-    chown -R kong:kong ${FILE}
-    chmod -R g=u ${FILE}
-  done
+	for FILE in ${FILES}; do
+		chown -R kong:kong ${FILE}
+		chmod -R g=u ${FILE}
+	done
 
-  return 0
+	return 0
 }
 
-create_user > /dev/null 2>&1
+create_user >/dev/null 2>&1

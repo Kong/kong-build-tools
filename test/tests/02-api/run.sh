@@ -6,7 +6,7 @@ assert_response "$KONG_ADMIN_URI" "200"
 msg_test "Create a service"
 assert_response "-d name=testservice -d url=http://mockbin $KONG_ADMIN_URI/services" "201"
 
-msg_test  "List services"
+msg_test "List services"
 assert_response "$KONG_ADMIN_URI/services" "200"
 
 msg_test "Create a route"

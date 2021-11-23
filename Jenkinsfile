@@ -37,6 +37,7 @@ pipeline {
                 sh 'make cleanup'
                 sh 'rm -rf $KONG_SOURCE_LOCATION || true'
                 sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
+                sh 'pip install pre-commit && pre-commit run'
                 sh 'make kong-test-container'
             }
         }

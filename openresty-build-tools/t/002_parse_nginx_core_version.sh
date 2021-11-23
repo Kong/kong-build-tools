@@ -7,17 +7,17 @@ set +e
 g_ok=0
 
 function t() {
-    local res
+	local res
 
-    >&2 printf "t: $1 is core $2 ? ... "
-    res=$($1)
+	printf >&2 "t: $1 is core $2 ? ... "
+	res=$($1)
 
-    if [ $res != $2 ]; then
-        >&2 printf "\e[091merr: $res\e[0m\n"
-        g_ok=1
-    else
-        >&2 printf "\e[092mok\n\e[0m"
-    fi
+	if [ $res != $2 ]; then
+		printf >&2 "\e[091merr: $res\e[0m\n"
+		g_ok=1
+	else
+		printf >&2 "\e[092mok\n\e[0m"
+	fi
 }
 
 t "parse_nginx_core_version 1.11.2.1" "1.11.2"
