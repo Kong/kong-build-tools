@@ -8,6 +8,7 @@ DOWNLOAD_CACHE=work
 OPENRESTY_VER=
 OPENSSL_VER=
 OPENTRACING_VERSION=
+BORINGSSL_VER=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
@@ -64,6 +65,10 @@ main() {
         ;;
       --opentracing)
         OPENTRACING_VERSION=$2
+        shift 2
+        ;;
+      --boringssl)
+        BORINGSSL_VER="$2"
         shift 2
         ;;
       --luarocks)
@@ -140,9 +145,14 @@ main() {
     fatal "OpenResty version can not be empty"
   fi
 
-  if [ -z "$OPENSSL_VER" ]; then
+  if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
     show_usage
-    fatal "OpenSSL version can not be empty"
+    fatal "OpenSSL and BoringSSL version can not both be empty"
+  fi
+
+  if [ -n "$OPENSSL_VER" -a -n "$BORINGSSL_VER" ]; then
+    show_usage
+    fatal "OpenSSL and BoringSSL version can not both be present"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -163,21 +173,29 @@ main() {
 
   NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
 
-  OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
-  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
-
   mkdir -p $DOWNLOAD_CACHE $PREFIX
-
-  OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
   OPENRESTY_DESTDIR=${OPENRESTY_DESTDIR:-/}
-
-  OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
   OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
-
-  OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
 
-  if version_lt $NGINX_CORE_VER 1.13.6 || version_lt $OPENSSL_VER 1.1; then
+  if [ -n "$OPENSSL_VER" ]; then
+    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
+    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
+    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+
+    if version_lt $OPENSSL_VER 1.1; then
+      # unconditionally disable module in older core since they are never tested
+      KONG_NGINX_MODULE=0
+    fi
+  fi
+
+  if [ -n "$BORINGSSL_VER" ]; then
+    BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
+  fi
+
+  if version_lt $NGINX_CORE_VER 1.13.6; then
     # unconditionally disable module in older core since they are never tested
     KONG_NGINX_MODULE=0
   fi
@@ -185,22 +203,41 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
-    # OpenSSL
 
-    if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
-      warn "OpenSSL source not found, downloading..."
-      set +e
-      curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
-      if [[ $? != 0 ]]; then
-        curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
-        [[ $? != 0 ]] && err "Could not download OpenSSL"
-      fi
-      set -e
+    if [ -n "$OPENSSL_VER" ]; then
+      # OpenSSL
 
-      if [ ! -z ${OPENSSL_SHA+x} ]; then
-        echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+      if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
+        warn "OpenSSL source not found, downloading..."
+        set +e
+        curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+        if [[ $? != 0 ]]; then
+          curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+          [[ $? != 0 ]] && err "Could not download OpenSSL"
+        fi
+        set -e
+
+        if [ ! -z ${OPENSSL_SHA+x} ]; then
+          echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+        fi
+        tar -xzf openssl-$OPENSSL_VER.tar.gz
       fi
-      tar -xzf openssl-$OPENSSL_VER.tar.gz
+    fi
+
+    if [ -n "$BORINGSSL_VER" ]; then
+      # Boring SSL
+
+      if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
+        warn "BoringSSL source not found, downloading..."
+        set +e
+        curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
+        [[ $? != 0 ]] && err "Could not download BoringSSL"
+        set -e
+
+        # -- check hash? --
+
+        unzip -q boringssl-${BORINGSSL_VER}.zip
+      fi
     fi
 
     # OpenResty
@@ -257,7 +294,7 @@ main() {
       PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
       if [ ! -d $PCRE_DOWNLOAD ]; then
         warn "PCRE source not found, downloading..."
-        curl -sSLO https://ftp.pcre.org/pub/pcre/pcre-${PCRE_VER}.tar.gz
+        curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
         fi
@@ -423,56 +460,88 @@ main() {
 
   # Building OpenSSL
 
-  if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
-    notice "Building OpenSSL..."
+  if [ -n "$OPENSSL_VER" ]; then
+    if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
+      notice "Building OpenSSL..."
 
-    pushd $OPENSSL_DOWNLOAD
-      if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
-          OPENSSL_OPTS=(
-            "-g"
-            "shared"
-            "-DPURIFY"
-            "no-threads"
-            "--prefix=$OPENSSL_PREFIX"
-            "--openssldir=$OPENSSL_PREFIX"
-          )
+      pushd $OPENSSL_DOWNLOAD
+        if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
+            OPENSSL_OPTS=(
+              "-g"
+              "shared"
+              "-DPURIFY"
+              "no-threads"
+              "--prefix=$OPENSSL_PREFIX"
+              "--openssldir=$OPENSSL_PREFIX"
+            )
 
-          if version_gte $OPENSSL_VER 1.1.0; then
-            OPENSSL_OPTS+=('no-unit-test')
+            if version_gte $OPENSSL_VER 1.1.0; then
+              OPENSSL_OPTS+=('no-unit-test')
 
-          else
-            OPENSSL_OPTS+=('no-tests')
-          fi
-
-          if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
-            local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
-            if [[ $OS != "Darwin" ]]; then
-              ld_opts="$ld_opts,--enable-new-dtags"
+            else
+              OPENSSL_OPTS+=('no-tests')
             fi
 
-            OPENSSL_OPTS+=("$ld_opts")
-          fi
+            if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
+              local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
+              if [[ $OS != "Darwin" ]]; then
+                ld_opts="$ld_opts,--enable-new-dtags"
+              fi
 
-          if [ $DEBUG == 1 ]; then
-            OPENSSL_OPTS+=('-d')
-          fi
+              OPENSSL_OPTS+=("$ld_opts")
+            fi
 
-        eval ./config ${OPENSSL_OPTS[*]}
-      fi
+            if [ $DEBUG == 1 ]; then
+              OPENSSL_OPTS+=('-d')
+            fi
 
-      if version_gte $OPENSSL_VER 1.1.0; then
-        make -j$NPROC
-      else
-        make
-      fi
+          eval ./config ${OPENSSL_OPTS[*]}
+        fi
 
-      make install_sw DESTDIR=${OPENSSL_DESTDIR}
-    popd
+        if version_gte $OPENSSL_VER 1.1.0; then
+          make -j$NPROC
+        else
+          make
+        fi
 
-    succ "OpenSSL $OPENSSL_VER has been built successfully!"
+        make install_sw DESTDIR=${OPENSSL_DESTDIR}
+      popd
 
-  else
-    succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
+      succ "OpenSSL $OPENSSL_VER has been built successfully!"
+
+    else
+      succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
+    fi
+  fi
+
+  if [ -n "$BORINGSSL_VER" ]; then
+    if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
+      notice "Building BoringSSL..."
+
+      pushd $BORINGSSL_DOWNLOAD
+
+        mkdir -p build
+        pushd build
+          CC=/usr/bin/clang \
+          CXX=/usr/bin/clang++ \
+          CPP=/usr/bin/clang-cpp \
+          LD=/usr/bin/ld.lld \
+          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
+          ninja
+        popd #build
+
+        mkdir -p .openssl/lib
+        cp build/crypto/libcrypto.so build/ssl/libssl.so .openssl/lib
+        pushd .openssl
+          ln -s ../include .
+        popd #.openssl
+
+      popd # $OPENRESTY_DOWNLOAD
+      succ "BoringSSL $BORINGSSL_VER has been built successfully!"
+
+    else
+      succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
+    fi
   fi
 
   # Building OpenResty
@@ -482,15 +551,14 @@ main() {
 
     pushd $OPENRESTY_DOWNLOAD
       if [ ! -f Makefile ]; then
-        OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
         OPENRESTY_OPTS=(
           "--prefix=$OPENRESTY_PREFIX"
-          "--with-cc-opt='-I$OPENSSL_INSTALL/include'"
           "--with-pcre-jit"
           "--with-http_ssl_module"
           "--with-http_realip_module"
           "--with-http_stub_status_module"
           "--with-http_v2_module"
+          "--without-http_encrypted_session_module"
           "-j$NPROC"
         )
 
@@ -503,12 +571,6 @@ main() {
           if [[ -d $DOWNLOAD_CACHE/lua-kong-nginx-module/stream ]]; then
             OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-kong-nginx-module/stream")
           fi
-        fi
-
-        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
-        else
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
         fi
 
         if version_gte $NGINX_CORE_VER 1.11.4; then
@@ -527,6 +589,16 @@ main() {
         fi
 
         OPENRESTY_OPTS+=(${NGINX_EXTRA_MODULES[@]})
+
+        OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
+
+        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
+          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
+        else
+          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+        fi
+
+        OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
 
         if [ $DEBUG == 1 ]; then
           OPENRESTY_OPTS+=('--with-debug')
