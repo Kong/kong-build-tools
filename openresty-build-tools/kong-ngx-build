@@ -145,11 +145,6 @@ main() {
     fatal "OpenSSL and BoringSSL version can not both be empty"
   fi
 
-  if [ -n "$OPENSSL_VER" -a -n "$BORINGSSL_VER" ]; then
-    show_usage
-    fatal "OpenSSL and BoringSSL version can not both be present"
-  fi
-
   # retrieve DIST info of DIST-specific patches
 
   if [ -f /etc/os-release ]; then
