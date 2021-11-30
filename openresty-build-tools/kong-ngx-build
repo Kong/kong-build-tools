@@ -69,6 +69,10 @@ main() {
         LUAROCKS_SHA=$2
         shift 2
         ;;
+      --luarocks_tree)
+        LUAROCKS_TREE=$2
+        shift 2
+        ;;
       --no-openresty-patches)
         OPENRESTY_PATCHES=0
         shift 1
@@ -520,6 +524,7 @@ main() {
         if [ ! -f config.unix ]; then
           ./configure \
             --prefix=$LUAROCKS_PREFIX \
+            --rocks-tree=$LUAROCKS_TREE \
             --lua-suffix=jit \
             --with-lua=$OPENRESTY_INSTALL/luajit \
             --with-lua-include=$OPENRESTY_INSTALL/luajit/include/luajit-2.1
