@@ -7,3 +7,4 @@
 [submodule "lua-resty-lmdb"]
 	path = lua-resty-lmdb
 	url = git@github.com:Kong/lua-resty-lmdb.git
+        fetchRecurseSubmodules = true

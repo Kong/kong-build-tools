@@ -337,7 +337,7 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-lmdb ]; then
           warn "lua-resty-lmdb source not found, cloning..."
-          git clone https://github.com/Kong/lua-resty-lmdb
+          git clone https://github.com/Kong/lua-resty-lmdb --recursive
         fi
 
         pushd lua-resty-lmdb
