@@ -516,26 +516,30 @@ main() {
   fi
 
   if [ -n "$BORINGSSL_VER" ]; then
-    if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
+    if [ ! -d "$BORINGSSL_DOWNLOAD/.openssl/lib" ]; then
       notice "Building BoringSSL..."
 
       pushd $BORINGSSL_DOWNLOAD
 
         mkdir -p build
         pushd build
-          CC=/usr/bin/clang \
-          CXX=/usr/bin/clang++ \
+          CC="/usr/bin/clang -fPIE" \
+          CXX="/usr/bin/clang++ -fPIE" \
           CPP=/usr/bin/clang-cpp \
           LD=/usr/bin/ld.lld \
-          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
+          cmake -GNinja -DFIPS=1  ..
           ninja
         popd #build
 
         mkdir -p .openssl/lib
-        cp build/crypto/libcrypto.so build/ssl/libssl.so .openssl/lib
+        cp -v build/crypto/libcrypto.* build/ssl/libssl.* .openssl/lib
         pushd .openssl
           ln -s ../include .
         popd #.openssl
+#        pushd .openssl/lib
+#          ar -x libcrypto.a
+#          ar -x libssl.a
+#        popd
 
       popd # $OPENRESTY_DOWNLOAD
       succ "BoringSSL $BORINGSSL_VER has been built successfully!"
@@ -597,13 +601,23 @@ main() {
 
         OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
 
-        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
-        else
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
-        fi
 
-        OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+        if [ -n "$BORINGSSL_VER" ]; then
+          OPENRESTY_OPTS+=(
+            "--with-openssl=$BORINGSSL_DOWNLOAD"
+            "--with-cc-opt='-I$BORINGSSL_DOWNLOAD/.openssl/include'"
+            "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -L$BORINGSSL_DOWNLOAD/.openssl/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
+          )
+
+        else
+          if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
+          else
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+          fi
+
+          OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+        fi
 
         if [ $DEBUG == 1 ]; then
           OPENRESTY_OPTS+=('--with-debug')
@@ -611,6 +625,10 @@ main() {
         fi
 
         eval ./configure ${OPENRESTY_OPTS[*]}
+
+        if [ -n "$BORINGSSL_VER" ]; then
+          touch $BORINGSSL_DOWNLOAD/.openssl/include/openssl/ssl.h
+        fi
       fi
 
       make -j$NPROC
