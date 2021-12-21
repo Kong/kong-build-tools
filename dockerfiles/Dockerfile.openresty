@@ -88,6 +88,7 @@ ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 
 COPY kong-licensing /enterprise/kong-licensing
 COPY lua-kong-nginx-module /enterprise/lua-kong-nginx-module
+COPY lua-resty-lmdb /enterprise/lua-resty-lmdb
 
 ARG DEBUG=1
 RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \

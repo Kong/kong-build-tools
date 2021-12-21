@@ -13,6 +13,7 @@ PCRE_VER=
 FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
+RESTY_LMDB=0 # disable by default for now
 DEBUG=0
 NPROC=
 OS=
@@ -84,6 +85,14 @@ main() {
         ;;
       --no-kong-nginx-module)
         KONG_NGINX_MODULE=0
+        shift 1
+        ;;
+      --resty-lmdb)
+        RESTY_LMDB=$2
+        shift 2
+        ;;
+      --no-resty-lmdb)
+        RESTY_LMDB=0
         shift 1
         ;;
       -f|--force)
@@ -319,6 +328,25 @@ main() {
         popd
       popd
     fi
+
+    # lua-resty-lmdb
+    if [ $RESTY_LMDB != 0 ]; then
+      if [[ $RESTY_LMDB == "master" ]]; then
+        RESTY_LMDB="origin/master"
+      fi
+      pushd $DOWNLOAD_CACHE
+        if [ ! -d lua-resty-lmdb ]; then
+          warn "lua-resty-lmdb source not found, cloning..."
+          git clone https://github.com/Kong/lua-resty-lmdb --recursive
+        fi
+
+        pushd lua-resty-lmdb
+          git fetch
+          # Accept both tags, branches and SHAs
+          git reset --hard $RESTY_LMDB || git reset --hard origin/$RESTY_LMDB
+        popd
+      popd
+    fi
   popd
 
   notice "Patching the components now..."
@@ -525,6 +553,10 @@ main() {
           fi
         fi
 
+        if [ $RESTY_LMDB != 0 ]; then
+          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-resty-lmdb")
+        fi
+
         if version_gte $NGINX_CORE_VER 1.11.4; then
           OPENRESTY_OPTS+=('--with-stream_realip_module')
         fi
@@ -566,6 +598,13 @@ main() {
       if [ $KONG_NGINX_MODULE != 0 ]; then
         pushd $DOWNLOAD_CACHE/lua-kong-nginx-module
           warn "installing library files for lua-kong-nginx-module..."
+          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+        popd
+      fi
+
+      if [ $RESTY_LMDB != 0 ]; then
+        pushd $DOWNLOAD_CACHE/lua-resty-lmdb
+          warn "installing library files for lua-resty-lmdb..."
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
         popd
       fi
@@ -737,6 +776,10 @@ show_usage() {
   echo "                                     (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
   echo ""
   echo "      --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling."
+  echo "                                     (Defaults to \"master\")"
+  echo "      --no-resty-lmdb                Do not include lua-resty-lmdb while patching and compiling OpenResty."
+  echo ""
+  echo "      --resty-lmdb <branch>          Specify a lua-resty-lmdb branch to use when patching and compiling."
   echo "                                     (Defaults to \"master\")"
   echo ""
   echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"

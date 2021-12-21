@@ -33,6 +33,11 @@ Optional arguments:
       --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling.
                                      (Defaults to "master")
 
+      --no-resty-lmdb                Do not include lua-resty-lmdb while patching and compiling OpenResty.
+
+      --resty-lmdb <branch>          Specify a lua-resty-lmdb branch to use when patching and compiling.
+                                     (Defaults to "master")
+
       --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks
                                      will not be built.
 
