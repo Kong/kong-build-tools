@@ -527,7 +527,7 @@ main() {
           CXX="/usr/bin/clang++ -fPIE" \
           CPP=/usr/bin/clang-cpp \
           LD=/usr/bin/ld.lld \
-          cmake -GNinja -DFIPS=1  ..
+          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
           ninja
         popd #build
 
@@ -536,10 +536,6 @@ main() {
         pushd .openssl
           ln -s ../include .
         popd #.openssl
-#        pushd .openssl/lib
-#          ar -x libcrypto.a
-#          ar -x libssl.a
-#        popd
 
       popd # $OPENRESTY_DOWNLOAD
       succ "BoringSSL $BORINGSSL_VER has been built successfully!"
@@ -604,7 +600,6 @@ main() {
 
         if [ -n "$BORINGSSL_VER" ]; then
           OPENRESTY_OPTS+=(
-            "--with-openssl=$BORINGSSL_DOWNLOAD"
             "--with-cc-opt='-I$BORINGSSL_DOWNLOAD/.openssl/include'"
             "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -L$BORINGSSL_DOWNLOAD/.openssl/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
           )
