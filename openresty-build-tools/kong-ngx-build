@@ -5,6 +5,7 @@ set -e
 SCRIPT_PATH=
 PREFIX=
 DOWNLOAD_CACHE=work
+DOWNLOAD_ONLY=
 OPENRESTY_VER=
 OPENSSL_VER=
 BORINGSSL_VER=
@@ -110,6 +111,10 @@ main() {
       --add-module)
         NGINX_EXTRA_MODULES+=("--add-module=$2")
         shift 2
+        ;;
+      --donwload-extract-only)
+        DOWNLOAD_ONLY=1
+        shift 1
         ;;
       -h|--help)
         show_usage
@@ -218,6 +223,8 @@ main() {
 
         if [ ! -z ${OPENSSL_SHA+x} ]; then
           echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
         fi
         tar -xzf openssl-$OPENSSL_VER.tar.gz
       fi
@@ -233,8 +240,11 @@ main() {
         [[ $? != 0 ]] && err "Could not download BoringSSL"
         set -e
 
-        # -- check hash? --
-
+        if [ ! -z ${BORINGSSL_SHA+x} ]; then
+          echo "$BORINGSSL_SHA boringssl-${BORINGSSL_VER}.zip" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
+        fi
         unzip -q boringssl-${BORINGSSL_VER}.zip
       fi
     fi
@@ -256,6 +266,8 @@ main() {
         curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
         if [ ! -z ${OPENRESTY_SHA+x} ]; then
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
 
@@ -280,6 +292,8 @@ main() {
         curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
       fi
@@ -304,6 +318,8 @@ main() {
           set -e
           if [ ! -z ${LUAROCKS_SHA+x} ]; then
             echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
+          else
+            notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
         fi
@@ -348,6 +364,11 @@ main() {
       popd
     fi
   popd
+
+  if [ ! -z "$DOWNLOAD_ONLY" ]; then
+    notice "Exiting early since --download-extract-only was specified"
+    exit 0
+  fi
 
   notice "Patching the components now..."
 
