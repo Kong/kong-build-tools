@@ -148,6 +148,14 @@ main() {
   if [ -z "$OPENRESTY_PATCHES" ]; then
     OPENRESTY_PATCHES=master
   fi
+
+  if [ -z "$PREFIX" ]; then
+    show_usage
+    fatal "prefix can not be empty"
+  fi
+
+  PREFIX=`canon_path $PREFIX`
+  DOWNLOAD_CACHE=`canon_path $DOWNLOAD_CACHE`
   
   if [ -n "$SEMVER" ]; then
     set +e
@@ -159,19 +167,6 @@ main() {
     
     [[ $? != 0 ]] && warn "Cache not found"
     set -e
-  fi
-
-  if [ -z "$PREFIX" ]; then
-    show_usage
-    fatal "prefix can not be empty"
-  fi
-
-  PREFIX=`canon_path $PREFIX`
-  DOWNLOAD_CACHE=`canon_path $DOWNLOAD_CACHE`
-
-  if [ -z "$OPENRESTY_VER" ]; then
-    show_usage
-    fatal "OpenResty version can not be empty"
   fi
 
   if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
