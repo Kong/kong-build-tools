@@ -5,11 +5,15 @@ set -e
 SCRIPT_PATH=
 PREFIX=
 DOWNLOAD_CACHE=work
-OPENRESTY_VER=
-OPENSSL_VER=
+DOWNLOAD_ONLY=
+OPENRESTY_VER="${OPENRESTY_VER:-1.19.9.1}"
+OPENSSL_VER="${OPENSSL_VER:-1.1.1l}"
 BORINGSSL_VER=
-LUAROCKS_VER=
-PCRE_VER=
+LUAROCKS_VER="${LUAROCKS_VER:-3.7.0}"
+PCRE_VER="${PCRE_VER:-8.44}"
+
+ARTIFACT_STORE=https://raw.github.com/kong-build-tools/kong-build-tools
+
 FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
@@ -20,6 +24,7 @@ OS=
 DIST=
 DIST_VER=
 NGINX_EXTRA_MODULES=()
+SEMVER=
 
 PARAMS=""
 
@@ -95,6 +100,10 @@ main() {
         RESTY_LMDB=0
         shift 1
         ;;
+      --semver)
+        SEMVER=$2
+        shift 1
+        ;;
       -f|--force)
         FORCE=1
         shift 1
@@ -110,6 +119,10 @@ main() {
       --add-module)
         NGINX_EXTRA_MODULES+=("--add-module=$2")
         shift 2
+        ;;
+      --donwload-extract-only)
+        DOWNLOAD_ONLY=1
+        shift 1
         ;;
       -h|--help)
         show_usage
@@ -134,6 +147,18 @@ main() {
 
   if [ -z "$OPENRESTY_PATCHES" ]; then
     OPENRESTY_PATCHES=master
+  fi
+  
+  if [ -n "$SEMVER" ]; then
+    set +e
+    warn "Looking for a pre-existing asset cache"
+    ### curl --fail -sSLO $ARTIFACT_STORE/$SEMVER.tar.gz TBD
+    
+    mkdir -p $PREFIX
+    tar -C $PREFIX -xzvf /tmp/cache.tar.gz
+    
+    [[ $? != 0 ]] && warn "Cache not found"
+    set -e
   fi
 
   if [ -z "$PREFIX" ]; then
@@ -218,6 +243,8 @@ main() {
 
         if [ ! -z ${OPENSSL_SHA+x} ]; then
           echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
         fi
         tar -xzf openssl-$OPENSSL_VER.tar.gz
       fi
@@ -233,8 +260,11 @@ main() {
         [[ $? != 0 ]] && err "Could not download BoringSSL"
         set -e
 
-        # -- check hash? --
-
+        if [ ! -z ${BORINGSSL_SHA+x} ]; then
+          echo "$BORINGSSL_SHA boringssl-${BORINGSSL_VER}.zip" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
+        fi
         unzip -q boringssl-${BORINGSSL_VER}.zip
       fi
     fi
@@ -256,6 +286,8 @@ main() {
         curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
         if [ ! -z ${OPENRESTY_SHA+x} ]; then
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
 
@@ -280,6 +312,8 @@ main() {
         curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
       fi
@@ -291,6 +325,7 @@ main() {
       LUAROCKS_DESTDIR=${LUAROCKS_DESTDIR:-/}
       LUAROCKS_PREFIX=${LUAROCKS_PREFIX:-$PREFIX/luarocks}
       LUAROCKS_INSTALL=$(canon_path $LUAROCKS_DESTDIR/$LUAROCKS_PREFIX)
+      
       if [ ! -f $LUAROCKS_INSTALL/bin/luarocks ]; then
         LUAROCKS_DOWNLOAD=$DOWNLOAD_CACHE/luarocks-$LUAROCKS_VER
         if [ ! -d $LUAROCKS_DOWNLOAD ]; then
@@ -304,6 +339,8 @@ main() {
           set -e
           if [ ! -z ${LUAROCKS_SHA+x} ]; then
             echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
+          else
+            notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
         fi
@@ -348,6 +385,11 @@ main() {
       popd
     fi
   popd
+
+  if [ ! -z "$DOWNLOAD_ONLY" ]; then
+    notice "Exiting early since --download-extract-only was specified"
+    exit 0
+  fi
 
   notice "Patching the components now..."
 
@@ -488,22 +530,21 @@ main() {
       popd
 
       succ "OpenSSL $OPENSSL_VER has been built successfully!"
-
     else
       succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
     fi
   fi
-
+  
   if [ -n "$BORINGSSL_VER" ]; then
-    if [ ! -f "$BORINGSSL_DOWNLOAD/.openssl/lib/libcrypto.so" ]; then
+    if [ ! -d "$BORINGSSL_DOWNLOAD/.openssl/lib" ]; then
       notice "Building BoringSSL..."
 
       pushd $BORINGSSL_DOWNLOAD
 
         mkdir -p build
         pushd build
-          CC=/usr/bin/clang \
-          CXX=/usr/bin/clang++ \
+          CC="/usr/bin/clang -fPIE" \
+          CXX="/usr/bin/clang++ -fPIE" \
           CPP=/usr/bin/clang-cpp \
           LD=/usr/bin/ld.lld \
           cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
@@ -511,7 +552,7 @@ main() {
         popd #build
 
         mkdir -p .openssl/lib
-        cp build/crypto/libcrypto.so build/ssl/libssl.so .openssl/lib
+        cp -v build/crypto/libcrypto.* build/ssl/libssl.* .openssl/lib
         pushd .openssl
           ln -s ../include .
         popd #.openssl
@@ -522,6 +563,13 @@ main() {
     else
       succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
     fi
+  fi
+  
+  if [ -n "$SEMVER" ]; then
+    pushd $PREFIX
+    tar -cvzf /tmp/$SEMVER.tar.gz .
+    popd
+    mv /tmp/$SEMVER.tar.gz .
   fi
 
   # Building OpenResty
@@ -576,13 +624,22 @@ main() {
 
         OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
 
-        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
-        else
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
-        fi
 
-        OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+        if [ -n "$BORINGSSL_VER" ]; then
+          OPENRESTY_OPTS+=(
+            "--with-cc-opt='-I$BORINGSSL_DOWNLOAD/.openssl/include'"
+            "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -L$BORINGSSL_DOWNLOAD/.openssl/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
+          )
+
+        else
+          if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
+          else
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+          fi
+
+          OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+        fi
 
         if [ $DEBUG == 1 ]; then
           OPENRESTY_OPTS+=('--with-debug')
@@ -590,6 +647,10 @@ main() {
         fi
 
         eval ./configure ${OPENRESTY_OPTS[*]}
+
+        if [ -n "$BORINGSSL_VER" ]; then
+          touch $BORINGSSL_DOWNLOAD/.openssl/include/openssl/ssl.h
+        fi
       fi
 
       make -j$NPROC
@@ -640,6 +701,10 @@ main() {
     else
       succ "LuaRocks $LUAROCKS_VER has been built successfully (cached)!"
     fi
+  fi
+  
+  if [ -n "$SEMVER" ]; then
+    tar -chvzf $SEMVER.tar.gz $PREFIX
   fi
 
   succ "Build finished in $SECONDS seconds. Enjoy!"

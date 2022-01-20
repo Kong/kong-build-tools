@@ -1,8 +1,5 @@
 pipeline {
     agent none
-    triggers {
-        cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
-    }
     environment {
         KONG_SOURCE = "master"
         KONG_SOURCE_LOCATION = "/tmp/kong"
@@ -211,15 +208,35 @@ pipeline {
                 }
             }
             when {
-                triggeredBy 'TimerTrigger'
+                allOf {
+                    branch 'master'
+                    anyOf {
+                        changeset pattern: "openresty-build-tools/kong-ngx-build"
+                        changeset pattern: "openresty-patchs/patches/*/*.patch"
+                    }
+                }
             }
             environment {
                 GITHUB_TOKEN = credentials('github_bot_access_token')
+                LUAROCKS_PREFIX = "/usr/local"
+                LUAROCKS_DESTDIR = "/tmp/build"
+                OPENRESTY_PREFIX = "/usr/local/openresty"
+                OPENRESTY_DESTDIR = "/tmp/build"
+                OPENSSL_PREFIX = "/usr/local/kong"
+                OPENSSL_DESTDIR = "/tmp/build"
+                OPENRESTY_RPATH = "/usr/local/kong/lib"
             }
             steps {
-                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
-                sh '. ~/.nvm/nvm.sh && nvm install lts/*'
-                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
+                sh './openresty-build-tools/kong-ngx-build \
+                    -p /tmp/build/usr/local \
+                    --semver cache'
+            }
+            post {
+                success {
+                    sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
+                    sh '. ~/.nvm/nvm.sh && nvm install lts/*'
+                    sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
+                }
             }
         }
     }

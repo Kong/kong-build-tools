@@ -16,6 +16,9 @@
     }],
     ["@semantic-release/github", {
       "failComment": false,
+      "assets": [
+        {"path": "cache.tar.gz"}
+      ]
     }]
   ]
 }
