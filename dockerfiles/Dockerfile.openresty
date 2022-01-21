@@ -74,6 +74,7 @@ ARG RESTY_LUAROCKS_VERSION
 
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
+COPY cache.tar.gz /tmp/cache.tar.gz
 COPY build-openresty.sh /tmp/build-openresty.sh
 
 ARG OPENRESTY_PATCHES=1

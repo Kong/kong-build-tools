@@ -54,6 +54,7 @@ OPENRESTY_RPATH=/usr/local/kong/lib \
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES \
 EDITION=$EDITION \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
+--semver cache \
 --resty-lmdb $RESTY_LMDB \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
