@@ -37,6 +37,7 @@ RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirem
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 LIBYAML_VERSION ?= `grep LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENTRACING_VERSION ?= `grep OPENTRACING_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
@@ -105,6 +106,7 @@ debug:
 	@echo ${BUILDX_INFO}
 	@echo ${DEBUG}
 	@echo ${KONG_NGINX_MODULE}
+	@echo ${RESTY_LMDB}
 
 setup-ci: setup-build
 
@@ -177,6 +179,7 @@ else
 	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
 	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
+	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	--build-arg OPENTRACING_VERSION=$(OPENTRACING_VERSION) \
 	--build-arg DEBUG=$(DEBUG) \

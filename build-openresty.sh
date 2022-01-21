@@ -8,7 +8,7 @@ touch $BUILD_OUTPUT
 
 dump_output() {
    echo Tailing the last 500 lines of output:
-   cat $BUILD_OUTPUT  
+   cat $BUILD_OUTPUT
 }
 error_handler() {
   echo ERROR: An error was encountered with the build.
@@ -53,6 +53,11 @@ then
   NGX_BUILD_FLAGS+=("--debug")
 fi
 
+if [ -z "$RESTY_LMDB" ]
+then
+  RESTY_LMDB=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -63,7 +68,13 @@ OPENRESTY_RPATH=/usr/local/kong/lib \
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES \
 EDITION=$EDITION \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
-  "${NGX_BUILD_FLAGS[*]}" >> $BUILD_OUTPUT 2>&1
+--openresty $RESTY_VERSION \
+--openssl $RESTY_OPENSSL_VERSION \
+--resty-lmdb $RESTY_LMDB \
+--luarocks $RESTY_LUAROCKS_VERSION \
+--kong-nginx-module $KONG_NGINX_MODULE \
+--pcre $RESTY_PCRE_VERSION \
+--work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
 
 # The build finished without returning an error so dump a tail of the output
 dump_output
