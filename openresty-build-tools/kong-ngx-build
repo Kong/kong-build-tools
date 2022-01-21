@@ -266,7 +266,7 @@ main() {
 
     # OpenResty
 
-    if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+    if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ] || [ "$EDITION" == 'enterprise' ] ; then
       if [[ $OPENRESTY_PATCHES == 0 && -f $OPENRESTY_DOWNLOAD/bundle/.patch_applied ]]; then
         warn "Patched OpenResty found but vanilla requested, removing source..."
         rm -rf $OPENRESTY_DOWNLOAD
@@ -388,7 +388,7 @@ main() {
 
   notice "Patching the components now..."
 
-  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ] || [ "$EDITION" == 'enterprise' ]; then
     notice "Patching OpenResty..."
 
     if [[ $OPENRESTY_PATCHES != 0 ]]; then
@@ -559,17 +559,10 @@ main() {
       succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
     fi
   fi
-  
-  if [ -n "$SEMVER" ]; then
-    pushd $PREFIX
-    tar -cvzf /tmp/$SEMVER.tar.gz .
-    popd
-    mv /tmp/$SEMVER.tar.gz .
-  fi
 
   # Building OpenResty
 
-  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ]; then
+  if [ ! -f $OPENRESTY_INSTALL/nginx/sbin/nginx ] || [ "$EDITION" == 'enterprise' ]; then
     notice "Building OpenResty..."
 
     pushd $OPENRESTY_DOWNLOAD
@@ -696,6 +689,13 @@ main() {
     else
       succ "LuaRocks $LUAROCKS_VER has been built successfully (cached)!"
     fi
+  fi
+  
+  if [ -n "$SEMVER" ]; then
+    pushd $PREFIX
+    tar -cvzf /tmp/$SEMVER.tar.gz .
+    popd
+    mv /tmp/$SEMVER.tar.gz .
   fi
 
   succ "Build finished in $SECONDS seconds. Enjoy!"
