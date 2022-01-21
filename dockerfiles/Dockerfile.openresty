@@ -5,11 +5,28 @@ ARG DOCKER_REPOSITORY
 
 FROM ${DOCKER_REPOSITORY}:${RESTY_IMAGE_BASE}-${RESTY_IMAGE_TAG}-${DOCKER_BASE_SUFFIX}
 
-ARG EDITION="community"
 ENV EDITION $EDITION
+ENV LIBYAML_VERSION=0.2.5
+ENV KONG_GMP_VERSION=6.2.1
+ENV KONG_NETTLE_VERSION="3.7.3"
+ENV KONG_DEP_PASSWDQC_VERSION="1.3.1"
+ENV KONG_NGINX_MODULE=master
 
-ARG LIBYAML_VERSION=0.2.5
-ENV LIBYAML_VERSION $LIBYAML_VERSION
+ENV RESTY_VERSION=1.19.9.1
+LABEL resty_version="${RESTY_VERSION}"
+
+ENV RESTY_OPENSSL_VERSION=1.1.1m
+LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
+
+ENV RESTY_PCRE_VERSION=8.45
+LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
+
+ENV RESTY_LUAROCKS_VERSION=3.8.0
+LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
+
+ENV RESTY_LMDB=0
+LABEL resty_lmdb="${RESTY_LMDB}"
+
 RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
     && cd /tmp \
     && tar xzf yaml-${LIBYAML_VERSION}.tar.gz \
@@ -23,8 +40,6 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install \
     && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
-ARG KONG_GMP_VERSION=6.2.1
-ENV KONG_GMP_VERSION $KONG_GMP_VERSION
 RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
     && cd /tmp \
     && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
@@ -33,8 +48,6 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/gmp-${KONG_GMP_VERS
     && ./configure --build=x86_64-linux-gnu --enable-static=no --libdir=/tmp/build/usr/local/kong/lib \
     && make -j${RESTY_J}; fi
 
-ARG KONG_NETTLE_VERSION="3.7.3"
-ENV KONG_NETTLE_VERSION $KONG_NETTLE_VERSION
 RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
     && cd /tmp \
     && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz \
@@ -47,8 +60,6 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTL
     --with-lib-path="/tmp/gmp-${KONG_GMP_VERSION}/.libs/" \
     && make -j${RESTY_J}; fi
 
-ARG KONG_DEP_PASSWDQC_VERSION="1.3.1"
-ENV KONG_DEP_PASSWDQC_VERSION $KONG_DEP_PASSWDQC_VERSION
 RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz https://www.openwall.com/passwdqc/passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz \
     && cd /tmp \
     && tar xzf passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz \
@@ -64,23 +75,6 @@ RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/passwdqc-${KONG_DEP
     CONFDIR=/usr/local/etc/passwdqc \
     MANDIR=/usr/local/share/man \
     install_lib; fi
-
-ARG KONG_NGINX_MODULE=master
-
-ARG RESTY_VERSION=1.19.9.1
-LABEL resty_version="${RESTY_VERSION}"
-
-ARG RESTY_OPENSSL_VERSION=1.1.1k
-LABEL resty_openssl_version="${RESTY_OPENSSL_VERSION}"
-
-ARG RESTY_PCRE_VERSION=8.44
-LABEL resty_pcre_version="${RESTY_PCRE_VERSION}"
-
-ARG RESTY_LUAROCKS_VERSION=3.7.0
-LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
-
-ARG RESTY_LMDB=0
-LABEL resty_lmdb="${RESTY_LMDB}"
 
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
