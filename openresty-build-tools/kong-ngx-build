@@ -697,10 +697,6 @@ main() {
       succ "LuaRocks $LUAROCKS_VER has been built successfully (cached)!"
     fi
   fi
-  
-  if [ -n "$SEMVER" ]; then
-    tar -chvzf $SEMVER.tar.gz $PREFIX
-  fi
 
   succ "Build finished in $SECONDS seconds. Enjoy!"
 }
