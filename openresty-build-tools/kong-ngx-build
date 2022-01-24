@@ -523,10 +523,6 @@ main() {
 
         mkdir -p build
         pushd build
-          CC="/usr/bin/clang -fPIE" \
-          CXX="/usr/bin/clang++ -fPIE" \
-          CPP=/usr/bin/clang-cpp \
-          LD=/usr/bin/ld.lld \
           cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
           ninja
         popd #build
