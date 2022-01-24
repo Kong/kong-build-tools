@@ -63,8 +63,8 @@ else
 	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
 endif
 
-# Cache gets automatically busted every week. Set this to unique value to skip the cache
-CACHE_BUSTER?=`date +%V`
+# Set this to unique value to bust the cache
+CACHE_BUSTER?=0
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
