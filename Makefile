@@ -4,7 +4,7 @@ export SHELL:=/bin/bash
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
-RESTY_IMAGE_TAG?=bionic
+RESTY_IMAGE_TAG?=20.04
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
 
@@ -46,10 +46,13 @@ RELEASE_DOCKER_ONLY ?= false
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
+# We build ARM64 for alpine and xenial only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
 else ifeq ($(RESTY_IMAGE_TAG),xenial)
+	BUILDX=true
+else ifeq ($(RESTY_IMAGE_TAG),16.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
@@ -143,6 +146,10 @@ else ifeq ($(BUILDX),true)
 endif
 
 build-base:
+	docker pull centos:8
+	docker tag centos:8 centos:7
+	docker pull debian:9
+	docker tag debian:9 debian:8
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(RESTY_IMAGE_BASE),rhel)
@@ -401,5 +408,7 @@ cleanup: cleanup-tests cleanup-build
 
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX)
+	-docker tag $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_BASE_SUFFIX) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) || true
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG) || true
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_OPENRESTY_SUFFIX)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX)

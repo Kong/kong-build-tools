@@ -17,6 +17,7 @@ fi
 
 rm -rf docker-kong || true
 git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
+chmod -R 755 docker-kong/*/*.sh
 
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   cp output/*${RESTY_IMAGE_TAG}.${ARCHITECTURE}.deb docker-kong/ubuntu/kong.deb
@@ -29,7 +30,8 @@ elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinu
   BUILD_DIR="centos"
 fi
 
-if [ "$RESTY_IMAGE_TAG" == "stretch" ]; then
+if [ "$RESTY_IMAGE_TAG" == "stretch" ] ||
+  { [ "$RESTY_IMAGE_BASE" == "debian" ] && [ "$RESTY_IMAGE_TAG" == "8" ]; } then
   sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
   sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
 fi

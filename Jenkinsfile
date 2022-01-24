@@ -61,6 +61,7 @@ pipeline {
                         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
                     }
                     steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 PACKAGE_TYPE=rpm && make package-kong && make test && make cleanup'
                     }
@@ -72,9 +73,10 @@ pipeline {
                         }
                     }
                     steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3.10 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('RedHat'){
@@ -90,6 +92,7 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
@@ -108,12 +111,13 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
-                stage('Debian OldStable'){
+                stage('Debian') {
                     agent {
                         node {
                             label 'bionic'
@@ -126,26 +130,12 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=stretch && make package-kong && make test && make cleanup'
-                    }
-                }
-                stage('Debian Stable & Testing') {
-                    agent {
-                        node {
-                            label 'bionic'
-                        }
-                    }
-                    environment {
-                        PACKAGE_TYPE = "deb"
-                        RESTY_IMAGE_BASE = "debian"
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
-                    }
-                    steps {
-                        sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=buster && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=bullseye && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('Ubuntu') {
@@ -164,9 +154,10 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=bionic && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=focal && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=18.04 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_TAG=20.04 && make package-kong && make test && make cleanup'
                     }
                     post {
                         always {
@@ -193,8 +184,9 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=xenial DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
+                        sh 'export CACHE=false UPDATE_CACHE=true RESTY_IMAGE_TAG=16.04 DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test'
                     }
                     post {
                         always {
