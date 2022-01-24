@@ -45,6 +45,7 @@ RELEASE_DOCKER_ONLY ?= false
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
+# We build ARM64 for alpine and xenial only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false

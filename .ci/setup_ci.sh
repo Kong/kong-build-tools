@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script configures CI systems such that they're capable of building our ARM64 assets
+
 set -x
 
 if [ "$RESTY_IMAGE_TAG" != "xenial" ] && [ "$RESTY_IMAGE_TAG" != "16.04" ] && [ "$RESTY_IMAGE_BASE" != "alpine" ]; then
