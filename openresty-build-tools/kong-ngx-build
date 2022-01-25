@@ -557,6 +557,7 @@ main() {
           "--with-http_v2_module"
           "--without-http_encrypted_session_module"
           "-j$NPROC"
+          "--with-cc-opt='-D DDEBUG=1'"
         )
 
         if [ "$EDITION" == 'enterprise' ]; then

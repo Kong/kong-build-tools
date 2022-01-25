@@ -1,0 +1,14 @@
+diff --git a/ngx_lua-0.10.20/src/ngx_http_lua_initby.c b/ngx_lua-0.10.20/src/ngx_http_lua_initby.c
+index e8941da..62206d6 100644
+--- a/ngx_lua-0.10.20/src/ngx_http_lua_initby.c
++++ b/ngx_lua-0.10.20/src/ngx_http_lua_initby.c
+@@ -23,6 +23,9 @@ ngx_http_lua_init_by_inline(ngx_log_t *log, ngx_http_lua_main_conf_t *lmcf,
+                              lmcf->init_src.len, "=init_by_lua")
+              || ngx_http_lua_do_call(log, L);
+ 
++    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, log, 0,
++                   lmcf->init_src.data);
++
+     return ngx_http_lua_report(log, L, status, "init_by_lua");
+ }
+ 
