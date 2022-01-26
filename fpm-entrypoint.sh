@@ -5,12 +5,10 @@ set -o errexit
 cd /tmp/build
 
 FPM_PARAMS=""
-if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
-  PACKAGE_TYPE="deb"
+if [ "$PACKAGE_TYPE" == "deb" ]; then
   FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
-elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "rhel" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
-  PACKAGE_TYPE="rpm"
+elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib -d zlib-devel"
   OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
@@ -28,7 +26,7 @@ OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo ${BUILDPLATFORM} | awk -F "/" 
 
 ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`
 
-if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
     mkdir /output
     tar -zcvf /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz usr etc
