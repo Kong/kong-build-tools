@@ -48,15 +48,15 @@ DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
 # We build ARM64 for alpine and xenial only at this time
 BUILDX?=false
-#ifndef AWS_ACCESS_KEY
-#	BUILDX=false
-#else ifeq ($(RESTY_IMAGE_TAG),xenial)
-#	BUILDX=true
-#else ifeq ($(RESTY_IMAGE_TAG),16.04)
-#	BUILDX=true
-#else ifeq ($(RESTY_IMAGE_BASE),alpine)
-#	BUILDX=true
-#endif
+ifndef AWS_ACCESS_KEY
+	BUILDX=false
+else ifeq ($(RESTY_IMAGE_TAG),xenial)
+	BUILDX=true
+else ifeq ($(RESTY_IMAGE_TAG),16.04)
+	BUILDX=true
+else ifeq ($(RESTY_IMAGE_BASE),alpine)
+	BUILDX=true
+endif
 
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
