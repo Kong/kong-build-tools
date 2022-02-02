@@ -338,6 +338,8 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-test-container:
+	docker pull rockylinux:8
+	docker tag rockylinux:8 centos:8
 	touch test/kong_license.private
 	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
