@@ -40,7 +40,7 @@ KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requiremen
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 LIBYAML_VERSION ?= `grep LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
-DOCKER_KONG_VERSION = 'fix/centos-yum-clean'
+DOCKER_KONG_VERSION = 'master'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
