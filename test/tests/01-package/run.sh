@@ -8,7 +8,7 @@ fi
 
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm procps"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 # Tests disabled until CSRE-467 is resolved
 #  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --import https://download.konghq.com/gateway-2.x-rhel-8/repodata/repomd.xml.key"

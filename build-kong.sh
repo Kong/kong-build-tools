@@ -16,8 +16,10 @@ export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChec
 export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/usr/local/openresty/luajit/bin
-    
-cp -R /tmp/build/* /
+
+/usr/local/bin/luarocks --version
+/usr/local/kong/bin/openssl version
+/usr/local/openresty/bin/openresty -v
 
 if test -f /root/id_rsa; then
   mkdir -p /root/.ssh
