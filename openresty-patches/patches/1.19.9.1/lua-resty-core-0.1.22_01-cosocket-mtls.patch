@@ -1,7 +1,7 @@
 From 4f0f4bf63d23a952179aaf810c10dfffc19ee835 Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Fri, 28 Jan 2022 20:54:30 +0800
-Subject: [PATCH 1/8] move tcp.lua into socket.lua
+Subject: [PATCH 1/9] move tcp.lua into socket.lua
 
 ---
  lib/resty/core/socket.lua | 136 +++++++++++++++++++++++++++++++++++++-
@@ -192,7 +192,7 @@ index 1a504ec..cc0081e 100644
 From 4eab5793d741c739d9c5cfe14e0671c1d70fd6e5 Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Fri, 28 Jan 2022 21:37:45 +0800
-Subject: [PATCH 2/8] revert assert in sslhandshake
+Subject: [PATCH 2/9] revert assert in sslhandshake
 
 ---
  lib/resty/core/socket.lua | 5 +++++
@@ -235,7 +235,7 @@ index cc0081e..7c61d06 100644
 From 58de9a44c89f07eda98bb7fd978a9e04a244d2f2 Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Fri, 28 Jan 2022 21:45:42 +0800
-Subject: [PATCH 3/8] rename ffi_string to ffi_str
+Subject: [PATCH 3/9] rename ffi_string to ffi_str
 
 ---
  lib/resty/core/socket.lua | 10 +++++-----
@@ -292,7 +292,7 @@ index 7c61d06..14457da 100644
 From ff138619432bda6b9bd4f37403c12600a4739e47 Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Sat, 29 Jan 2022 07:23:16 +0800
-Subject: [PATCH 4/8] minor style fix
+Subject: [PATCH 4/9] minor style fix
 
 ---
  lib/resty/core/socket.lua | 15 +++++++++------
@@ -343,7 +343,7 @@ index 14457da..3c882af 100644
 From a843a258987efba49f0b6979389f75ee32c2150c Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Sat, 29 Jan 2022 07:28:41 +0800
-Subject: [PATCH 5/8] rename self to cosocket
+Subject: [PATCH 5/9] rename self to cosocket
 
 ---
  lib/resty/core/socket.lua | 18 +++++++++---------
@@ -413,7 +413,7 @@ index 3c882af..374d583 100644
 From db95a049a019ff6f0d3b4e550412e40c25dda41f Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Sat, 29 Jan 2022 07:35:04 +0800
-Subject: [PATCH 6/8] use get_tcp_socket() in sslhandshake
+Subject: [PATCH 6/9] use get_tcp_socket() in sslhandshake
 
 ---
  lib/resty/core/socket.lua | 2 +-
@@ -439,7 +439,7 @@ index 374d583..ecff453 100644
 From 6767f0c2e8a73fd1a09d727431bed457c5cac4c0 Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Sat, 29 Jan 2022 08:58:52 +0800
-Subject: [PATCH 7/8] fix arguments check in sslhandshake
+Subject: [PATCH 7/9] fix arguments check in sslhandshake
 
 ---
  lib/resty/core/socket.lua | 2 +-
@@ -465,7 +465,7 @@ index ecff453..15e3065 100644
 From 4eeddcd2114d0097e4b9cb11f2f93d30c70d573e Mon Sep 17 00:00:00 2001
 From: chronolaw <chrono_cpp@me.com>
 Date: Mon, 7 Feb 2022 10:59:35 +0800
-Subject: [PATCH 8/8] setclientcert return err
+Subject: [PATCH 8/9] setclientcert return err
 
 ---
  lib/resty/core/socket.lua | 13 ++++++++-----
@@ -505,6 +505,59 @@ index 15e3065..879d678 100644
      cosocket.client_pkey = pkey
 +
 +    return true
+ end
+ 
+ 
+-- 
+2.32.0 (Apple Git-132)
+
+
+From fead2a28f409117ad1b6c98d02edb6a38a64fde0 Mon Sep 17 00:00:00 2001
+From: James Hurst <james@reel.audio>
+Date: Wed, 9 Feb 2022 16:05:11 +0000
+Subject: [PATCH 9/9] fix(socket) add temporary backwards compatability for
+ tlshandshake
+
+---
+ lib/resty/core/socket.lua | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/lua-resty-core-0.1.22/lib/resty/core/socket.lua b/lua-resty-core-0.1.22/lib/resty/core/socket.lua
+index 879d678..448bf36 100644
+--- a/lua-resty-core-0.1.22/lib/resty/core/socket.lua
++++ b/lua-resty-core-0.1.22/lib/resty/core/socket.lua
+@@ -253,12 +253,34 @@ local function sslhandshake(cosocket, reused_session, server_name, ssl_verify,
+ end
+ 
+ 
++-- Temporary patch for backwards compatablity with existing Kong tech debt
++local function tlshandshake(cosocket, options)
++    local options = options or {}
++
++    if options.client_cert then
++        local ok, err = cosocket:setclientcert(options.client_cert, options.client_priv_key)
++        if not ok then
++            return nil, err
++        end
++    end
++
++    return sslhandshake(
++        cosocket,
++        options.reused_session,
++        options.server_name,
++        options.ssl_verify,
++        options.ocsp_status_req
++    )
++end
++
++
+ do
+     local method_table = registry.__tcp_cosocket_mt
+     method_table.getoption = getoption
+     method_table.setoption = setoption
+     method_table.setclientcert = setclientcert
+     method_table.sslhandshake  = sslhandshake
++    method_table.tlshandshake  = tlshandshake
  end
  
  
