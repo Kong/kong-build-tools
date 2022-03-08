@@ -3,10 +3,12 @@
 set -o errexit
 
 cd /tmp/build
+chgrp root -R /tmp/build/*
+chmod -R g=u /tmp/build/*
 
 FPM_PARAMS=""
 if [ "$PACKAGE_TYPE" == "deb" ]; then
-  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
+  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev --deb-use-file-permissions"
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib -d zlib-devel"

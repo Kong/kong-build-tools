@@ -17,7 +17,7 @@ create_user() {
   FILES="${FILES} /usr/local/share/lua/"
 
   for FILE in ${FILES}; do
-    chown -R kong:kong ${FILE}
+    chown -R kong:root ${FILE}
     chmod -R g=u ${FILE}
   done
 
