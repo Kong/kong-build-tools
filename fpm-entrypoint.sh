@@ -3,8 +3,8 @@
 set -o errexit
 
 cd /tmp/build
-chgrp root -R /tmp/build/*
-chmod -R g=u /tmp/build/*
+chown -R root:kong /tmp/build/{,.??}*
+chmod -R g=u,g-w /tmp/build/{,.??}*
 
 FPM_PARAMS=""
 if [ "$PACKAGE_TYPE" == "deb" ]; then
