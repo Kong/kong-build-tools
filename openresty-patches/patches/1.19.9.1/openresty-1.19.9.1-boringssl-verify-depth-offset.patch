@@ -1,0 +1,76 @@
+diff --git a/nginx-1.19.9/src/event/ngx_event_openssl.c b/nginx-1.19.9/src/event/ngx_event_openssl.c
+index 6361810..d08cbf0 100644
+--- a/nginx-1.19.9/src/event/ngx_event_openssl.c
++++ b/nginx-1.19.9/src/event/ngx_event_openssl.c
+@@ -876,7 +876,11 @@ ngx_ssl_client_certificate(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *cert,
+ 
+     SSL_CTX_set_verify(ssl->ctx, SSL_VERIFY_PEER, ngx_ssl_verify_callback);
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++    SSL_CTX_set_verify_depth(ssl->ctx, depth + 1);
++#else
+     SSL_CTX_set_verify_depth(ssl->ctx, depth);
++#endif
+ 
+     if (cert->len == 0) {
+         return NGX_OK;
+@@ -923,7 +927,11 @@ ngx_ssl_trusted_certificate(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *cert,
+     SSL_CTX_set_verify(ssl->ctx, SSL_CTX_get_verify_mode(ssl->ctx),
+                        ngx_ssl_verify_callback);
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++    SSL_CTX_set_verify_depth(ssl->ctx, depth + 1);
++#else
+     SSL_CTX_set_verify_depth(ssl->ctx, depth);
++#endif
+ 
+     if (cert->len == 0) {
+         return NGX_OK;
+diff --git a/nginx-1.19.9/src/http/ngx_http_request.c b/nginx-1.19.9/src/http/ngx_http_request.c
+index 684fabd..14f0291 100644
+--- a/nginx-1.19.9/src/http/ngx_http_request.c
++++ b/nginx-1.19.9/src/http/ngx_http_request.c
+@@ -951,7 +951,11 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
+         SSL_set_verify(ssl_conn, SSL_CTX_get_verify_mode(sscf->ssl.ctx),
+                        SSL_CTX_get_verify_callback(sscf->ssl.ctx));
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++        SSL_set_verify_depth(ssl_conn, SSL_CTX_get_verify_depth(sscf->ssl.ctx) + 1);
++#else
+         SSL_set_verify_depth(ssl_conn, SSL_CTX_get_verify_depth(sscf->ssl.ctx));
++#endif
+ 
+ #if OPENSSL_VERSION_NUMBER >= 0x009080dfL
+         /* only in 0.9.8m+ */
+diff --git a/ngx_lua-0.10.20/src/ngx_http_lua_ssl_certby.c b/ngx_lua-0.10.20/src/ngx_http_lua_ssl_certby.c
+index 6ed2f3f..62b4af1 100644
+--- a/ngx_lua-0.10.20/src/ngx_http_lua_ssl_certby.c
++++ b/ngx_lua-0.10.20/src/ngx_http_lua_ssl_certby.c
+@@ -1403,7 +1403,11 @@ ngx_http_lua_ffi_ssl_verify_client(ngx_http_request_t *r, void *ca_certs,
+         }
+     }
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++    SSL_set_verify_depth(ssl_conn, depth + 1);
++#else
+     SSL_set_verify_depth(ssl_conn, depth);
++#endif
+ 
+     /* set CA chain */
+ 
+diff --git a/ngx_stream_lua-0.0.10/src/ngx_stream_lua_ssl_certby.c b/ngx_stream_lua-0.0.10/src/ngx_stream_lua_ssl_certby.c
+index bc1b156..148e51f 100644
+--- a/ngx_stream_lua-0.0.10/src/ngx_stream_lua_ssl_certby.c
++++ b/ngx_stream_lua-0.0.10/src/ngx_stream_lua_ssl_certby.c
+@@ -1424,7 +1424,11 @@ ngx_stream_lua_ffi_ssl_verify_client(ngx_stream_lua_request_t *r,
+         }
+     }
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++    SSL_set_verify_depth(ssl_conn, depth + 1);
++#else
+     SSL_set_verify_depth(ssl_conn, depth);
++#endif
+ 
+     /* set CA chain */
+ 
