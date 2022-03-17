@@ -390,7 +390,7 @@ main() {
     # lua-resty-worker-pubsub
     if [ $RESTY_EVENT != 0 ]; then
       if [[ $RESTY_EVENT == "master" ]]; then
-        RESTY_EVENT="origin/main"
+        RESTY_EVENT="origin/master"
       fi
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-worker-pubsub ]; then
