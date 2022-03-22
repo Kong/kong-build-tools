@@ -1,0 +1,303 @@
+diff -ruN a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua b/lua-resty-core-0.1.22/lib/resty/core/shdict.lua
+--- a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 09:12:27.982635088 +0800
++++ b/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 09:07:44.075507230 +0800
+@@ -41,6 +41,12 @@
+ local ngx_lua_ffi_shdict_free_space
+ local ngx_lua_ffi_shdict_udata_to_zone
+ 
++local ngx_lua_kong_ffi_shdict_get
++local ngx_lua_kong_ffi_shdict_incr
++local ngx_lua_kong_ffi_shdict_store
++
++local MACOS_ARM64 = jit and jit.os == "OSX" and jit.arch == "arm64"
++
+ 
+ if subsystem == 'http' then
+     ffi.cdef[[
+@@ -72,6 +78,59 @@
+ void *ngx_http_lua_ffi_shdict_udata_to_zone(void *zone_udata);
+     ]]
+ 
++    if MACOS_ARM64 then
++        ffi.cdef [[
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    const unsigned char *key;
++    size_t               key_len;
++    int                 *value_type;
++    unsigned char      **str_value_buf;
++    size_t              *str_value_len;
++    double              *num_value;
++    int                 *user_flags;
++    int                  get_stale;
++    int                 *is_stale;
++    char               **errmsg;
++} ngx_http_lua_kong_shdict_get_t;
++
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    int                  op;
++    const unsigned char *key;
++    size_t               key_len;
++    int                  value_type;
++    const unsigned char *str_value_buf;
++    size_t               str_value_len;
++    double               num_value;
++    long                 exptime;
++    int                  user_flags;
++    char               **errmsg;
++    int                 *forcible;
++} ngx_http_lua_kong_shdict_store_t;
++
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    const unsigned char *key;
++    size_t               key_len;
++    double              *num_value;
++    char               **errmsg;
++    int                  has_init;
++    double               init;
++    long                 init_ttl;
++    int                 *forcible;
++} ngx_http_lua_kong_shdict_incr_t;
++
++int ngx_http_lua_kong_ffi_shdict_get(ngx_http_lua_kong_shdict_get_t *s);
++int ngx_http_lua_kong_ffi_shdict_store(ngx_http_lua_kong_shdict_store_t *s);
++int ngx_http_lua_kong_ffi_shdict_incr(ngx_http_lua_kong_shdict_incr_t *s);
++    ]]
++
++        ngx_lua_kong_ffi_shdict_get = C.ngx_http_lua_kong_ffi_shdict_get
++        ngx_lua_kong_ffi_shdict_store = C.ngx_http_lua_kong_ffi_shdict_store
++        ngx_lua_kong_ffi_shdict_incr = C.ngx_http_lua_kong_ffi_shdict_incr
++    end
++
+     ngx_lua_ffi_shdict_get = C.ngx_http_lua_ffi_shdict_get
+     ngx_lua_ffi_shdict_incr = C.ngx_http_lua_ffi_shdict_incr
+     ngx_lua_ffi_shdict_store = C.ngx_http_lua_ffi_shdict_store
+@@ -126,6 +185,58 @@
+ void *ngx_stream_lua_ffi_shdict_udata_to_zone(void *zone_udata);
+     ]]
+ 
++    if MACOS_ARM64 then
++        ffi.cdef [[
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    const unsigned char *key;
++    size_t               key_len;
++    int                 *value_type;
++    unsigned char      **str_value_buf;
++    size_t              *str_value_len;
++    double              *num_value;
++    int                 *user_flags;
++    int                  get_stale;
++    int                 *is_stale;
++    char               **errmsg;
++} ngx_stream_lua_kong_shdict_get_t;
++
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    int                  op;
++    const unsigned char *key;
++    size_t               key_len;
++    int                  value_type;
++    const unsigned char *str_value_buf;
++    size_t               str_value_len;
++    double               num_value;
++    long                 exptime;
++    int                  user_flags;
++    char               **errmsg;
++    int                 *forcible;
++} ngx_stream_lua_kong_shdict_store_t;
++
++typedef struct {
++    ngx_shm_zone_t      *zone;
++    const unsigned char *key;
++    size_t               key_len;
++    double              *num_value;
++    char               **errmsg;
++    int                  has_init;
++    double               init;
++    long                 init_ttl;
++    int                 *forcible;
++} ngx_stream_lua_kong_shdict_incr_t;
++
++int ngx_stream_lua_kong_ffi_shdict_get(ngx_stream_lua_kong_shdict_get_t *s);
++int ngx_stream_lua_kong_ffi_shdict_store(ngx_stream_lua_kong_shdict_store_t *s);
++int ngx_stream_lua_kong_ffi_shdict_incr(ngx_stream_lua_kong_shdict_incr_t *s);
++    ]]
++        ngx_lua_kong_ffi_shdict_get = C.ngx_stream_lua_kong_ffi_shdict_get
++        ngx_lua_kong_ffi_shdict_store = C.ngx_stream_lua_kong_ffi_shdict_store
++        ngx_lua_kong_ffi_shdict_incr = C.ngx_stream_lua_kong_ffi_shdict_incr
++    end
++
+     ngx_lua_ffi_shdict_get = C.ngx_stream_lua_ffi_shdict_get
+     ngx_lua_ffi_shdict_incr = C.ngx_stream_lua_ffi_shdict_incr
+     ngx_lua_ffi_shdict_store = C.ngx_stream_lua_ffi_shdict_store
+@@ -168,6 +279,21 @@
+ local str_value_buf = ffi_new("unsigned char *[1]")
+ local errmsg = base.get_errmsg_ptr()
+ 
++local shs
++local shg
++local shi
++
++if MACOS_ARM64 then
++    if subsystem == 'http' then
++        shs = ffi_new("ngx_http_lua_kong_shdict_store_t")
++        shg = ffi_new("ngx_http_lua_kong_shdict_get_t")
++        shi = ffi_new("ngx_http_lua_kong_shdict_incr_t")
++    else    -- must be 'stream'
++        shs = ffi_new("ngx_stream_lua_kong_shdict_store_t")
++        shg = ffi_new("ngx_stream_lua_kong_shdict_get_t")
++        shi = ffi_new("ngx_stream_lua_kong_shdict_incr_t")
++    end
++end
+ 
+ local function check_zone(zone)
+     if not zone or type(zone) ~= "table" then
+@@ -245,11 +371,29 @@
+         return nil, "bad value type"
+     end
+ 
+-    local rc = ngx_lua_ffi_shdict_store(zone, op, key, key_len,
++    local rc
++    if MACOS_ARM64 then
++        shs.zone = zone
++        shs.op = op
++        shs.key = key
++        shs.key_len = key_len
++        shs.value_type = valtyp
++        shs.str_value_buf = str_val_buf
++        shs.str_value_len = str_val_len
++        shs.num_value = num_val
++        shs.exptime = exptime * 1000
++        shs.user_flags = flags
++        shs.errmsg = errmsg
++        shs.forcible = forcible
++
++        rc = ngx_lua_kong_ffi_shdict_store(shs)
++    else
++        rc = ngx_lua_ffi_shdict_store(zone, op, key, key_len,
+                                         valtyp, str_val_buf,
+                                         str_val_len, num_val,
+                                         exptime * 1000, flags, errmsg,
+                                         forcible)
++    end
+ 
+     -- print("rc == ", rc)
+ 
+@@ -317,10 +461,29 @@
+     local value_len = get_size_ptr()
+     value_len[0] = size
+ 
+-    local rc = ngx_lua_ffi_shdict_get(zone, key, key_len, value_type,
++    local rc
++    if MACOS_ARM64 then
++        shg.zone = zone
++        shg.key = key
++        shg.key_len = key_len
++        shg.value_type = value_type
++        shg.str_value_buf = str_value_buf
++        shg.str_value_len = value_len
++        shg.num_value = num_value
++        shg.user_flags = user_flags
++        shg.get_stale = 0
++        shg.is_stale = is_stale
++        shg.errmsg = errmsg
++
++        rc = ngx_lua_kong_ffi_shdict_get(shg)
++    else
++
++        rc = ngx_lua_ffi_shdict_get(zone, key, key_len, value_type,
+                                       str_value_buf, value_len,
+                                       num_value, user_flags, 0,
+                                       is_stale, errmsg)
++    end
++
+     if rc ~= 0 then
+         if errmsg[0] ~= nil then
+             return nil, ffi_str(errmsg[0])
+@@ -329,6 +492,7 @@
+         error("failed to get the key")
+     end
+ 
++
+     local typ = value_type[0]
+ 
+     if typ == 0 then -- LUA_TNIL
+@@ -392,10 +556,28 @@
+     local value_len = get_size_ptr()
+     value_len[0] = size
+ 
+-    local rc = ngx_lua_ffi_shdict_get(zone, key, key_len, value_type,
++    local rc
++    if MACOS_ARM64 then
++        shg.zone = zone
++        shg.key = key
++        shg.key_len = key_len
++        shg.value_type = value_type
++        shg.str_value_buf = str_value_buf
++        shg.str_value_len = value_len
++        shg.num_value = num_value
++        shg.user_flags = user_flags
++        shg.get_stale = 1
++        shg.is_stale = is_stale
++        shg.errmsg = errmsg
++
++        rc = ngx_lua_kong_ffi_shdict_get(shg)
++    else
++        rc = ngx_lua_ffi_shdict_get(zone, key, key_len, value_type,
+                                       str_value_buf, value_len,
+                                       num_value, user_flags, 1,
+                                       is_stale, errmsg)
++    end
++
+     if rc ~= 0 then
+         if errmsg[0] ~= nil then
+             return nil, ffi_str(errmsg[0])
+@@ -404,6 +586,7 @@
+         error("failed to get the key")
+     end
+ 
++
+     local typ = value_type[0]
+ 
+     if typ == 0 then -- LUA_TNIL
+@@ -498,14 +681,36 @@
+         init_ttl = 0
+     end
+ 
+-    local rc = ngx_lua_ffi_shdict_incr(zone, key, key_len, num_value,
++    local rc
++    if MACOS_ARM64 then
++        shi.zone = zone
++        shi.key = key
++        shi.key_len = key_len
++        shi.num_value = num_value
++        shi.errmsg = errmsg
++        if init then
++            shi.has_init = 1
++            shi.init = init
++        else
++            shi.has_init = 0
++        end
++        shi.init_ttl = init_ttl * 1000
++        shi.forcible = forcible
++
++        rc = ngx_lua_kong_ffi_shdict_incr(shi)
++    else
++
++        rc = ngx_lua_ffi_shdict_incr(zone, key, key_len, num_value,
+                                        errmsg, init and 1 or 0,
+                                        init or 0, init_ttl * 1000,
+                                        forcible)
++    end
++
+     if rc ~= 0 then  -- ~= NGX_OK
+         return nil, ffi_str(errmsg[0])
+     end
+ 
++
+     if not init then
+         return tonumber(num_value[0])
+     end

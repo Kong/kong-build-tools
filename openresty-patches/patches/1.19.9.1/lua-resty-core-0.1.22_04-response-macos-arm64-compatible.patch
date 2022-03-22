@@ -1,0 +1,88 @@
+diff -ruN a/lua-resty-core-0.1.22/lib/resty/core/response.lua b/lua-resty-core-0.1.22/lib/resty/core/response.lua
+--- a/lua-resty-core-0.1.22/lib/resty/core/response.lua	2022-03-22 09:12:27.982635088 +0800
++++ b/lua-resty-core-0.1.22/lib/resty/core/response.lua	2022-03-22 09:35:02.829319636 +0800
+@@ -45,6 +45,30 @@
+ ]]
+ 
+ 
++local MACOS_ARM64 = jit and jit.os == "OSX" and jit.arch == "arm64"
++local srh
++
++if MACOS_ARM64 then
++    ffi.cdef[[
++        typedef struct {
++            ngx_http_request_t  *r;
++            const char          *key_data;
++            size_t               key_len;
++            int                  is_nil;
++            const char          *sval;
++            size_t               sval_len;
++            void                *mvals;
++            size_t               mvals_len;
++            int                  override;
++            char               **errmsg;
++        } ngx_http_lua_kong_set_resp_header_t;
++
++        int ngx_http_lua_kong_ffi_set_resp_header(ngx_http_lua_kong_set_resp_header_t *s);
++    ]]
++    srh = ffi.new("ngx_http_lua_kong_set_resp_header_t")
++end
++
++
+ local function set_resp_header(tb, key, value, no_override)
+     local r = get_request()
+     if not r then
+@@ -61,8 +85,22 @@
+             error("invalid header value", 3)
+         end
+ 
+-        rc = C.ngx_http_lua_ffi_set_resp_header(r, key, #key, true, nil, 0, nil,
+-                                                0, 1, errmsg)
++        if MACOS_ARM64 then
++            srh.r = r
++            srh.key_data = key
++            srh.key_len = #key
++            srh.is_nil = true
++            srh.sval_len = 0
++            srh.mvals_len = 0
++            srh.override = 1
++            srh.errmsg = errmsg
++
++            rc = C.ngx_http_lua_kong_ffi_set_resp_header(srh)
++        else
++            rc = C.ngx_http_lua_ffi_set_resp_header(r, key, #key, true, nil, 0, nil,
++                                                    0, 1, errmsg)
++        end
++
+     else
+         local sval, sval_len, mvals, mvals_len, buf
+ 
+@@ -99,9 +137,25 @@
+         end
+ 
+         local override_int = no_override and 0 or 1
+-        rc = C.ngx_http_lua_ffi_set_resp_header(r, key, #key, false, sval,
+-                                                sval_len, mvals, mvals_len,
+-                                                override_int, errmsg)
++
++        if MACOS_ARM64 then
++            srh.r = r
++            srh.key_data = key
++            srh.key_len = #key
++            srh.is_nil = false
++            srh.sval = sval
++            srh.sval_len = sval_len
++            srh.mvals = mvals
++            srh.mvals_len = mvals_len
++            srh.override = override_int
++            srh.errmsg = errmsg
++
++            rc = C.ngx_http_lua_ffi_set_resp_header_m1(s)
++        else
++            rc = C.ngx_http_lua_ffi_set_resp_header(r, key, #key, false, sval,
++                                                    sval_len, mvals, mvals_len,
++                                                    override_int, errmsg)
++        end
+     end
+ 
+     if rc == 0 or rc == FFI_DECLINED then
