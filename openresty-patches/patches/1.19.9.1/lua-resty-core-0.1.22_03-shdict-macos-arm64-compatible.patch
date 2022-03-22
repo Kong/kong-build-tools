@@ -1,6 +1,6 @@
 diff -ruN a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua b/lua-resty-core-0.1.22/lib/resty/core/shdict.lua
---- a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 09:12:27.982635088 +0800
-+++ b/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 09:07:44.075507230 +0800
+--- a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 14:51:19.499007440 +0800
++++ b/lua-resty-core-0.1.22/lib/resty/core/shdict.lua	2022-03-22 14:52:45.834098859 +0800
 @@ -41,6 +41,12 @@
  local ngx_lua_ffi_shdict_free_space
  local ngx_lua_ffi_shdict_udata_to_zone
@@ -263,7 +263,7 @@ diff -ruN a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua b/lua-resty-core-0.1
      local typ = value_type[0]
  
      if typ == 0 then -- LUA_TNIL
-@@ -498,14 +681,36 @@
+@@ -498,14 +681,32 @@
          init_ttl = 0
      end
  
@@ -275,12 +275,8 @@ diff -ruN a/lua-resty-core-0.1.22/lib/resty/core/shdict.lua b/lua-resty-core-0.1
 +        shi.key_len = key_len
 +        shi.num_value = num_value
 +        shi.errmsg = errmsg
-+        if init then
-+            shi.has_init = 1
-+            shi.init = init
-+        else
-+            shi.has_init = 0
-+        end
++        shi.has_init = init and 1 or 0
++        shi.init = init or 0
 +        shi.init_ttl = init_ttl * 1000
 +        shi.forcible = forcible
 +
