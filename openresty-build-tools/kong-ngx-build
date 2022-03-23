@@ -16,7 +16,7 @@ OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
 RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
-RESTY_EVENT=0 # disable by default for now
+RESTY_EVENT=main
 DEBUG=0
 NPROC=
 OS=
@@ -389,8 +389,8 @@ main() {
 
     # lua-resty-worker-pubsub
     if [ $RESTY_EVENT != 0 ]; then
-      if [[ $RESTY_EVENT == "master" ]]; then
-        RESTY_EVENT="origin/master"
+      if [[ $RESTY_EVENT == "main" ]]; then
+        RESTY_EVENT="origin/main"
       fi
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-worker-pubsub ]; then
