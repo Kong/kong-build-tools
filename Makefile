@@ -338,10 +338,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-test-container:
-	docker pull rockylinux:8
-	docker tag rockylinux:8 centos:8
 	touch test/kong_license.private
 	ARCHITECTURE=amd64 \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
@@ -355,6 +354,7 @@ ifeq ($(BUILDX),true)
 	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
 	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
 	ARCHITECTURE=arm64 \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
