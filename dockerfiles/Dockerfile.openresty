@@ -24,7 +24,7 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
 
 COPY kong/distribution /distribution
 COPY kong/.requirements /distribution/.requirements
-RUN cd /distribution && ./*.sh
+RUN cd /distribution && ./pre-*.sh
 
 ARG KONG_NGINX_MODULE=master
 
@@ -57,6 +57,8 @@ COPY lua-resty-lmdb /enterprise/lua-resty-lmdb
 ARG DEBUG=1
 RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \
     && rm -rf /work
+
+RUN cd /distribution && ./post-*.sh
 
 WORKDIR /kong
 COPY kong /kong
