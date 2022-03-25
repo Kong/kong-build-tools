@@ -14,8 +14,6 @@ pipeline {
     }
     options {
         timeout(time: 120, unit: 'MINUTES')
-        parallelsAlwaysFailFast()
-        retry(2)
     }
     stages {
         stage('Build Kong Test Container') {
@@ -169,9 +167,6 @@ pipeline {
                         node {
                             label 'bionic'
                         }
-                    }
-                    options {
-                        retry(2)
                     }
                     environment {
                         PACKAGE_TYPE = "deb"
