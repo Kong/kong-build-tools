@@ -106,15 +106,14 @@ pipeline {
                     }
                     environment {
                         PACKAGE_TYPE = "rpm"
-                        RESTY_IMAGE_BASE = "centos"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
+                        sh 'export RESTY_IMAGE_BASE=rockylinux RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
                     }
                 }
                 stage('Debian') {
