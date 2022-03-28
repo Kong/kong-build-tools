@@ -386,6 +386,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+	-docker rmi $(KONG_TEST_CONTAINER_TAG)
 
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX)
