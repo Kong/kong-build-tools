@@ -58,8 +58,6 @@ ARG DEBUG=1
 RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \
     && rm -rf /work
 
-RUN cd /distribution && ./post-*.sh
-
 WORKDIR /kong
 COPY kong /kong
 COPY build-kong.sh /build-kong.sh

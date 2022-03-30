@@ -43,31 +43,9 @@ pushd /kong
     YAML_INCDIR=/tmp/yaml \
     CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
   
-  grep git@github.com .requirements | while read -r line ; do
-    rm -rf /tmp/plugin || true
-    echo "Processing $line"
-    repo_url=$(echo $line | cut -d " " -f1)
-    echo $repo_url
-    version=$(echo $line | cut -d " " -f2)
-    git clone --branch $version --recursive $repo_url /tmp/plugin/
-    cd /tmp/plugin/
-    /tmp/build/usr/local/bin/luarocks make *.rockspec CRYPTO_DIR=/usr/local/kong OPENSSL_DIR=/usr/local/kong
-    cd /kong
-  done
-  
-  grep https://api.github.com .requirements | while read -r line ; do
-    rm -rf /tmp/plugin || true
-    mkdir -p /tmp/plugin
-    rm -rf /tmp/release.tar.gz || true
-    echo "Processing $line"
-    github_url=$(echo $line | cut -d " " -f1)
-    github_token=$(echo $line | cut -d " " -f3)
-    asset_url=`curl $github_url?access_token=$github_token | grep \/assets\/ | cut -d '"' -f 4`
-    curl -fsSLo /tmp/release.tar.gz -H 'Accept:application/octet-stream' $asset_url?access_token=$github_token
-    tar -xzvf /tmp/release.tar.gz --directory /tmp/plugin
-    directory=$(echo $line | cut -d " " -f2)
-    mv /tmp/plugin/dist /tmp/build/usr/local/kong/$directory
-  done
+  pushd /distribution
+    ./post-*.sh
+  popd
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
