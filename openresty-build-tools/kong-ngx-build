@@ -387,18 +387,18 @@ main() {
       popd
     fi
 
-    # lua-resty-worker-pubsub
+    # lua-resty-events
     if [ $RESTY_EVENTS != 0 ]; then
       if [[ $RESTY_EVENTS == "main" ]]; then
         RESTY_EVENTS="origin/main"
       fi
       pushd $DOWNLOAD_CACHE
-        if [ ! -d lua-resty-worker-pubsub ]; then
-          warn "lua-resty-worker-pubsub source not found, cloning..."
-          git clone https://github.com/Kong/lua-resty-worker-pubsub --recursive
+        if [ ! -d lua-resty-events ]; then
+          warn "lua-resty-events source not found, cloning..."
+          git clone https://github.com/Kong/lua-resty-events --recursive
         fi
 
-        pushd lua-resty-worker-pubsub
+        pushd lua-resty-events
           git fetch
           # Accept both tags, branches and SHAs
           git reset --hard $RESTY_EVENTS || git reset --hard origin/$RESTY_EVENTS
@@ -627,7 +627,7 @@ main() {
         fi
 
         if [ $RESTY_EVENTS != 0 ]; then
-          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-resty-worker-pubsub")
+          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-resty-events")
         fi
 
         if version_gte $NGINX_CORE_VER 1.11.4; then
@@ -696,8 +696,8 @@ main() {
       fi
 
       if [ $RESTY_EVENTS != 0 ]; then
-        pushd $DOWNLOAD_CACHE/lua-resty-worker-pubsub
-          warn "installing library files for lua-resty-worker-pubsub..."
+        pushd $DOWNLOAD_CACHE/lua-resty-events
+          warn "installing library files for lua-resty-events..."
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
         popd
       fi
