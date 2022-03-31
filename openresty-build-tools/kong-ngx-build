@@ -102,6 +102,10 @@ main() {
         RESTY_WEBSOCKET=$2
         shift 1
         ;;
+      --resty-events)
+        RESTY_EVENTS=$2
+        shift 2
+        ;;
       -f|--force)
         FORCE=1
         shift 1
