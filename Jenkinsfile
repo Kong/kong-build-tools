@@ -16,28 +16,6 @@ pipeline {
         timeout(time: 120, unit: 'MINUTES')
     }
     stages {
-        stage('Build Kong Test Container') {
-            when {
-                beforeAgent true
-                anyOf {
-                    buildingTag()
-                    branch 'master'
-                    changeRequest target: 'master'
-                }
-            }
-            agent {
-                node {
-                    label 'bionic'
-                }
-            }
-            steps {
-                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                sh 'make cleanup'
-                sh 'rm -rf $KONG_SOURCE_LOCATION || true'
-                sh 'git clone --single-branch --branch $KONG_SOURCE https://github.com/Kong/kong.git $KONG_SOURCE_LOCATION'
-                sh 'make kong-test-container'
-            }
-        }
         stage('OSS Test Builds') {
             when {
                 beforeAgent true
