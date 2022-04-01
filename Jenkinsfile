@@ -82,6 +82,7 @@ pipeline {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
+                        sh 'ssh -T git@github.com'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
