@@ -6,8 +6,12 @@ FROM ${DOCKER_REPOSITORY}:openresty-${PACKAGE_TYPE}-${DOCKER_OPENRESTY_SUFFIX}
 
 WORKDIR /kong
 COPY kong /kong
-COPY kong/distribution /distribution
-COPY id_rsa /root/id_rsa
 COPY build-kong.sh /build-kong.sh
+
+RUN rm -rf /distribution/*
+
+COPY kong/distribution /distribution
+COPY kong/.requirements /distribution/.requirements
+RUN cd /distribution && ./post-install.sh
 
 RUN /build-kong.sh
