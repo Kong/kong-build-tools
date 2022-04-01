@@ -227,6 +227,7 @@ main() {
           notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
         fi
         tar -xzf openssl-$OPENSSL_VER.tar.gz
+        ln -s openssl-${OPENSSL_VER} openssl
       fi
     fi
 
@@ -246,6 +247,7 @@ main() {
           notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
         fi
         unzip -q boringssl-${BORINGSSL_VER}.zip
+        ln -s boringssl-${BORINGSSL_VER} boringssl
       fi
     fi
 
@@ -270,6 +272,7 @@ main() {
           notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
+        ln -s openresty-$OPENRESTY_VER openresty
 
         # use unreleased version of lua-resty-dns
         if version_eq $OPENRESTY_VER 1.19.3; then
@@ -296,6 +299,7 @@ main() {
           notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
+        ln -s pcre-${PCRE_VER} pcre
       fi
     fi
 
@@ -322,6 +326,7 @@ main() {
             notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
+          ln -s luarocks-${LUAROCKS_VER} luarocks
         fi
       fi
     fi
