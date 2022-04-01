@@ -90,15 +90,17 @@ else
 endif
 
 UPDATE_CACHE?=$(CACHE)
+
 ifeq ($(UPDATE_CACHE),true)
 	UPDATE_CACHE_COMMAND?=docker push
 else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
-DOCKER_REPOSITORY?=mashape/kong-build-tools
+DOCKER_REPOSITORY?=kong/kong-build-tools
 
 debug:
+	@echo ${DOCKER_REPOSITORY}
 	@echo ${CACHE}
 	@echo ${BUILDX}
 	@echo ${UPDATE_CACHE}
@@ -162,8 +164,6 @@ else
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
-	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
-	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
 	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
