@@ -25,11 +25,6 @@ pipeline {
                     changeRequest target: 'master'
                 }
             }
-            environment {
-                KONG_SOURCE = "feat/branch-by-abstraction"
-                GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                DOCKER_REPOSITORY = "kong/kong-build-tools-private"
-            }
             parallel {
                 stage('Kong Enterprise RPM'){
                     agent {
@@ -38,8 +33,9 @@ pipeline {
                         }
                     }
                     environment {
-                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                        KONG_SOURCE = "feat/branch-by-abstraction"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         PACKAGE_TYPE = "rpm"
                     }
@@ -60,6 +56,12 @@ pipeline {
                             label 'bionic'
                         }
                     }
+                    environment {
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        KONG_SOURCE = "feat/branch-by-abstraction"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
@@ -77,6 +79,9 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "deb"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        KONG_SOURCE = "feat/branch-by-abstraction"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
