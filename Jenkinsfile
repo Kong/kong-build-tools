@@ -27,7 +27,7 @@ pipeline {
             }
             environment {
                 KONG_SOURCE = "feat/branch-by-abstraction"
-                GITHUB_TOKEN = credentials('github_bot_access_token')
+                GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                 DOCKER_REPOSITORY = "kong/kong-build-tools-private"
             }
             parallel {
@@ -45,8 +45,8 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
-                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
                         sh 'export RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
