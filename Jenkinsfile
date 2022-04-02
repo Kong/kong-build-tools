@@ -41,6 +41,7 @@ pipeline {
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 && make package-kong && make test && make cleanup'
