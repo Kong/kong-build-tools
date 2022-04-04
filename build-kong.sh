@@ -33,7 +33,7 @@ pushd /kong
     OPENSSL_DIR=/usr/local/kong \
     YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
     YAML_INCDIR=/tmp/yaml \
-    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
+    CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -std=gnu99 -fPIC"
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
