@@ -4,14 +4,13 @@ ARG DOCKER_REPOSITORY
 
 FROM ${DOCKER_REPOSITORY}:openresty-${PACKAGE_TYPE}-${DOCKER_OPENRESTY_SUFFIX}
 
-WORKDIR /kong
 COPY kong /kong
-COPY build-kong.sh /build-kong.sh
-
 RUN rm -rf /distribution/*
 
-COPY kong/distribution /distribution
-COPY kong/.requirements /distribution/.requirements
-RUN cd /distribution && ./post-install.sh
+COPY kong/.requirements kong/distribution/* kong/.requirements /distribution/
+WORKDIR /distribution
+RUN if [ -f "/distribution/post-install.sh" ] ; then ./post-install.sh; fi
 
+WORKDIR /kong
+COPY build-kong.sh /build-kong.sh
 RUN /build-kong.sh

@@ -22,9 +22,9 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install \
     && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
-COPY kong/distribution /distribution
-COPY kong/.requirements /distribution/.requirements
-RUN cd /distribution && ./pre-install.sh
+COPY kong/.requirements kong/distribution/* kong/.requirements /distribution/
+WORKDIR /distribution
+RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
 ARG KONG_NGINX_MODULE=master
 
