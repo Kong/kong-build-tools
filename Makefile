@@ -147,12 +147,10 @@ else ifeq ($(BUILDX),true)
 	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 endif
 
-build-openresty:
+build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -220,10 +218,8 @@ else
 build-kong: actual-build-kong
 endif
 
-actual-build-kong:
+actual-build-kong: setup-kong-source
 	touch id_rsa.private
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
@@ -232,10 +228,8 @@ actual-build-kong:
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 
-kong-test-container:
+kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
@@ -250,6 +244,11 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX)
 endif
+
+setup-kong-source:
+	-rm -rf kong
+	-cp -R $(KONG_SOURCE_LOCATION) kong
+	-mkdir kong/distribution
 
 test-kong: kong-test-container
 	docker-compose up -d

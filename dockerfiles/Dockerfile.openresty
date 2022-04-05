@@ -22,7 +22,7 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install \
     && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
-COPY kong/.requirements kong/distribution/* kong/.requirements /distribution/
+COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
 RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
