@@ -81,6 +81,9 @@ LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 ARG RESTY_LMDB=0
 LABEL resty_lmdb="${RESTY_LMDB}"
 
+ARG RESTY_WEBSOCKET=0
+LABEL resty_websocket="${RESTY_WEBSOCKET}"
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
