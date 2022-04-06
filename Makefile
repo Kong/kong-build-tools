@@ -1,4 +1,5 @@
 .PHONY: test build-kong
+.DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
 
