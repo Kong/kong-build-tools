@@ -53,8 +53,8 @@ COPY build-openresty.sh /tmp/build-openresty.sh
 ARG OPENRESTY_PATCHES=1
 ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 
-COPY lua-kong-nginx-module /enterprise/lua-kong-nginx-module
-COPY lua-resty-lmdb /enterprise/lua-resty-lmdb
+COPY lua-kong-nginx-module /distribution/lua-kong-nginx-module
+COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
 ARG DEBUG=1
 RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
