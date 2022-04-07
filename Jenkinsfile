@@ -17,6 +17,9 @@ pipeline {
     }
     stages {
         stage('Enteprise Test Builds') {
+            environment {
+                GITHUB_TOKEN = credentials('github_bot_access_token')
+            }
             when {
                 beforeAgent true
                 anyOf {
