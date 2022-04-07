@@ -110,6 +110,14 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/pluginsocket.proto"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
 
+if [[ "$EDITION" == "enterprise" ]]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "passwdqc"'
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "jq"'
+  #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} openapi2kong 2>&1 | head -1 | grep 'missing required parameter:'
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} ls -l /usr/local/kong/lib/pluginsocket.proto
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/bash -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
+fi
+
 # kong binaries
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 

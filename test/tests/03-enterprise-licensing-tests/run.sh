@@ -1,5 +1,9 @@
 set pipefail
 
+if [[ "$EDITION" != "enterprise" ]]; then
+  exit 0
+fi
+
 msg_test "Check admin API is alive"
 assert_response "$KONG_ADMIN_URI" "200"
 
@@ -18,6 +22,5 @@ assert_response "$KONG_ADMIN_URI/services" "200"
 msg_test "Proxy a request"
 assert_response "$KONG_PROXY_URI/anything" "200"
 
-if [[ "$EDITION" == "enterprise" ]]; then
-    it_runs_free_enterprise
-fi
+it_runs_full_enterprise
+
