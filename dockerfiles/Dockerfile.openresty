@@ -7,9 +7,6 @@ FROM kong/kong-build-tools:$PACKAGE_TYPE
 ARG EDITION="community"
 ENV EDITION $EDITION
 
-ARG GITHUB_TOKEN=
-ENV GITHUB_TOKEN $GITHUB_TOKEN
-
 ARG LIBYAML_VERSION=0.2.5
 ENV LIBYAML_VERSION $LIBYAML_VERSION
 RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
