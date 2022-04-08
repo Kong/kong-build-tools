@@ -149,6 +149,7 @@ build-openresty:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	docker build -t kong/kong-build-tools:$(PACKAGE_TYPE) -f dockerfiles/Dockerfile.$(PACKAGE_TYPE) .
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \

@@ -1,0 +1,3 @@
+FROM kong/kong-build-tools:deb-1.5.12
+
+# NOOP This file exists as a way to pin our base images

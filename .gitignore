@@ -2,6 +2,6 @@ kong
 docker-kong
 id_rsa.private
 kong_license.private
-*.deb
-*.rpm
+kong*.deb
+kong*.rpm
 openresty-build-tools/build
