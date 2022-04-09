@@ -399,7 +399,8 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-events ]; then
           warn "lua-resty-events source not found, cloning..."
-          git clone https://github.com/Kong/lua-resty-events --recursive
+          #git clone https://github.com/Kong/lua-resty-events --recursive
+          git clone -b dev git@github.com:Kong/lua-resty-events --recursive
         fi
 
         pushd lua-resty-events
