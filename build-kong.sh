@@ -16,8 +16,10 @@ export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChec
 export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/usr/local/openresty/luajit/bin
-    
-cp -R /tmp/build/* /
+
+/usr/local/bin/luarocks --version
+/usr/local/kong/bin/openssl version
+/usr/local/openresty/bin/openresty -v
 
 if test -f /root/id_rsa; then
   mkdir -p /root/.ssh
@@ -71,6 +73,10 @@ pushd /kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
   cp kong/pluginsocket.proto /tmp/build/usr/local/kong/lib
+
+  curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
+  unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
+  cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/lib
 popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/

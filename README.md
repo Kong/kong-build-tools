@@ -42,7 +42,7 @@ The most common ones are the following:
 
 ```
 RESTY_IMAGE_BASE=ubuntu|centos|rhel|debian|alpine|amazonlinux
-RESTY_IMAGE_TAG=xenial|bionic|focal|6|7|8|jessie|stretch|buster|latest|latest
+RESTY_IMAGE_TAG=16.04|18.04|20.04|7|8|9|10|11|latest|latest
 PACKAGE_TYPE=deb|rpm|apk
 ```
 
@@ -127,18 +127,17 @@ Also does some rudimentary checks of the systemd and logrotate we include with o
 
 **02-api**
 
-Uses the python [tavern](https://taverntesting.github.io/) testing tool to run functional tests against Kong with Postgres by 
-sending REST requests to the Kong admin api and validating the expected responses / behaviour on the proxy ports.
+Functional Admin API and Proxy tests.
 
 ## Releasing Kong
 
 The same defaults that applied when creating a packaged version of Kong apply to releasing said package
-to bintray and can be changed by environment variables. Presumes that the package you want to release
+to our internal server and can be changed by environment variables. Presumes that the package you want to release
 already exists in the output directory.
 
 ```
-export BINTRAY_USR=user
-export BINTRAY_KEY=key
+export PULP_USR=user
+export PULP_PSW=password
 export RESTY_IMAGE_BASE=seeabove
 export RESTY_IMAGE_TAG=seeabove
 export KONG_PACKAGE_NAME=somename
@@ -148,8 +147,8 @@ make release-kong
 
 Required release ENV variables:
 ```
-BINTRAY_USR
-BINTRAY_KEY
+PULP_USR
+PULP_PSW
 ```
 
 Optional release ENV variables:
@@ -164,12 +163,4 @@ The defaults when the optional arguments aren't passed are (in the following ord
 REPOSITORY_TYPE=deb|deb|rpm|generic
 REPOSITORY_NAME=$KONG_PACKAGE_NAME-$REPOSITORY_TYPE
 REPOSITORY_OS_NAME=ubuntu|rhel|centos|alpine-tar
-
-bintray.com/kong/$REPOSITORY_NAME/$REPOSITORY_OS_NAME/$KONG_VERSION/$KONG_PACKAGE_NAME-$KONG_VERSION.$OUTPUT_FILE_SUFFIX
-```
-
-Using all defaults one would end up with
-
-```
-bintray.com/kong/kong-deb/ubuntu/0.0.0/kong-0.0.0.bionic.all.deb
 ```

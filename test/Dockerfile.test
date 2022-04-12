@@ -9,15 +9,14 @@ FROM ${DOCKER_REPOSITORY}:test-${DOCKER_OPENRESTY_SUFFIX}
 ENV PATH=$PATH:/kong/bin:/usr/local/openresty/bin/:/usr/local/kong/bin/:/usr/local/openresty/nginx/sbin/
 ENV LUA_PATH=/kong/?.lua;/kong/?/init.lua;/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;./?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua
 ENV LUA_CPATH=/root/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;./?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so
-ENV GO_VERSION="1.13.12"
-
-ARG KONG_GO_PLUGINSERVER_VERSION=master
-ENV KONG_GO_PLUGINSERVER_VERSION $KONG_GO_PLUGINSERVER_VERSION
 
 RUN cp -R /tmp/build/* / || true
 RUN rm -rf /usr/local/bin/kong
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
-    apt-get update && apt-get install -y \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+    ca-certificates \
     tzdata \
     vim \
     jq \
@@ -28,24 +27,6 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     net-tools && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get install -y postgresql
-
-RUN curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz \
-	-o /tmp/go.tar.gz && \
-	cd /tmp && tar -xf go.tar.gz
-
-ENV GOROOT=/tmp/go
-ENV PATH $GOROOT/bin:$PATH
-ENV GOPATH=/tmp/gopath
-ENV PATH $GOPATH/bin:$PATH
-
-RUN go version ; \
-	mkdir /gps ; cd /gps ; \
-	go mod init go-pluginserver ; \
-	go get -d -v github.com/Kong/go-pluginserver@${KONG_GO_PLUGINSERVER_VERSION} ; \
-	go install -ldflags="-s -w -X main.version=${KONG_GO_PLUGINSERVER_VERSION}" ... ; \
-	cp /tmp/gopath/bin/go-pluginserver /usr/local/bin/ ;\
-	cd ; rm -r /gps; \
-	go-pluginserver --version
 
 RUN rm -rf /kong/* || true
 COPY kong /kong
@@ -64,10 +45,6 @@ RUN make dev
 RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest Test::Nginx \
     && cpanm --notest local::lib
-
-RUN go version ; \
-    go get -u github.com/tsenart/vegeta ; \
-    vegeta -version
 
 RUN rm -rf /tmp/build
 

@@ -5,13 +5,16 @@ set -e
 SCRIPT_PATH=
 PREFIX=
 DOWNLOAD_CACHE=work
+DOWNLOAD_ONLY=
 OPENRESTY_VER=
 OPENSSL_VER=
+BORINGSSL_VER=
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
+RESTY_LMDB=master
 DEBUG=0
 NPROC=
 OS=
@@ -61,6 +64,10 @@ main() {
         OPENSSL_SHA=$2
         shift 2
         ;;
+      --boringssl)
+        BORINGSSL_VER="$2"
+        shift 2
+        ;;
       --luarocks)
         LUAROCKS_VER=$2
         shift 2
@@ -81,6 +88,14 @@ main() {
         KONG_NGINX_MODULE=0
         shift 1
         ;;
+      --resty-lmdb)
+        RESTY_LMDB=$2
+        shift 2
+        ;;
+      --no-resty-lmdb)
+        RESTY_LMDB=0
+        shift 1
+        ;;
       -f|--force)
         FORCE=1
         shift 1
@@ -96,6 +111,10 @@ main() {
       --add-module)
         NGINX_EXTRA_MODULES+=("--add-module=$2")
         shift 2
+        ;;
+      --donwload-extract-only)
+        DOWNLOAD_ONLY=1
+        shift 1
         ;;
       -h|--help)
         show_usage
@@ -135,9 +154,9 @@ main() {
     fatal "OpenResty version can not be empty"
   fi
 
-  if [ -z "$OPENSSL_VER" ]; then
+  if [ -z "$OPENSSL_VER" -a -z "$BORINGSSL_VER" ]; then
     show_usage
-    fatal "OpenSSL version can not be empty"
+    fatal "OpenSSL and BoringSSL version can not both be empty"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -158,21 +177,29 @@ main() {
 
   NGINX_CORE_VER=$(parse_nginx_core_version $OPENRESTY_VER)
 
-  OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
-  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
-
   mkdir -p $DOWNLOAD_CACHE $PREFIX
-
-  OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+  OPENRESTY_DOWNLOAD=$DOWNLOAD_CACHE/openresty-$OPENRESTY_VER
   OPENRESTY_DESTDIR=${OPENRESTY_DESTDIR:-/}
-
-  OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
   OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
-
-  OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
 
-  if version_lt $NGINX_CORE_VER 1.13.6 || version_lt $OPENSSL_VER 1.1; then
+  if [ -n "$OPENSSL_VER" ]; then
+    OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
+    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
+    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX)
+
+    if version_lt $OPENSSL_VER 1.1; then
+      # unconditionally disable module in older core since they are never tested
+      KONG_NGINX_MODULE=0
+    fi
+  fi
+
+  if [ -n "$BORINGSSL_VER" ]; then
+    BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
+  fi
+
+  if version_lt $NGINX_CORE_VER 1.13.6; then
     # unconditionally disable module in older core since they are never tested
     KONG_NGINX_MODULE=0
   fi
@@ -180,22 +207,46 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
-    # OpenSSL
 
-    if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
-      warn "OpenSSL source not found, downloading..."
-      set +e
-      curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
-      if [[ $? != 0 ]]; then
-        curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
-        [[ $? != 0 ]] && err "Could not download OpenSSL"
-      fi
-      set -e
+    if [ -n "$OPENSSL_VER" ]; then
+      # OpenSSL
 
-      if [ ! -z ${OPENSSL_SHA+x} ]; then
-        echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+      if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
+        warn "OpenSSL source not found, downloading..."
+        set +e
+        curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+        if [[ $? != 0 ]]; then
+          curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+          [[ $? != 0 ]] && err "Could not download OpenSSL"
+        fi
+        set -e
+
+        if [ ! -z ${OPENSSL_SHA+x} ]; then
+          echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
+        fi
+        tar -xzf openssl-$OPENSSL_VER.tar.gz
       fi
-      tar -xzf openssl-$OPENSSL_VER.tar.gz
+    fi
+
+    if [ -n "$BORINGSSL_VER" ]; then
+      # Boring SSL
+
+      if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
+        warn "BoringSSL source not found, downloading..."
+        set +e
+        curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
+        [[ $? != 0 ]] && err "Could not download BoringSSL"
+        set -e
+
+        if [ ! -z ${BORINGSSL_SHA+x} ]; then
+          echo "$BORINGSSL_SHA boringssl-${BORINGSSL_VER}.zip" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
+        fi
+        unzip -q boringssl-${BORINGSSL_VER}.zip
+      fi
     fi
 
     # OpenResty
@@ -215,6 +266,8 @@ main() {
         curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
         if [ ! -z ${OPENRESTY_SHA+x} ]; then
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
 
@@ -222,8 +275,8 @@ main() {
         if version_eq $OPENRESTY_VER 1.19.3; then
           pushd openresty-$OPENRESTY_VER/bundle
             notice "Updating lua-resty-dns to unreleased version"
-            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz && \
-            tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1 && \
+            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
+            tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
             rm -f lua-resty-dns-0.21.tar.gz
           popd
         fi
@@ -236,9 +289,11 @@ main() {
       PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
       if [ ! -d $PCRE_DOWNLOAD ]; then
         warn "PCRE source not found, downloading..."
-        curl -sSLO https://ftp.pcre.org/pub/pcre/pcre-${PCRE_VER}.tar.gz
+        curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
+        else
+          notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
       fi
@@ -254,9 +309,17 @@ main() {
         LUAROCKS_DOWNLOAD=$DOWNLOAD_CACHE/luarocks-$LUAROCKS_VER
         if [ ! -d $LUAROCKS_DOWNLOAD ]; then
           warn "LuaRocks source not found, downloading..."
-          curl -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+          set +e
+          curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+          if [ $? != 0 ]; then
+            curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
+            [ $? != 0 ] && err "Could not download luarocks source"
+          fi
+          set -e
           if [ ! -z ${LUAROCKS_SHA+x} ]; then
             echo "$LUAROCKS_SHA luarocks-$LUAROCKS_VER.tar.gz" | sha256sum -c -
+          else
+            notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
         fi
@@ -281,7 +344,31 @@ main() {
         popd
       popd
     fi
+
+    # lua-resty-lmdb
+    if [ $RESTY_LMDB != 0 ]; then
+      if [[ $RESTY_LMDB == "master" ]]; then
+        RESTY_LMDB="origin/master"
+      fi
+      pushd $DOWNLOAD_CACHE
+        if [ ! -d lua-resty-lmdb ]; then
+          warn "lua-resty-lmdb source not found, cloning..."
+          git clone https://github.com/Kong/lua-resty-lmdb --recursive
+        fi
+
+        pushd lua-resty-lmdb
+          git fetch
+          # Accept both tags, branches and SHAs
+          git reset --hard $RESTY_LMDB || git reset --hard origin/$RESTY_LMDB
+        popd
+      popd
+    fi
   popd
+
+  if [ ! -z "$DOWNLOAD_ONLY" ]; then
+    notice "Exiting early since --download-extract-only was specified"
+    exit 0
+  fi
 
   notice "Patching the components now..."
 
@@ -374,56 +461,84 @@ main() {
 
   # Building OpenSSL
 
-  if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
-    notice "Building OpenSSL..."
+  if [ -n "$OPENSSL_VER" ]; then
+    if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
+      notice "Building OpenSSL..."
 
-    pushd $OPENSSL_DOWNLOAD
-      if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
-          OPENSSL_OPTS=(
-            "-g"
-            "shared"
-            "-DPURIFY"
-            "no-threads"
-            "--prefix=$OPENSSL_PREFIX"
-            "--openssldir=$OPENSSL_PREFIX"
-          )
+      pushd $OPENSSL_DOWNLOAD
+        if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
+            OPENSSL_OPTS=(
+              "-g"
+              "shared"
+              "-DPURIFY"
+              "no-threads"
+              "--prefix=$OPENSSL_PREFIX"
+              "--openssldir=$OPENSSL_PREFIX"
+            )
 
-          if version_gte $OPENSSL_VER 1.1.0; then
-            OPENSSL_OPTS+=('no-unit-test')
+            if version_gte $OPENSSL_VER 1.1.0; then
+              OPENSSL_OPTS+=('no-unit-test')
 
-          else
-            OPENSSL_OPTS+=('no-tests')
-          fi
-
-          if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
-            local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
-            if [[ $OS != "Darwin" ]]; then
-              ld_opts="$ld_opts,--enable-new-dtags"
+            else
+              OPENSSL_OPTS+=('no-tests')
             fi
 
-            OPENSSL_OPTS+=("$ld_opts")
-          fi
+            if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
+              local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
+              if [[ $OS != "Darwin" ]]; then
+                ld_opts="$ld_opts,--enable-new-dtags"
+              fi
 
-          if [ $DEBUG == 1 ]; then
-            OPENSSL_OPTS+=('-d')
-          fi
+              OPENSSL_OPTS+=("$ld_opts")
+            fi
 
-        eval ./config ${OPENSSL_OPTS[*]}
-      fi
+            if [ $DEBUG == 1 ]; then
+              OPENSSL_OPTS+=('-d')
+            fi
 
-      if version_gte $OPENSSL_VER 1.1.0; then
-        make -j$NPROC
-      else
-        make
-      fi
+          eval ./config ${OPENSSL_OPTS[*]}
+        fi
 
-      make install_sw DESTDIR=${OPENSSL_DESTDIR}
-    popd
+        if version_gte $OPENSSL_VER 1.1.0; then
+          make -j$NPROC
+        else
+          make
+        fi
 
-    succ "OpenSSL $OPENSSL_VER has been built successfully!"
+        make install_sw DESTDIR=${OPENSSL_DESTDIR}
+      popd
 
-  else
-    succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
+      succ "OpenSSL $OPENSSL_VER has been built successfully!"
+
+    else
+      succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
+    fi
+  fi
+
+  if [ -n "$BORINGSSL_VER" ]; then
+    if [ ! -d "$BORINGSSL_DOWNLOAD/.openssl/lib" ]; then
+      notice "Building BoringSSL..."
+
+      pushd $BORINGSSL_DOWNLOAD
+
+        mkdir -p build
+        pushd build
+          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
+          ninja
+        popd #build
+
+        mkdir -p .openssl/lib
+        cp -v build/crypto/libcrypto.* build/ssl/libssl.* .openssl/lib
+        pushd .openssl
+          ln -s ../include .
+        popd #.openssl
+
+      popd # $OPENRESTY_DOWNLOAD
+      succ "BoringSSL $BORINGSSL_VER has been built successfully!"
+
+    else
+      succ "BoringSSL $BORINGSSL_VER has been built successfully (cached)!"
+    fi
   fi
 
   # Building OpenResty
@@ -433,15 +548,14 @@ main() {
 
     pushd $OPENRESTY_DOWNLOAD
       if [ ! -f Makefile ]; then
-        OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
         OPENRESTY_OPTS=(
           "--prefix=$OPENRESTY_PREFIX"
-          "--with-cc-opt='-I$OPENSSL_INSTALL/include'"
           "--with-pcre-jit"
           "--with-http_ssl_module"
           "--with-http_realip_module"
           "--with-http_stub_status_module"
           "--with-http_v2_module"
+          "--without-http_encrypted_session_module"
           "-j$NPROC"
         )
 
@@ -456,10 +570,8 @@ main() {
           fi
         fi
 
-        if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
-        else
-          OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+        if [ $RESTY_LMDB != 0 ]; then
+          OPENRESTY_OPTS+=("--add-module=$DOWNLOAD_CACHE/lua-resty-lmdb")
         fi
 
         if version_gte $NGINX_CORE_VER 1.11.4; then
@@ -479,12 +591,35 @@ main() {
 
         OPENRESTY_OPTS+=(${NGINX_EXTRA_MODULES[@]})
 
+        OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
+
+
+        if [ -n "$BORINGSSL_VER" ]; then
+          OPENRESTY_OPTS+=(
+            "--with-cc-opt='-I$BORINGSSL_DOWNLOAD/.openssl/include'"
+            "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -L$BORINGSSL_DOWNLOAD/.openssl/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
+          )
+
+        else
+          if ld --disable-new-dtags 2>&1 >/dev/null | grep -q "disable-new-dtags"; then
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,-rpath,$OPENRESTY_RPATH'")
+          else
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$OPENSSL_INSTALL/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'")
+          fi
+
+          OPENRESTY_OPTS+=("--with-cc-opt='-I$OPENSSL_INSTALL/include'")
+        fi
+
         if [ $DEBUG == 1 ]; then
           OPENRESTY_OPTS+=('--with-debug')
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
 
         eval ./configure ${OPENRESTY_OPTS[*]}
+
+        if [ -n "$BORINGSSL_VER" ]; then
+          touch $BORINGSSL_DOWNLOAD/.openssl/include/openssl/ssl.h
+        fi
       fi
 
       make -j$NPROC
@@ -493,6 +628,13 @@ main() {
       if [ $KONG_NGINX_MODULE != 0 ]; then
         pushd $DOWNLOAD_CACHE/lua-kong-nginx-module
           warn "installing library files for lua-kong-nginx-module..."
+          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+        popd
+      fi
+
+      if [ $RESTY_LMDB != 0 ]; then
+        pushd $DOWNLOAD_CACHE/lua-resty-lmdb
+          warn "installing library files for lua-resty-lmdb..."
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
         popd
       fi
@@ -664,6 +806,10 @@ show_usage() {
   echo "                                     (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
   echo ""
   echo "      --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling."
+  echo "                                     (Defaults to \"master\")"
+  echo "      --no-resty-lmdb                Do not include lua-resty-lmdb while patching and compiling OpenResty."
+  echo ""
+  echo "      --resty-lmdb <branch>          Specify a lua-resty-lmdb branch to use when patching and compiling."
   echo "                                     (Defaults to \"master\")"
   echo ""
   echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"

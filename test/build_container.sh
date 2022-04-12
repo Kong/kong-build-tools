@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+
+source test/util.sh
 set -e
 
 DOCKER_BUILD_ARGS=()
@@ -6,10 +9,15 @@ if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 fi
 
-if docker image inspect $KONG_TEST_IMAGE_NAME; then exit 0; fi
+image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME" || true)
+if [ -n "$image_id" ]; then
+  msg_test "Tests image ID: $image_id"
+  exit 0;
+fi
 
 rm -rf docker-kong || true
 git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
+chmod -R 755 docker-kong/*/*.sh
 
 if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; then
   cp output/*${RESTY_IMAGE_TAG}.${ARCHITECTURE}.deb docker-kong/ubuntu/kong.deb
@@ -22,7 +30,7 @@ elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinu
   BUILD_DIR="centos"
 fi
 
-if [ "$RESTY_IMAGE_TAG" == "stretch" ] || [ "$RESTY_IMAGE_TAG" == "jessie" ]; then
+if [ "$RESTY_IMAGE_TAG" == "stretch" ]; then
   sed -i 's/apt install --yes /gdebi -n /g' docker-kong/ubuntu/Dockerfile
   sed -i 's/unzip git/unzip git gdebi/g' docker-kong/ubuntu/Dockerfile
 fi
@@ -32,7 +40,7 @@ if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
   BUILD_DIR="rhel"
   DOCKER_BUILD_ARGS+=(--build-arg RHEL_VERSION=$RESTY_IMAGE_TAG)
 else
-  sed -i 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
+  sed -i.bak 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' docker-kong/${BUILD_DIR}/Dockerfile
 fi
 
 pushd docker-kong/${BUILD_DIR}

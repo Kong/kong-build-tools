@@ -8,8 +8,11 @@ fi
 
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm procps"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
+# Tests disabled until CSRE-467 is resolved
+#  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --import https://download.konghq.com/gateway-2.x-rhel-8/repodata/repomd.xml.key"
+#  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --checksig /src/kong.rpm"
 fi
 
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
@@ -101,18 +104,24 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luaro
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks config | grep -q /usr/local/openresty/luajit/lib"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks install version"
 
+# kong shipped files
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong*.logrotate"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/pluginsocket.proto"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
+
 # kong binaries
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_TAG" == "bionic" ]]; then
+if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
-  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:18.04
+  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt install --yes /src/kong.deb"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "kong version"
 
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "test -f /etc/kong/kong.logrotate"
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "test -f /etc/kong/kong*.logrotate"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "mkdir -p /etc/systemd/system/kong.service.d/"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD > /etc/systemd/system/kong.service.d/override.conf
 [Service]
@@ -122,11 +131,16 @@ EOD"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl restart kong"
   sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl stop kong"
+  sleep 5
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong || true" # systemctl will exit with 3 if unit is not active
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg --remove $KONG_PACKAGE_NAME"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "! test -f /lib/systemd/system/kong.service"
   docker stop systemd-ubuntu
