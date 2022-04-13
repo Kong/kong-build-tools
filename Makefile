@@ -301,7 +301,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 
-test: cleanup-tests build-test-container
+test: build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	VERBOSE=$(VERBOSE) \

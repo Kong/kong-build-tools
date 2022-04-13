@@ -48,6 +48,10 @@ start_kong() {
 
 stop_kong() {
   KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" down
+  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" rm -f
+  docker stop $(docker ps -a -q) || true
+  docker rm $(docker ps -a -q) || true
+  docker volume prune -f
 }
 
 kong_ready() {
