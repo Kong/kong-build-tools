@@ -14,7 +14,7 @@ services:
       KONG_PG_HOST: db
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
-    restart: on-failure
+    restart: always
     networks:
       - kong-net
 
@@ -30,7 +30,7 @@ services:
       KONG_PG_HOST: db
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
-    restart: on-failure
+    restart: always
     networks:
       - kong-net
 

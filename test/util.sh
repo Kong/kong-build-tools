@@ -63,7 +63,7 @@ wait_kong() {
     msg_test "Waiting for Kong to be ready "
     docker-compose -f "$TEST_COMPOSE_PATH" ps
     docker-compose -f "$TEST_COMPOSE_PATH" logs
-    wait_for 5
+    sleep 5
   done
 }
 
