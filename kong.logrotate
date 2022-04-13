@@ -1,3 +1,5 @@
+su kong kong
+
 /usr/local/kong/logs/*.log {
   rotate 14
   daily
