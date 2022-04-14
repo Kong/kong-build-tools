@@ -388,6 +388,8 @@ cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
 	docker-compose -f test/kong-tests-compose.yaml rm -f
+	docker stop user-validation-tests || true
+	docker rm user-validation-tests || true
 	docker volume prune -f
 endif
 
