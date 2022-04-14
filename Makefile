@@ -257,7 +257,11 @@ endif
 setup-kong-source:
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
-	-mkdir kong/distribution
+	-mkdir -pv kong/distribution
+	-git submodule update --init --recursive
+	-git submodule status
+	-git -C kong submodule update --init --recursive
+	-git -C kong submodule status
 
 test-kong: kong-test-container
 	docker-compose up -d
@@ -397,6 +401,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+	-git submodule deinit -f .
 
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX)
