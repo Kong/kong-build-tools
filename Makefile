@@ -1,3 +1,5 @@
+$(info starting make in kong-build-tools)
+
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
