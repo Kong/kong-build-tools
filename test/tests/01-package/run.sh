@@ -18,6 +18,7 @@ fi
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get install -y perl-base zlib1g-dev"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 fi
