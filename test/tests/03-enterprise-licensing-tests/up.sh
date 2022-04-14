@@ -23,5 +23,7 @@ fi
 
 export KONG_LICENSE_DATA
 
+export KONG_PORTAL
+
 start_kong
 wait_kong

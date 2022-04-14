@@ -24,3 +24,25 @@ assert_response "$KONG_PROXY_URI/anything" "200"
 
 it_runs_full_enterprise
 
+msg_test "GUI https"
+assert_response "https://$TEST_HOST:8445/ --insecure" "200"
+
+msg_test "Portal GUI"
+assert_response "http://$TEST_HOST:8003" "200"
+
+msg_test "Portal GUI https"
+assert_response "https://$TEST_HOST:8446/ --insecure" "200"
+
+msg_test "check portal"
+assert_response "http://$TEST_HOST:8004/files" "200"
+
+msg_test "Portal GUI https"
+assert_response "https://$TEST_HOST:8447/files --insecure" "200"
+
+msg_test "rbac"
+export KONG_ENFORCE_RBAC=both
+stop_kong
+start_kong
+wait_kong
+
+assert_response "$KONG_ADMIN_URI/status" "401"
