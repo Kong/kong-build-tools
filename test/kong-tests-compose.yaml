@@ -56,6 +56,7 @@ services:
       KONG_PG_USER: ${KONG_PG_USER:-kong}
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_PORTAL: "on"
       KONG_LICENSE_DATA:
     healthcheck:
       test: ["CMD", "kong", "health"]
@@ -67,9 +68,15 @@ services:
       - kong-net
     ports:
       - "8000:8000/tcp"
-      - "127.0.0.1:8001:8001/tcp"
       - "8443:8443/tcp"
+      - "127.0.0.1:8001:8001/tcp"
+      - "127.0.0.1:8002:8002/tcp"
+      - "127.0.0.1:8003:8003/tcp"
+      - "127.0.0.1:8004:8004/tcp"
       - "127.0.0.1:8444:8444/tcp"
+      - "127.0.0.1:8445:8445/tcp"
+      - "127.0.0.1:8446:8446/tcp"
+      - "127.0.0.1:8447:8447/tcp"
 
   db:
     image: postgres:13

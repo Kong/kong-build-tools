@@ -93,5 +93,25 @@ it_runs_full_enterprise() {
   [ "$(echo $info | jq -r .configuration.vitals)" == "true" ]
   msg_test "workspaces are writable"
   assert_response "$KONG_ADMIN_URI/workspaces -d name=testworkspace" "201"
+  
+  msg_test "kong admin gui"
+  assert_response "http://127.0.0.1:8002" "200"
+  
+  msg_test "kong admin gui https"
+  assert_response "https://127.0.0.1:8445/ --insecure" "200"
+  
+  msg_test "kong portal"
+  curl --data "config.portal=true" -X PATCH $KONG_ADMIN_URI/workspaces/default
+  assert_response "http://127.0.0.1:8003" "200"
+  
+  msg_test "kong portal https"
+  assert_response "https://127.0.0.1:8446/ --insecure" "200"
+  
+  msg_test "kong portal files"
+  curl --data '{"config": {"portal": true}}' -X PATCH -H "Content-Type:application/json" $KONG_ADMIN_URI/workspaces/default
+  assert_response "http://127.0.0.1:8004/files" "200"
+  
+  msg_test "kong portal files https"
+  assert_response "https://127.0.0.1:8447/files --insecure" "200"
 }
 
