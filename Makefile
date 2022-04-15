@@ -55,6 +55,9 @@ GITHUB_TOKEN ?=
 # set to 'plain' to get less dynamic, but linear output from docker build(x)
 DOCKER_BUILD_PROGRESS ?= auto
 
+# whether to enable bytecompilation of kong lua files or not
+ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
 # We build ARM64 for alpine and xenial only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
@@ -238,6 +241,7 @@ actual-build-kong: setup-kong-source
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
+	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 
 kong-test-container: setup-kong-source
