@@ -54,6 +54,7 @@ sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/`
 
 chown -R 1000:1000 /tmp/build/*
 
-if [ -n "${ENABLE_LJBC:-}" ] && test -f "/distribution/post-bytecompile.sh"; then
+# bytecompile if script is present (as with ee)
+if test -f "/distribution/post-bytecompile.sh"; then
   /distribution/post-bytecompile.sh
 fi
