@@ -22,8 +22,8 @@ if [[ ! $KONG_LICENSE_DATA == *"signature"* || ! $KONG_LICENSE_DATA == *"payload
 fi
 
 export KONG_LICENSE_DATA
-
 export KONG_PORTAL
+export KONG_ENFORCE_RBAC
 
 start_kong
 wait_kong

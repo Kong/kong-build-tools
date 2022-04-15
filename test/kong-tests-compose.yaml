@@ -57,6 +57,7 @@ services:
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PORTAL: "on"
+      KONG_ENFORCE_RBAC:
       KONG_LICENSE_DATA:
     healthcheck:
       test: ["CMD", "kong", "health"]
