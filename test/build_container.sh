@@ -47,7 +47,7 @@ pushd docker-kong/${BUILD_DIR}
   DOCKER_BUILD_ARGS+=(--no-cache)
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
 
-  docker build -t $KONG_TEST_IMAGE_NAME \
+  docker build --progress=${DOCKER_BUILD_PROGRESS:-auto} -t $KONG_TEST_IMAGE_NAME \
     "${DOCKER_BUILD_ARGS[@]}"
 
   docker run -t $KONG_TEST_IMAGE_NAME kong version

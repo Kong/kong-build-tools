@@ -52,6 +52,9 @@ DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
 GITHUB_TOKEN ?=
 
+# set to 'plain' to get less dynamic, but linear output from docker build(x)
+DOCKER_BUILD_PROGRESS ?= auto
+
 # We build ARM64 for alpine and xenial only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
@@ -67,9 +70,9 @@ endif
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
 endif
 
 # Set this to unique value to bust the cache
@@ -210,7 +213,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -361,6 +364,7 @@ build-test-container:
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
+	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS)
 	test/build_container.sh
 ifeq ($(BUILDX),true)
 	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
