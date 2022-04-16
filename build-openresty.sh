@@ -51,7 +51,7 @@ fi
 
 if [ -z "$RESTY_EVENTS" ]
 then
-  RESTY_LMDB=0
+  RESTY_EVENTS=0
 fi
 
 LUAROCKS_PREFIX=/usr/local \
