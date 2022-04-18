@@ -18,7 +18,9 @@ pipeline {
     stages {
         stage('Enteprise Test Builds') {
             environment {
+                DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                 GITHUB_TOKEN = credentials('github_bot_access_token')
+                KONG_SOURCE = "feat/branch-by-abstraction"
                 PULP = credentials('PULP')
                 PULP_PASSWORD = "${env.PULP_PSW}"
                 PULP_USERNAME = "${env.PULP_USR}"
@@ -39,9 +41,7 @@ pipeline {
                         }
                     }
                     environment {
-                        KONG_SOURCE = "feat/branch-by-abstraction"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         PACKAGE_TYPE = "rpm"
                     }
@@ -65,9 +65,7 @@ pipeline {
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        KONG_SOURCE = "feat/branch-by-abstraction"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -87,9 +85,7 @@ pipeline {
                     environment {
                         PACKAGE_TYPE = "deb"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        KONG_SOURCE = "feat/branch-by-abstraction"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
