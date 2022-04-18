@@ -20,6 +20,8 @@ pipeline {
             environment {
                 GITHUB_TOKEN = credentials('github_bot_access_token')
                 PULP = credentials('PULP')
+                PULP_PASSWORD = "${env.PULP_PSW}"
+                PULP_USERNAME = "${env.PULP_USR}"
             }
             when {
                 beforeAgent true
@@ -48,11 +50,11 @@ pipeline {
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=8 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise src & Alpine'){
@@ -72,8 +74,8 @@ pipeline {
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3.10 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3.10 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise DEB') {
@@ -94,12 +96,12 @@ pipeline {
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 && make package-kong && make test && make cleanup'
-                        sh 'export PULP_USERNAME=$PULP_USR PULP_PASSWORD=$PULP_PSW RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9     package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                     }
                 }
             }
@@ -129,11 +131,11 @@ pipeline {
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=centos RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=7 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8 && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=8 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
                     }
                 }
                 stage('Kong OSS src & Alpine'){
@@ -145,8 +147,8 @@ pipeline {
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3.10 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3.10 PACKAGE_TYPE=apk CACHE=false UPDATE_CACHE=true DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` package-kong test cleanup'
                     }
                 }
                 stage('Kong OSS DEB') {
@@ -163,12 +165,12 @@ pipeline {
                         sh 'mkdir -p /home/ubuntu/bin/'
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'export RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 && make package-kong && make test && make cleanup'
-                        sh 'export RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 && make package-kong && make test && make cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9     package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                     }
                 }
             }
