@@ -127,7 +127,7 @@ fi
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
+if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
