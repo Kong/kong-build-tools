@@ -4,6 +4,27 @@ set -o errexit
 
 cd /tmp/build
 
+if [ -z "$KONG_PACKAGE_NAME" ]
+then
+  KONG_PACKAGE_NAME=kong
+fi
+
+if [ -z "$PACKAGE_CONFLICTS" ]
+then
+  PACKAGE_CONFLICTS=kong-enterprise-edition
+fi
+
+if [ -z "$PACKAGE_PROVIDES" ]
+then
+  PACKAGE_PROVIDES=kong-community-edition
+fi
+
+
+if [ -z "$PACKAGE_REPLACES" ]
+then
+  PACKAGE_REPLACES=kong-community-edition
+fi
+
 FPM_PARAMS=""
 if [ "$PACKAGE_TYPE" == "deb" ]; then
   FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
