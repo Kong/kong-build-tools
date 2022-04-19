@@ -134,6 +134,8 @@ setup-ci: setup-build
 
 setup-build:
 	.ci/setup_ci.sh
+	$(info 'running build: RESTY_IMAGE_BASE: $(RESTY_IMAGE_BASE)')
+	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
