@@ -22,9 +22,14 @@ TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_PACKAGE_NAME?="kong"
-KONG_CONFLICTS?="kong-enterprise-edition"
+
 KONG_LICENSE?="ASL 2.0"
+
+KONG_PACKAGE_NAME ?= `grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
+PACKAGE_CONFLICTS ?= `grep PACKAGE_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
 PRIVATE_REPOSITORY?=true
 KONG_TEST_CONTAINER_NAME=kong-tests
@@ -205,7 +210,9 @@ endif
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
+	--build-arg PACKAGE_CONFLICTS=$(PACKAGE_CONFLICTS) \
+	--build-arg PACKAGE_PROVIDES=$(PACKAGE_PROVIDES) \
+	--build-arg PACKAGE_REPLACES=$(PACKAGE_REPLACES) \
 	--build-arg PRIVATE_KEY_FILE=kong.private.gpg-key.asc \
 	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
 	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) .

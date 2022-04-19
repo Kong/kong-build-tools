@@ -38,12 +38,12 @@ else
     -n $KONG_PACKAGE_NAME \
     -v $KONG_VERSION \
     $FPM_PARAMS \
-    --conflicts $KONG_CONFLICTS \
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
-    --provides 'kong-community-edition' \
-    --replaces 'kong-community-edition' \
+    --conflicts $PACKAGE_CONFLICTS \
+    --provides $PACKAGE_PROVIDES \
+    --replaces $PACKAGE_REPLACES \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
