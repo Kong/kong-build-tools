@@ -44,6 +44,12 @@ then
   RESTY_LMDB=0
 fi
 
+if [ -z "$RESTY_WEBSOCKET" ]
+then
+  RESTY_WEBSOCKET=0
+fi
+
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -57,6 +63,7 @@ EDITION=$EDITION \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
 --resty-lmdb $RESTY_LMDB \
+--resty-websocket $RESTY_WEBSOCKET \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
