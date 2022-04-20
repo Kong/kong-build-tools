@@ -150,17 +150,3 @@ Required release ENV variables:
 PULP_USR
 PULP_PSW
 ```
-
-Optional release ENV variables:
-```
-REPOSITORY_TYPE
-REPOSITORY_NAME
-REPOSITORY_OS_NAME
-```
-
-The defaults when the optional arguments aren't passed are (in the following order ubuntu|rhel|centos|alpine):
-```
-REPOSITORY_TYPE=deb|deb|rpm|generic
-REPOSITORY_NAME=$KONG_PACKAGE_NAME-$REPOSITORY_TYPE
-REPOSITORY_OS_NAME=ubuntu|rhel|centos|alpine-tar
-```
