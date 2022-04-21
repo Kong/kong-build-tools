@@ -16,7 +16,7 @@ OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
 RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
-RESTY_EVENTS=main
+RESTY_EVENTS=dev
 DEBUG=0
 NPROC=
 OS=
@@ -399,8 +399,7 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-events ]; then
           warn "lua-resty-events source not found, cloning..."
-          #git clone https://github.com/Kong/lua-resty-events --recursive
-          git clone git@github.com:Kong/lua-resty-events --recursive
+          git clone https://github.com/Kong/lua-resty-events --recursive
         fi
 
         pushd lua-resty-events
