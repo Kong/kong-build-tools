@@ -169,7 +169,7 @@ else
 	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
 	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
 	--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
-	--build-arg RESTY_EVENTS="feat/rebased_new_apis" \
+	--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	--build-arg DEBUG=$(DEBUG) \
 	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
