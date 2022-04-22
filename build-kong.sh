@@ -74,6 +74,13 @@ pushd /kong
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
   cp kong/pluginsocket.proto /tmp/build/usr/local/kong/lib
 
+  # collect proto files (for, at minimum, wrpc & analytics)
+  # see also:
+  #   https://github.com/Kong/kong-distributions/pull/774
+  if [ -d "/kong/kong/include/kong" ]; then
+    cp -r /kong/kong/include/kong /tmp/build/usr/local/kong/lib
+  fi
+
   curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
   unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
   cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/lib
