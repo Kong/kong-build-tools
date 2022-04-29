@@ -17,7 +17,9 @@ if [ "$RESULT" != "0" ]; then
     sudo apt-get -y -o Dpkg::Options::="--force-confnew" install containerd.io docker-ce
 fi
 
-echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+if test -d /etc/docker; then
+    echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+fi
 
 docker buildx version
 RESULT=$?
