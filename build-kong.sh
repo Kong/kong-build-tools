@@ -58,3 +58,8 @@ chown -R 1000:1000 /tmp/build/*
 if test -f "/distribution/post-bytecompile.sh"; then
   /distribution/post-bytecompile.sh
 fi
+
+# add copyright manifests if script is present (as with ee)
+if test -f "/distribution/post-copyright-manifests.sh"; then
+  /distribution/post-copyright-manifests.sh
+fi
