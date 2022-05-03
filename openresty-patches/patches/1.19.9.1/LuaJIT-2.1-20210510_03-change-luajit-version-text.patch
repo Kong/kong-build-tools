@@ -1,0 +1,25 @@
+From 4c8ed0d223da040373b7c8c9e8d4d73a124cd955 Mon Sep 17 00:00:00 2001
+From: Qi <add_sp@outlook.com>
+Date: Tue, 3 May 2022 20:09:37 +0800
+Subject: [PATCH] Change the LuaJIT version text to v2.1-20210510
+
+---
+ LuaJIT-2.1-20210510/src/luajit.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/LuaJIT-2.1-20210510/src/luajit.h b/LuaJIT-2.1-20210510/src/luajit.h
+index 1dddaec..d3a566c 100644
+--- a/LuaJIT-2.1-20210510/src/luajit.h
++++ b/LuaJIT-2.1-20210510/src/luajit.h
+@@ -32,7 +32,7 @@
+
+ #define OPENRESTY_LUAJIT
+
+-#define LUAJIT_VERSION		"LuaJIT 2.1.0-beta3"
++#define LUAJIT_VERSION		"LuaJIT v2.1-20210510"
+ #define LUAJIT_VERSION_NUM	20100  /* Version 2.1.0 = 02.01.00. */
+ #define LUAJIT_VERSION_SYM	luaJIT_version_2_1_0_beta3
+ #define LUAJIT_COPYRIGHT	"Copyright (C) 2005-2021 Mike Pall"
+--
+2.34.1
+
