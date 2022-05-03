@@ -48,10 +48,24 @@ start_kong() {
 
 stop_kong() {
   KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" down
+  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" rm -f
+  docker stop $(docker ps -a -q) || true
+  docker rm $(docker ps -a -q) || true
+  docker volume prune -f
 }
 
 kong_ready() {
-  [ "$(docker-compose -f "$TEST_COMPOSE_PATH" ps | grep -c healthy | tr -d ' ')" == "2" ]
+  local TIMEOUT_SECONDS=$((5 * 60))
+  while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000)" != 404 ]]; do
+    sleep 5;
+    COUNTER=$((COUNTER + 5))
+  
+    if (($COUNTER >= $TIMEOUT_SECONDS))
+    then
+      printf "\xe2\x98\x93 ERROR: Timed out waiting for $KONG"
+      exit 1
+    fi
+  done
 }
 
 wait_kong() {
@@ -59,7 +73,7 @@ wait_kong() {
     msg_test "Waiting for Kong to be ready "
     docker-compose -f "$TEST_COMPOSE_PATH" ps
     docker-compose -f "$TEST_COMPOSE_PATH" logs kong
-    wait_for 5
+    sleep 5
   done
 }
 
