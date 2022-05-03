@@ -72,7 +72,7 @@ wait_kong() {
   while ! kong_ready; do
     msg_test "Waiting for Kong to be ready "
     docker-compose -f "$TEST_COMPOSE_PATH" ps
-    docker-compose -f "$TEST_COMPOSE_PATH" logs
+    docker-compose -f "$TEST_COMPOSE_PATH" logs kong
     sleep 5
   done
 }
