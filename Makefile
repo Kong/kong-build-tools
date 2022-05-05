@@ -88,7 +88,7 @@ CACHE_BUSTER?=0
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
-REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
+REQUIREMENTS_SHA=$$(find kong/distribution -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum  | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
@@ -277,6 +277,7 @@ setup-kong-source:
 	-git submodule status
 	-git -C kong submodule update --init --recursive
 	-git -C kong submodule status
+	cp kong/.requirements kong/distribution/.requirements 
 
 test-kong: kong-test-container
 	docker-compose up -d
