@@ -12,6 +12,9 @@ assert_response "$KONG_ADMIN_URI/services" "200"
 msg_test "Create a route"
 assert_response "-d name=testroute -d paths=/ $KONG_ADMIN_URI/services/testservice/routes" "201"
 
+msg_test "List routes"
+assert_response "$KONG_ADMIN_URI/services/testservice/routes" "200"
+
 msg_test "List services"
 assert_response "$KONG_ADMIN_URI/services" "200"
 
