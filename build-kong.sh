@@ -10,7 +10,9 @@ rocks_trees = {
 }
 " > $ROCKS_CONFIG
 
-[ -d "/usr/local/share/lua/" ] && cp -R /usr/local/share/lua/ /tmp/build/usr/local/share/ 
+if [[ -d /usr/local/share/lua ]]; then
+  cp -R /usr/local/share/lua/ /tmp/build/usr/local/share/ 
+fi
 cp -R /tmp/build/* /
 
 export LUAROCKS_CONFIG=$ROCKS_CONFIG
