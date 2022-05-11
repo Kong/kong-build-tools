@@ -108,6 +108,11 @@ function push_package() {
 
   set -x
 
+  local release_args="--package-type gateway --publish"
+  if [[ "$EDITION" == "enterprise" ]]; then
+    release_args="$release_args --enterprise"
+  fi
+
   eval $(docker-machine env -u) # release-scripts do not need to run within the arm64 box
 
   docker run \
@@ -119,8 +124,7 @@ function push_package() {
           --file "/files/$DIST_FILE" \
           --dist-name "$RESTY_IMAGE_BASE" $dist_version \
           --major-version "${KONG_VERSION%%.*}.x" \
-          --package-type gateway \
-          --publish
+          $release_args
   set +x
 }
 
