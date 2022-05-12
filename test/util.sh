@@ -84,3 +84,24 @@ assert_response() {
   resp_code=$(curl -s -o /dev/null -w "%{http_code}" $endpoint)
   [ "$resp_code" == "$expected_code" ] || err_exit "  expected $2, got $resp_code"
 }
+
+it_runs_free_enterprise() {
+  info=$(curl $KONG_ADMIN_URI)
+  msg_test "it does not have ee-only plugins"
+  [ "$(echo $info | jq -r .plugins.available_on_server.collector)" != "true" ]
+  msg_test "it does not enable vitals"
+  [ "$(echo $info | jq -r .configuration.vitals)" == "false" ]
+  msg_test "workspaces are not writable"
+  assert_response "$KONG_ADMIN_URI/workspaces -d name=testworkspace" "403"
+}
+
+it_runs_full_enterprise() {
+  info=$(curl $KONG_ADMIN_URI)
+  msg_test "it does have ee-only plugins"
+  [ "$(echo $info | jq -r .plugins.available_on_server.collector)" == "true" ]
+  msg_test "it does enable vitals"
+  [ "$(echo $info | jq -r .configuration.vitals)" == "true" ]
+  msg_test "workspaces are writable"
+  assert_response "$KONG_ADMIN_URI/workspaces -d name=testworkspace" "201"
+}
+

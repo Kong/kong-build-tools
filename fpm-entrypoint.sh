@@ -4,6 +4,27 @@ set -o errexit
 
 cd /tmp/build
 
+if [ -z "$KONG_PACKAGE_NAME" ]
+then
+  KONG_PACKAGE_NAME=kong
+fi
+
+if [ -z "$PACKAGE_CONFLICTS" ]
+then
+  PACKAGE_CONFLICTS=kong-enterprise-edition
+fi
+
+if [ -z "$PACKAGE_PROVIDES" ]
+then
+  PACKAGE_PROVIDES=kong-community-edition
+fi
+
+
+if [ -z "$PACKAGE_REPLACES" ]
+then
+  PACKAGE_REPLACES=kong-community-edition
+fi
+
 FPM_PARAMS=""
 if [ "$PACKAGE_TYPE" == "deb" ]; then
   FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
@@ -38,12 +59,12 @@ else
     -n $KONG_PACKAGE_NAME \
     -v $KONG_VERSION \
     $FPM_PARAMS \
-    --conflicts $KONG_CONFLICTS \
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
-    --provides 'kong-community-edition' \
-    --replaces 'kong-community-edition' \
+    --conflicts $PACKAGE_CONFLICTS \
+    --provides $PACKAGE_PROVIDES \
+    --replaces $PACKAGE_REPLACES \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
