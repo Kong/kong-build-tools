@@ -558,11 +558,41 @@ main() {
 
       pushd $BORINGSSL_DOWNLOAD
 
+        notice "BoringSSL: downloading toolchain..."
+        OLD_PATH="$PATH"
+        OLD_HOME="$HOME"
+        export HOME="$PWD"
+
+        # TODO: checksum
+        curl -sSL https://releases.llvm.org/7.0.1/clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz | tar Jxf -
+        export PATH="$PWD/clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04/bin:$PATH"
+        printf "set(CMAKE_C_COMPILER \"clang\")\nset(CMAKE_CXX_COMPILER \"clang++\")\n" > ${HOME}/toolchain
+        notice "BoringSSL: using clang $(clang --version)"
+
+        curl -sSL https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz | tar zxf -
+        export GOPATH="$PWD/gopath"
+        export GOROOT="$PWD/go"
+        export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
+        notice "BoringSSL: using golang $(go version)"
+
+        curl -sSL https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip -o ninja-linux.zip
+        unzip -o ninja-linux.zip
+        export PATH="$PWD:$PATH"
+        notice "BoringSSL: using ninja $(ninja --version)"
+
         mkdir -p build
         pushd build
-          cmake -GNinja -DBUILD_SHARED_LIBS=1 -DFIPS=1  ..
+          cmake -GNinja \
+                -DCMAKE_TOOLCHAIN_FILE=${HOME}/toolchain \
+                -DFIPS=1 \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_SHARED_LIBS=1 ..  
           ninja
         popd #build
+
+        PATH="$OLD_PATH"
+        HOME="$OLD_HOME"
+        unset GOPATH GOROOT
 
         mkdir -p .openssl/lib
         cp -v build/crypto/libcrypto.* build/ssl/libssl.* .openssl/lib
