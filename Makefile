@@ -26,6 +26,7 @@ EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print
 KONG_LICENSE?="ASL 2.0"
 
 KONG_PACKAGE_NAME ?= `grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+OFFICIAL_RELEASE ?= true
 
 PACKAGE_CONFLICTS ?= `grep PACKAGE_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -128,6 +129,10 @@ debug:
 	@echo ${KONG_NGINX_MODULE}
 	@echo ${RESTY_LMDB}
 	@echo ${RESTY_WEBSOCKET}
+	@echo ${KONG_VERSION}
+	@echo ${KONG_PACKAGE_NAME}
+	@echo ${OFFICIAL_RELEASE}
+	
 
 setup-ci: setup-build
 
@@ -301,6 +306,7 @@ release-kong: test
 	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
 	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
 	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
 	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
@@ -321,6 +327,7 @@ ifeq ($(BUILDX),true)
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
 	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 endif
 
