@@ -112,10 +112,10 @@ function push_package() {
   if [[ "$EDITION" == "enterprise" ]]; then
     release_args="$release_args --enterprise"
     # enterprise pre-releases go to `/internal/`
-    if [[ "$OFFICIAL_RELEASE" == "false" ]]; then
-      release_args="$release_args --internal"
-    else
+    if [[ "$OFFICIAL_RELEASE" == "true" ]]; then
       release_args="$release_args --publish"
+    else
+      release_args="$release_args --internal"
     fi
   else
     release_args="$release_args --publish"
