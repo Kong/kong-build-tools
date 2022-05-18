@@ -15,6 +15,7 @@ FORCE=0
 OPENRESTY_PATCHES=$OPENRESTY_PATCHES
 KONG_NGINX_MODULE=master
 RESTY_LMDB=master
+RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 DEBUG=0
 NPROC=
 OS=
@@ -94,6 +95,10 @@ main() {
         ;;
       --no-resty-lmdb)
         RESTY_LMDB=0
+        shift 1
+        ;;
+      --resty-websocket)
+        RESTY_WEBSOCKET=$2
         shift 1
         ;;
       -f|--force)
@@ -227,6 +232,7 @@ main() {
           notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
         fi
         tar -xzf openssl-$OPENSSL_VER.tar.gz
+        ln -s openssl-${OPENSSL_VER} openssl
       fi
     fi
 
@@ -246,6 +252,7 @@ main() {
           notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
         fi
         unzip -q boringssl-${BORINGSSL_VER}.zip
+        ln -s boringssl-${BORINGSSL_VER} boringssl
       fi
     fi
 
@@ -270,6 +277,7 @@ main() {
           notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
+        ln -s openresty-$OPENRESTY_VER openresty
 
         # use unreleased version of lua-resty-dns
         if version_eq $OPENRESTY_VER 1.19.3; then
@@ -278,6 +286,23 @@ main() {
             curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
             tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
             rm -f lua-resty-dns-0.21.tar.gz
+          popd
+        fi
+
+        if [[ $RESTY_WEBSOCKET != 0 ]]; then
+          pushd openresty-$OPENRESTY_VER/bundle
+            if ! rm -rf lua-resty-websocket-*; then
+              fatal "Failed to find/remove upstream lua-resty-websocket component"
+            fi
+            mkdir "lua-resty-websocket-${RESTY_WEBSOCKET}"
+            notice "Downloading Kong/lua-resty-websocket $RESTY_WEBSOCKET"
+            curl -sSL \
+              -o lua-resty-websocket.tar.gz \
+              "https://github.com/Kong/lua-resty-websocket/archive/refs/tags/${RESTY_WEBSOCKET}.tar.gz"
+            tar -xzf lua-resty-websocket.tar.gz \
+              -C "lua-resty-websocket-${RESTY_WEBSOCKET}" \
+              --strip-components 1
+            rm -f lua-resty-websocket.tar.gz
           popd
         fi
       fi
@@ -296,6 +321,7 @@ main() {
           notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
+        ln -s pcre-${PCRE_VER} pcre
       fi
     fi
 
@@ -322,6 +348,7 @@ main() {
             notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
+          ln -s luarocks-${LUAROCKS_VER} luarocks
         fi
       fi
     fi
@@ -388,6 +415,16 @@ main() {
       pushd $OPENRESTY_DOWNLOAD/bundle
         if [ ! -f .patch_applied ]; then
           for patch_file in $(ls -1 $OPENRESTY_PATCHES_DIR/patches/$OPENRESTY_VER/*.patch); do
+            # any existing patch files will surely conflict with our fork of
+            # lua-resty-websocket, so skip them if bundling Kong/lua-resty-websocket
+            if
+              [[ $RESTY_WEBSOCKET != 0 ]] &&
+              [[ "$(basename "$patch_file")" = lua-resty-websocket-* ]]
+            then
+              notice "Skipping lua-resty-websocket patch: $patch_file"
+              continue
+            fi
+
             notice "Applying OpenResty patch $patch_file"
             patch -p1 < $patch_file \
               || fatal "failed to apply patch: $patch_file"
@@ -560,7 +597,8 @@ main() {
         )
 
         if [ "$EDITION" == 'enterprise' ]; then
-          OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
+          OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
@@ -614,7 +652,7 @@ main() {
           OPENRESTY_OPTS+=('--with-debug')
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
-
+        
         eval ./configure ${OPENRESTY_OPTS[*]}
 
         if [ -n "$BORINGSSL_VER" ]; then
@@ -811,6 +849,9 @@ show_usage() {
   echo ""
   echo "      --resty-lmdb <branch>          Specify a lua-resty-lmdb branch to use when patching and compiling."
   echo "                                     (Defaults to \"master\")"
+  echo ""
+  echo "      --resty-websocket <tag>        Specify a Kong/lua-resty-websocket tag to install in place of the"
+  echo "                                     bundled version of lua-resty-websocket (Defaults to \"$RESTY_WEBSOCKET\")"
   echo ""
   echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"
   echo "                                     will not be built."

@@ -2,7 +2,7 @@ ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:$PACKAGE_TYPE
+FROM kong/kong-build-tools:$PACKAGE_TYPE-1.5.12
 
 ARG EDITION="community"
 ENV EDITION $EDITION
@@ -22,47 +22,9 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install \
     && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
-ARG KONG_GMP_VERSION=6.2.1
-ENV KONG_GMP_VERSION $KONG_GMP_VERSION
-RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/gmp-${KONG_GMP_VERSION}.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-${KONG_GMP_VERSION}.tar.bz2 \
-    && cd /tmp \
-    && tar xjf gmp-${KONG_GMP_VERSION}.tar.bz2 \
-    && ln -s /tmp/gmp-${KONG_GMP_VERSION} /tmp/gmp \
-    && cd /tmp/gmp \
-    && ./configure --build=x86_64-linux-gnu --enable-static=no --libdir=/tmp/build/usr/local/kong/lib \
-    && make -j${RESTY_J}; fi
-
-ARG KONG_NETTLE_VERSION="3.7.3"
-ENV KONG_NETTLE_VERSION $KONG_NETTLE_VERSION
-RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/nettle-${KONG_NETTLE_VERSION}.tar.gz https://ftp.gnu.org/gnu/nettle/nettle-${KONG_NETTLE_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf nettle-${KONG_NETTLE_VERSION}.tar.gz \
-    && ln -s /tmp/nettle-${KONG_NETTLE_VERSION} /tmp/nettle \
-    && cd /tmp/nettle \
-    && LDFLAGS="-Wl,-rpath,/usr/local/kong/lib" \
-    ./configure --disable-static \
-    --libdir=/tmp/build/usr/local/kong/lib \
-    --with-include-path="/tmp/gmp-${KONG_GMP_VERSION}/" \
-    --with-lib-path="/tmp/gmp-${KONG_GMP_VERSION}/.libs/" \
-    && make -j${RESTY_J}; fi
-
-ARG KONG_DEP_PASSWDQC_VERSION="1.3.1"
-ENV KONG_DEP_PASSWDQC_VERSION $KONG_DEP_PASSWDQC_VERSION
-RUN if [ "$EDITION" = "enterprise" ] ; then curl -fsSLo /tmp/passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz https://www.openwall.com/passwdqc/passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf passwdqc-${KONG_DEP_PASSWDQC_VERSION}.tar.gz \
-    && ln -s /tmp/passwdqc-${KONG_DEP_PASSWDQC_VERSION} /tmp/passwdqc \
-    && cd /tmp/passwdqc \
-    && make libpasswdqc.so -j$BUILD_JOBS \
-    && make \
-    DESTDIR=/tmp/build/ \
-    SHARED_LIBDIR=/usr/local/kong/lib \
-    SHARED_LIBDIR_REL='.' \
-    DEVEL_LIBDIR=/usr/local/kong/lib \
-    INCLUDEDIR=/usr/local/kong/include/passwdqc \
-    CONFDIR=/usr/local/etc/passwdqc \
-    MANDIR=/usr/local/share/man \
-    install_lib; fi
+COPY kong/.requirements kong/distribution/ /distribution/
+WORKDIR /distribution
+RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
 ARG KONG_NGINX_MODULE=master
 
@@ -81,6 +43,9 @@ LABEL resty_luarocks_version="${RESTY_LUAROCKS_VERSION}"
 ARG RESTY_LMDB=0
 LABEL resty_lmdb="${RESTY_LMDB}"
 
+ARG RESTY_WEBSOCKET=0
+LABEL resty_websocket="${RESTY_WEBSOCKET}"
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
@@ -88,18 +53,10 @@ COPY build-openresty.sh /tmp/build-openresty.sh
 ARG OPENRESTY_PATCHES=1
 ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 
-COPY kong-licensing /enterprise/kong-licensing
-COPY lua-kong-nginx-module /enterprise/lua-kong-nginx-module
-COPY lua-resty-lmdb /enterprise/lua-resty-lmdb
+COPY lua-kong-nginx-module /distribution/lua-kong-nginx-module
+COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
 ARG DEBUG=1
-RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh \
-    && rm -rf /work
-
-WORKDIR /kong
-COPY kong /kong
-COPY build-kong.sh /build-kong.sh
-
-RUN /build-kong.sh && rm -rf /kong
+RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
