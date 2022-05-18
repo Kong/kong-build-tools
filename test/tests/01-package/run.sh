@@ -23,7 +23,7 @@ if [[ "$PACKAGE_TYPE" == "deb" ]]; then
 fi
 
 if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
-  # These files should have 'kong:root' ownership
+  # These files should have 'kong:kong' ownership
   files=(
     "/etc/kong/"
     "/usr/local/bin/json2lua"
@@ -41,8 +41,8 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   )
 
   for file in "${files[@]}"; do
-    # Check if the 'chown -R kong:root' ownership changes worked
-    docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%U:%G" {} \; | grep -vc "kong:root") == "0" ]'
+    # Check if the 'chown -R kong:kong' ownership changes worked
+    docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%U:%G" {} \; | grep -vc "kong:kong") == "0" ]'
 
     # Check if the 'chmod g=u -R' permission changes worked
     docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%a" {} \; | grep -Evc "^(.)\1") == "0" ]'
