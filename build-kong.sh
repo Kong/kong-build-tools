@@ -24,6 +24,8 @@ export PATH=$PATH:/usr/local/openresty/luajit/bin
 /usr/local/openresty/bin/openresty -v
 
 pushd /kong
+  cp -r kong/include/kong /tmp/build/usr/local/kong/lib/ || true
+
   ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
