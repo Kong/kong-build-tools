@@ -108,9 +108,17 @@ function push_package() {
 
   set -x
 
-  local release_args="--package-type gateway --publish"
+  local release_args="--package-type gateway"
   if [[ "$EDITION" == "enterprise" ]]; then
     release_args="$release_args --enterprise"
+    # enterprise pre-releases go to `/internal/`
+    if [[ "$OFFICIAL_RELEASE" == "true" ]]; then
+      release_args="$release_args --publish"
+    else
+      release_args="$release_args --internal"
+    fi
+  else
+    release_args="$release_args --publish"
   fi
 
   eval $(docker-machine env -u) # release-scripts do not need to run within the arm64 box

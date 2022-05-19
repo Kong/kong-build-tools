@@ -13,7 +13,7 @@ pipeline {
         DEBUG = 0
     }
     options {
-        retry(1)
+        retry(2)
         timeout(time: 120, unit: 'MINUTES')
     }
     stages {
