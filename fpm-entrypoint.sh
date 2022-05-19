@@ -37,7 +37,7 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   fi
   if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
-    FPM_PARAMS="$FPM_PARAMS -d /usr/sbin/useradd"
+    FPM_PARAMS="$FPM_PARAMS -d /usr/sbin/useradd -d /usr/sbin/groupadd"
   fi
   if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
     OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"

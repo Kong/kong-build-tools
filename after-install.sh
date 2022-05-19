@@ -1,5 +1,6 @@
 create_user() {
-  useradd -U -m -s /bin/sh kong
+  groupadd -f kong
+  useradd -g kong -ms /bin/sh kong
 
   FILES=""
   FILES="${FILES} /etc/kong/"
@@ -9,7 +10,9 @@ create_user() {
   FILES="${FILES} /usr/local/bin/lua2json"
   FILES="${FILES} /usr/local/bin/luarocks"
   FILES="${FILES} /usr/local/bin/luarocks-admin"
+  FILES="${FILES} /usr/local/bin/openapi2kong"
   FILES="${FILES} /usr/local/etc/luarocks/"
+  FILES="${FILES} /usr/local/etc/passwdqc/"
   FILES="${FILES} /usr/local/kong/"
   FILES="${FILES} /usr/local/lib/lua/"
   FILES="${FILES} /usr/local/lib/luarocks/"
