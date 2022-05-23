@@ -118,7 +118,7 @@ endif
 
 DOCKER_REPOSITORY?=kong/kong-build-tools
 
-# this prints out variables defined within this Makefile by filterting out
+# this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
 # value (within single quotes) and the expanded variable value (without quotes)
 #
