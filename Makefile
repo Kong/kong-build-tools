@@ -122,7 +122,7 @@ DOCKER_REPOSITORY?=kong/kong-build-tools
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
 # value (within single quotes) and the expanded variable value (without quotes)
 #
-# variables' whos value does not expand, are only printed once ("uniq"-ed )
+# variables whose value does not expand are only printed once ("uniq"-ed )
 debug:
 	@$(foreach v, \
 		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
