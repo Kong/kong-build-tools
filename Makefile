@@ -1,5 +1,7 @@
 $(info starting make in kong-build-tools)
 
+VARS_OLD := $(.VARIABLES)
+
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
@@ -116,23 +118,19 @@ endif
 
 DOCKER_REPOSITORY?=kong/kong-build-tools
 
+# this prints out variables defined within this Makefile by filterting out
+# from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
+# value (within single quotes) and the expanded variable value (without quotes)
+#
+# variables' whos value does not expand, are only printed once ("uniq"-ed )
 debug:
-	@echo ${DOCKER_REPOSITORY}
-	@echo ${CACHE}
-	@echo ${BUILDX}
-	@echo ${UPDATE_CACHE}
-	@echo ${CACHE_COMMAND}
-	@echo ${UPDATE_CACHE_COMMAND}
-	@echo ${DOCKER_COMMAND}
-	@echo ${BUILDX_INFO}
-	@echo ${DEBUG}
-	@echo ${KONG_NGINX_MODULE}
-	@echo ${RESTY_LMDB}
-	@echo ${RESTY_WEBSOCKET}
-	@echo ${KONG_VERSION}
-	@echo ${KONG_PACKAGE_NAME}
-	@echo ${OFFICIAL_RELEASE}
-	
+	@$(foreach v, \
+		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
+		( \
+			echo '$(v) = $($(v))' ; echo \
+			      $(v) = $($(v)) ;  \
+		) | uniq ; \
+	)
 
 setup-ci: setup-build
 
