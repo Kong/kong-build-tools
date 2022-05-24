@@ -142,6 +142,10 @@ pipeline {
                             label 'bionic'
                         }
                     }
+                    environment {
+                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
+                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
