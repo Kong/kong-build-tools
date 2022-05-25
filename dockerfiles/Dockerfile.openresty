@@ -28,7 +28,7 @@ RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
 ARG KONG_NGINX_MODULE=master
 
-ARG RESTY_VERSION=1.19.9.1
+ARG RESTY_VERSION=1.21.4.1
 LABEL resty_version="${RESTY_VERSION}"
 
 ARG RESTY_OPENSSL_VERSION=1.1.1k
