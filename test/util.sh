@@ -59,7 +59,7 @@ kong_ready() {
   while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000)" != 404 ]]; do
     sleep 5;
     COUNTER=$((COUNTER + 5))
-  
+
     if (($COUNTER >= $TIMEOUT_SECONDS))
     then
       printf "\xe2\x98\x93 ERROR: Timed out waiting for $KONG"
@@ -81,7 +81,14 @@ assert_response() {
   local endpoint=$1
   local expected_code=$2
   local resp_code
-  resp_code=$(curl -s -o /dev/null -w "%{http_code}" $endpoint)
+  COUNTER=20
+  while : ; do
+    resp_code=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint")
+    [ "$resp_code" == "$expected_code" ] && break
+    ((COUNTER-=1))
+    [ "$COUNTER" -lt 1 ] && break
+    sleep 0.5 # 10 seconds max
+  done
   [ "$resp_code" == "$expected_code" ] || err_exit "  expected $2, got $resp_code"
 }
 
@@ -104,4 +111,3 @@ it_runs_full_enterprise() {
   msg_test "workspaces are writable"
   assert_response "$KONG_ADMIN_URI/workspaces -d name=testworkspace" "201"
 }
-
