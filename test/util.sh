@@ -83,7 +83,7 @@ assert_response() {
   local resp_code
   COUNTER=20
   while : ; do
-    resp_code=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint")
+    resp_code=$(curl -s -o /dev/null -w "%{http_code}" $endpoint)
     [ "$resp_code" == "$expected_code" ] && break
     ((COUNTER-=1))
     [ "$COUNTER" -lt 1 ] && break
