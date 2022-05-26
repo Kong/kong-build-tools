@@ -56,7 +56,6 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=rockylinux  RESTY_IMAGE_TAG=8 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
-                        
                     }
                 }
                 stage('Kong Enterprise src & Alpine'){
@@ -97,7 +96,6 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9     package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11    package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                     }
@@ -170,7 +168,6 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=9     package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11    package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=16.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                     }
