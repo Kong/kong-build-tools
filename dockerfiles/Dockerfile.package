@@ -12,12 +12,13 @@ COPY fpm-entrypoint.sh sign-rpm.exp .rpmmacros /
 COPY after-install.sh /after-install.sh
 COPY .rpmmacros /root/.rpmmacros
 ARG PRIVATE_KEY_FILE
-COPY ${PRIVATE_KEY_FILE} /kong.private.asc 
+COPY ${PRIVATE_KEY_FILE} /kong.private.asc
 ARG PRIVATE_KEY_PASSPHRASE
 ENV PRIVATE_KEY_PASSPHRASE ${PRIVATE_KEY_PASSPHRASE}
 
 ARG RESTY_IMAGE_BASE="ubuntu"
-ARG RESTY_IMAGE_TAG="16.04"
+ARG RESTY_IMAGE_TAG="18.04"
+
 ARG PACKAGE_TYPE
 ARG KONG_VERSION
 ARG KONG_PACKAGE_NAME

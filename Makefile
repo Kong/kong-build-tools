@@ -43,13 +43,21 @@ RELEASE_DOCKER_ONLY ?= false
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
-# We build ARM64 for alpine and xenial only at this time
+GITHUB_TOKEN ?=
+
+# set to 'plain' to get less dynamic, but linear output from docker build(x)
+DOCKER_BUILD_PROGRESS ?= auto
+
+# whether to enable bytecompilation of kong lua files or not
+ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
+# We build ARM64 for alpine and bionic only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),xenial)
+else ifeq ($(RESTY_IMAGE_TAG),bionic)
 	BUILDX=true
-else ifeq ($(RESTY_IMAGE_TAG),16.04)
+else ifeq ($(RESTY_IMAGE_TAG),18.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
