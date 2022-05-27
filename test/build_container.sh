@@ -28,6 +28,8 @@ fi
 pushd docker-kong
   if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
     sed -i.bak 's/^FROM .*/FROM 'registry.access.redhat.com\\/ubi${RESTY_IMAGE_TAG}\\/ubi'/' Dockerfile.$PACKAGE_TYPE
+  elif [ "$RESTY_IMAGE_BASE" == "debian" ]; then
+    sed -i.bak 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}-slim'/' Dockerfile.$PACKAGE_TYPE
   else
     sed -i.bak 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' Dockerfile.$PACKAGE_TYPE
   fi
