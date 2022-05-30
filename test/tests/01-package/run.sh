@@ -18,6 +18,7 @@ fi
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get install -y perl-base zlib1g-dev"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 fi
@@ -101,26 +102,28 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/openresty/lualib/resty/websocket/*.lua"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "grep _VERSION /usr/local/openresty/lualib/resty/websocket/*.lua"
 
-# luarocks
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks --version | grep -q ${RESTY_LUAROCKS_VERSION}"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks config | grep -q /usr/local/openresty/luajit/bin/luajit"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks config | grep -q /usr/local/openresty/luajit/include/luajit-2.1"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks config | grep -q /usr/local/openresty/luajit/lib"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "luarocks install version"
-
 # kong shipped files
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong*.logrotate"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/pluginsocket.proto"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
 
+if [[ "$EDITION" == "enterprise" ]]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "passwdqc"'
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "jq"'
+  #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} openapi2kong 2>&1 | head -1 | grep 'missing required parameter:'
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} ls -l /usr/local/kong/lib/pluginsocket.proto
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/bash -c "ls -l /usr/local/kong/lib/google/protobuf/*.proto"
+fi
+
 # kong binaries
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]]; then
+if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
   cp $PACKAGE_LOCATION/*amd64.deb kong.deb
   docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get clean"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt install --yes /src/kong.deb"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "kong version"

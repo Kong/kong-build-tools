@@ -1,4 +1,9 @@
+$(info starting make in kong-build-tools)
+
+VARS_OLD := $(.VARIABLES)
+
 .PHONY: test build-kong
+.DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
 
@@ -19,11 +24,17 @@ TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_PACKAGE_NAME?="kong"
-KONG_CONFLICTS?="kong-enterprise-edition"
+
 KONG_LICENSE?="ASL 2.0"
 
-PRIVATE_REPOSITORY?=true
+KONG_PACKAGE_NAME ?= `grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+OFFICIAL_RELEASE ?= true
+
+PACKAGE_CONFLICTS ?= `grep PACKAGE_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+DOCKER_RELEASE_REPOSITORY ?= `grep DOCKER_RELEASE_REPOSITORY $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
 KONG_TEST_CONTAINER_NAME=kong-tests
 KONG_TEST_CONTAINER_TAG?=5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 KONG_TEST_IMAGE_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
@@ -39,8 +50,8 @@ KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requir
 KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-LIBYAML_VERSION ?= `grep LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 DOCKER_KONG_VERSION = 'master'
 DEBUG ?= 0
@@ -48,13 +59,21 @@ RELEASE_DOCKER_ONLY ?= false
 
 DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 
-# We build ARM64 for alpine and xenial only at this time
+GITHUB_TOKEN ?=
+
+# set to 'plain' to get less dynamic, but linear output from docker build(x)
+DOCKER_BUILD_PROGRESS ?= auto
+
+# whether to enable bytecompilation of kong lua files or not
+ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
+# We build ARM64 for alpine and bionic only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),xenial)
+else ifeq ($(RESTY_IMAGE_TAG),bionic)
 	BUILDX=true
-else ifeq ($(RESTY_IMAGE_TAG),16.04)
+else ifeq ($(RESTY_IMAGE_TAG),18.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
@@ -63,9 +82,9 @@ endif
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
 endif
 
 # Set this to unique value to bust the cache
@@ -73,7 +92,7 @@ CACHE_BUSTER?=0
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
-REQUIREMENTS_SHA=$$(md5sum $(KONG_SOURCE_LOCATION)/.requirements | cut -d' ' -f 1)
+REQUIREMENTS_SHA=$$(find kong/distribution -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum  | cut -d' ' -f 1)
 BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
@@ -91,31 +110,35 @@ else
 endif
 
 UPDATE_CACHE?=$(CACHE)
+
 ifeq ($(UPDATE_CACHE),true)
 	UPDATE_CACHE_COMMAND?=docker push
 else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
-DOCKER_REPOSITORY?=mashape/kong-build-tools
+DOCKER_REPOSITORY?=kong/kong-build-tools
 
+# this prints out variables defined within this Makefile by filtering out
+# from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
+# value (within single quotes) and the expanded variable value (without quotes)
+#
+# variables whose value does not expand are only printed once ("uniq"-ed )
 debug:
-	@echo ${CACHE}
-	@echo ${BUILDX}
-	@echo ${UPDATE_CACHE}
-	@echo ${CACHE_COMMAND}
-	@echo ${UPDATE_CACHE_COMMAND}
-	@echo ${DOCKER_COMMAND}
-	@echo ${BUILDX_INFO}
-	@echo ${DEBUG}
-	@echo ${KONG_NGINX_MODULE}
-	@echo ${RESTY_LMDB}
-	@echo ${RESTY_WEBSOCKET}
+	@$(foreach v, \
+		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
+		( \
+			echo '$(v) = $($(v))' ; echo \
+			      $(v) = $($(v)) ;  \
+		) | uniq ; \
+	)
 
 setup-ci: setup-build
 
 setup-build:
 	.ci/setup_ci.sh
+	$(info 'running build: RESTY_IMAGE_BASE: $(RESTY_IMAGE_BASE)')
+	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
@@ -147,12 +170,10 @@ else ifeq ($(BUILDX),true)
 	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 endif
 
-build-openresty:
+build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -164,8 +185,6 @@ else
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
-	--build-arg KONG_GMP_VERSION=$(KONG_GMP_VERSION) \
-	--build-arg KONG_NETTLE_VERSION=$(KONG_NETTLE_VERSION) \
 	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
 	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
 	--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
@@ -197,7 +216,9 @@ endif
 	--build-arg EDITION=$(EDITION) \
 	--build-arg KONG_VERSION=$(KONG_VERSION) \
 	--build-arg KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	--build-arg KONG_CONFLICTS=$(KONG_CONFLICTS) \
+	--build-arg PACKAGE_CONFLICTS=$(PACKAGE_CONFLICTS) \
+	--build-arg PACKAGE_PROVIDES=$(PACKAGE_PROVIDES) \
+	--build-arg PACKAGE_REPLACES=$(PACKAGE_REPLACES) \
 	--build-arg PRIVATE_KEY_FILE=kong.private.gpg-key.asc \
 	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
 	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) .
@@ -208,7 +229,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -224,22 +245,20 @@ else
 build-kong: actual-build-kong
 endif
 
-actual-build-kong:
+actual-build-kong: setup-kong-source
 	touch id_rsa.private
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
+	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 
-kong-test-container:
+kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
-	-rm -rf kong
-	-cp -R $(KONG_SOURCE_LOCATION) kong
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
@@ -254,6 +273,16 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX)
 endif
+
+setup-kong-source:
+	-rm -rf kong
+	-cp -R $(KONG_SOURCE_LOCATION) kong
+	-mkdir -pv kong/distribution
+	-git submodule update --init --recursive
+	-git submodule status
+	-git -C kong submodule update --init --recursive
+	-git -C kong submodule status
+	cp kong/.requirements kong/distribution/.requirements 
 
 test-kong: kong-test-container
 	docker-compose up -d
@@ -272,10 +301,12 @@ release-kong: test
 	PULP_STAGE_USR=$(PULP_STAGE_USR) \
 	PULP_STAGE_PSW=$(PULP_STAGE_PSW) \
 	PULP_HOST_STAGE=$(PULP_HOST_STAGE) \
-	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
+	EDITION=$(EDITION) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
+	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
 	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
 	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
 	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
@@ -293,10 +324,10 @@ ifeq ($(BUILDX),true)
 	PULP_STAGE_USR=$(PULP_STAGE_USR) \
 	PULP_STAGE_PSW=$(PULP_STAGE_PSW) \
 	PULP_HOST_STAGE=$(PULP_HOST_STAGE) \
-	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
 	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 endif
 
@@ -322,6 +353,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_HOST=127.0.0.1 \
 	KONG_ADMIN_PORT=8444 \
 	KONG_PROXY_PORT=8000 \
+	TEST_HOST=$(TEST_HOST) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	KONG_ADMIN_URI="http://$(TEST_HOST):$(TEST_ADMIN_PORT)" \
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
@@ -340,16 +372,16 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-test-container:
-	docker pull rockylinux:8
-	docker tag rockylinux:8 centos:8
 	touch test/kong_license.private
 	ARCHITECTURE=amd64 \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
+	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS) \
 	test/build_container.sh
 ifeq ($(BUILDX),true)
 	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
@@ -357,6 +389,7 @@ ifeq ($(BUILDX),true)
 	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
 	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
 	ARCHITECTURE=arm64 \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
@@ -381,6 +414,8 @@ cleanup-tests:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	docker-compose -f test/kong-tests-compose.yaml down
 	docker-compose -f test/kong-tests-compose.yaml rm -f
+	docker stop user-validation-tests || true
+	docker rm user-validation-tests || true
 	docker volume prune -f
 endif
 
@@ -388,6 +423,8 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+	-git submodule deinit -f .
+	-docker rmi $(KONG_TEST_CONTAINER_TAG)
 
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX)

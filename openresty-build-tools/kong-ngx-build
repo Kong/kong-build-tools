@@ -237,6 +237,7 @@ main() {
           notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
         fi
         tar -xzf openssl-$OPENSSL_VER.tar.gz
+        ln -s openssl-${OPENSSL_VER} openssl
       fi
     fi
 
@@ -256,6 +257,7 @@ main() {
           notice "Downloaded: $(sha256sum "boringssl-${BORINGSSL_VER}.zip")"
         fi
         unzip -q boringssl-${BORINGSSL_VER}.zip
+        ln -s boringssl-${BORINGSSL_VER} boringssl
       fi
     fi
 
@@ -280,6 +282,7 @@ main() {
           notice "Downloaded: $(sha256sum "openresty-$OPENRESTY_VER.tar.gz")"
         fi
         tar -xzf openresty-$OPENRESTY_VER.tar.gz
+        ln -s openresty-$OPENRESTY_VER openresty
 
         # use unreleased version of lua-resty-dns
         if version_eq $OPENRESTY_VER 1.19.3; then
@@ -323,6 +326,7 @@ main() {
           notice "Downloaded: $(sha256sum "pcre-${PCRE_VER}.tar.gz")"
         fi
         tar -xzf pcre-${PCRE_VER}.tar.gz
+        ln -s pcre-${PCRE_VER} pcre
       fi
     fi
 
@@ -349,6 +353,7 @@ main() {
             notice "Downloaded: $(sha256sum "luarocks-$LUAROCKS_VER.tar.gz")"
           fi
           tar -xzf luarocks-$LUAROCKS_VER.tar.gz
+          ln -s luarocks-${LUAROCKS_VER} luarocks
         fi
       fi
     fi
@@ -616,7 +621,8 @@ main() {
         )
 
         if [ "$EDITION" == 'enterprise' ]; then
-          OPENRESTY_OPTS+=('--add-module=/enterprise/kong-licensing/ngx_module')
+          OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
@@ -674,7 +680,7 @@ main() {
           OPENRESTY_OPTS+=('--with-debug')
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
-
+        
         eval ./configure ${OPENRESTY_OPTS[*]}
 
         if [ -n "$BORINGSSL_VER" ]; then
