@@ -71,9 +71,9 @@ function push_docker_images() {
   docker push "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
 
   docker manifest create \
-    -a "$DOCKER_REPOSITORY:$KONG_VERSION" \
+    -a "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE" \
        "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION"
+  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE"
 }
 
 
@@ -123,7 +123,7 @@ function push_package() {
 
 # only push docker images for alpine builds
 # this is for "release per commit" builds
-if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+if [ "$RELEASE_DOCKER" == "true" ]; then
   push_docker_images
 
   if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
