@@ -123,10 +123,10 @@ function push_package() {
 
 # only push docker images for alpine builds
 # this is for "release per commit" builds
-if [ "$RELEASE_DOCKER" == "true" ]; then
+if [[ "$RELEASE_DOCKER" == "true" ]]; then
   push_docker_images
 
-  if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
+  if [[ "$RELEASE_DOCKER_ONLY" == "true" ]]; then
     exit 0
   fi
 fi
