@@ -585,6 +585,15 @@ main() {
 
     pushd $OPENRESTY_DOWNLOAD
       if [ ! -f Makefile ]; then
+
+        pushd bundle
+          lj_dir=$(ls -d LuaJIT*)
+          lj_release_date=$(echo ${lj_dir} | sed -e 's/LuaJIT-[[:digit:]]\+.[[:digit:]]\+-\([[:digit:]]\+\)/\1/')
+          lj_version_tag="LuaJIT\ 2.1.0-${lj_release_date}"
+        popd
+
+        notice "Building LuaJIT with version string $lj_version_tag"
+
         OPENRESTY_OPTS=(
           "--prefix=$OPENRESTY_PREFIX"
           "--with-pcre-jit"
@@ -593,6 +602,7 @@ main() {
           "--with-http_stub_status_module"
           "--with-http_v2_module"
           "--without-http_encrypted_session_module"
+          "--with-luajit-xcflags='-DLUAJIT_VERSION=\\\"${lj_version_tag}\\\"'"
           "-j$NPROC"
         )
 
