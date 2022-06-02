@@ -7,6 +7,7 @@ DOCKER_BUILD_ARGS=()
 
 image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME" || true)
 if [ -n "$image_id" ]; then
+  msg_test "Tests image Name: $KONG_TEST_IMAGE_NAME"
   msg_test "Tests image ID: $image_id"
   exit 0;
 fi
@@ -25,7 +26,7 @@ else
   cp output/*.${PACKAGE_TYPE} docker-kong/kong.${PACKAGE_TYPE}
 fi
 
-pushd docker-kong
+pushd ./docker-kong
   if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
     sed -i.bak 's/^FROM .*/FROM 'registry.access.redhat.com\\/ubi${RESTY_IMAGE_TAG}\\/ubi'/' Dockerfile.$PACKAGE_TYPE
   elif [ "$RESTY_IMAGE_BASE" == "debian" ]; then
@@ -41,6 +42,7 @@ pushd docker-kong
     "${DOCKER_BUILD_ARGS[@]}"
 
   docker run -t $KONG_TEST_IMAGE_NAME kong version
+  msg_test "Tests image Name: $KONG_TEST_IMAGE_NAME"
 popd
 
 rm -rf docker-kong || true

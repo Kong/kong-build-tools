@@ -422,7 +422,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf docker-kong
 	-rm -rf output/*
 	-git submodule deinit -f .
-	-docker rmi $(KONG_TEST_CONTAINER_TAG)
+	-docker rmi $(KONG_TEST_IMAGE_NAME)
 
 update-cache-images:
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX)
