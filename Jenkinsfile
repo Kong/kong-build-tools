@@ -21,7 +21,7 @@ pipeline {
             environment {
                 DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                 GITHUB_TOKEN = credentials('github_bot_access_token')
-                KONG_SOURCE = "feat/branch-by-abstraction"
+                KONG_SOURCE = "master"
                 PULP = credentials('PULP')
                 PULP_PASSWORD = "${env.PULP_PSW}"
                 PULP_USERNAME = "${env.PULP_USR}"
