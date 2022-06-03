@@ -31,7 +31,6 @@ KONG_VERSION=$KONG_VERSION
 
 DOCKER_REPOSITORY="kong/kong"
 DOCKER_REPOSITORY="${DOCKER_RELEASE_REPOSITORY:-kong/kong}"
-DOCKER_TAG="latest"
 
 
 case "$RESTY_IMAGE_BASE" in
@@ -72,24 +71,9 @@ function push_docker_images() {
   docker push "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
 
   docker manifest create \
-    -a "$DOCKER_REPOSITORY:$KONG_VERSION" \
+    -a "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE" \
        "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION"
-
-  docker tag \
-    "localhost:5000/kong-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG" \
-    "$DOCKER_REPOSITORY:$ARCHITECTURE-$DOCKER_TAG"
-
-  echo "FROM $DOCKER_REPOSITORY:$ARCHITECTURE-$DOCKER_TAG" | docker build \
-    --label org.opencontainers.image.version="$KONG_VERSION" \
-    --label org.opencontainers.image.created="$DOCKER_LABEL_CREATED" \
-    --label org.opencontainers.image.revision="$DOCKER_LABEL_REVISION" \
-    -t "$DOCKER_REPOSITORY:$ARCHITECTURE-$DOCKER_TAG" -
-  docker push "$DOCKER_REPOSITORY:$ARCHITECTURE-$DOCKER_TAG"
-
-  docker manifest create -a "$DOCKER_REPOSITORY:$DOCKER_TAG" \
-    "$DOCKER_REPOSITORY:$ARCHITECTURE-$DOCKER_TAG"
-  docker manifest push "$DOCKER_REPOSITORY:$DOCKER_TAG"
+  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE"
 }
 
 
@@ -139,10 +123,10 @@ function push_package() {
 
 # only push docker images for alpine builds
 # this is for "release per commit" builds
-if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
+if [[ "$RELEASE_DOCKER" == "true" ]]; then
   push_docker_images
 
-  if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
+  if [[ "$RELEASE_DOCKER_ONLY" == "true" ]]; then
     exit 0
   fi
 fi
