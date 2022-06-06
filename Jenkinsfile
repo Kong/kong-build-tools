@@ -54,6 +54,7 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise src & Alpine'){
@@ -128,6 +129,7 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
                     }
                 }
                 stage('Kong OSS src & Alpine'){
