@@ -16,36 +16,42 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
-    ca-certificates \
-    tzdata \
-    vim \
-    jq \
-    httpie \
-    iputils-ping \
-    net-tools \
-    valgrind \
-    net-tools && \
-    dpkg-reconfigure --frontend noninteractive tzdata && \
-    apt-get install -y postgresql
+        ca-certificates \
+        tzdata \
+        vim \
+        jq \
+        httpie \
+        iputils-ping \
+        net-tools \
+        valgrind \
+        libyaml-dev \
+        valgrind \
+        libprotobuf-dev \
+        libpam-dev \
+        curl \
+        postgresql-client \
+        net-tools && \
+    dpkg-reconfigure --frontend noninteractive tzdata
 
 RUN rm -rf /kong/* || true
 COPY kong /kong
-RUN rm -rf /kong/bin/grpcurl
+
 RUN mkdir -p /kong/servroot/logs
 RUN chmod -R 777 /kong
 WORKDIR /kong
-RUN luarocks purge --tree=/usr/local || true
-RUN /usr/local/bin/luarocks make kong-*.rockspec \
-    CRYPTO_DIR=/usr/local/kong \
-    OPENSSL_DIR=/usr/local/kong \
-    YAML_LIBDIR=/usr/local/kong/lib \
-    CFLAGS="-L/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
-RUN make dev
 
+# Luarocks will leave old rocks installed so we need to purge / reinstall
+RUN luarocks purge --tree=/usr/local || true
+
+# cpanm necessary for PDK testing
 RUN curl -L https://cpanmin.us | perl - App::cpanminus \
     && cpanm --notest Test::Nginx \
     && cpanm --notest local::lib
 
+# Mirror of kong-ee CI logic
+RUN make dev || true
+RUN make try-install-plugins-ee || true
+
 RUN rm -rf /tmp/build
 
-CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; tail -f /dev/null"]
+CMD ["sh", "-c", "cat /kong/spec/fixtures/hosts >> /etc/hosts; /bin/bash"]
