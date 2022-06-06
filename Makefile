@@ -182,6 +182,7 @@ else
 	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
@@ -284,10 +285,13 @@ setup-kong-source:
 	-git -C kong submodule status
 	cp kong/.requirements kong/distribution/.requirements 
 
-test-kong: kong-test-container
+kong-test-infrastructure:
+	docker-compose pull
 	docker-compose up -d
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
+
+test-kong: kong-test-infrastructure
+	docker-compose exec -T kong .ci/run_tests_github.sh
 
 release-kong: test
 	ARCHITECTURE=amd64 \
