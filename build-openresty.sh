@@ -49,6 +49,10 @@ then
   RESTY_WEBSOCKET=0
 fi
 
+if [ -z "$RESTY_EVENTS" ]
+then
+  RESTY_EVENTS=0
+fi
 
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
@@ -64,6 +68,7 @@ EDITION=$EDITION \
 --openssl $RESTY_OPENSSL_VERSION \
 --resty-lmdb $RESTY_LMDB \
 --resty-websocket $RESTY_WEBSOCKET \
+--resty-events $RESTY_EVENTS \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
