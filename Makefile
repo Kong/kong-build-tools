@@ -48,6 +48,7 @@ RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirem
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PROTOBUF_VERSION ?= `grep PROTOBUF_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -255,6 +256,7 @@ actual-build-kong: setup-kong-source
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
+	--build-arg PROTOBUF_VERSION=$(PROTOBUF_VERSION) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 
 kong-test-container: setup-kong-source
@@ -275,6 +277,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 setup-kong-source:
+	@echo "Kong source location: $(KONG_SOURCE_LOCATION)"
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
 	-mkdir -pv kong/distribution
@@ -424,6 +427,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf docker-kong
 	-rm -rf output/*
 	-git submodule deinit -f .
+	-docker container ls --all | grep ${KONG_TEST_IMAGE_NAME} | awk '{print $$1}' | xargs -I {} docker rm {}
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
 
 update-cache-images:

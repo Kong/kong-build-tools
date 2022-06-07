@@ -45,7 +45,7 @@ pushd /kong
   # call mkdir here to make sure it's created
   mkdir -p /tmp/build/usr/local/kong/include
 
-  curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
+  curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
   unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
   cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/include/
 popd
