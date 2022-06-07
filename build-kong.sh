@@ -45,6 +45,11 @@ pushd /kong
   mkdir -p /tmp/build/usr/local/kong/include
   cp -r kong/include/* /tmp/build/usr/local/kong/include/
 
+  # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
+  if [ -e "kong/pluginsocket.proto" ]; then
+        cp kong/pluginsocket.proto /tmp/build/usr/local/kong/include/kong
+  fi
+
   curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
   unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
   cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/include/
