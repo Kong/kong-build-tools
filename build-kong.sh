@@ -24,7 +24,6 @@ export PATH=$PATH:/usr/local/openresty/luajit/bin
 /usr/local/openresty/bin/openresty -v
 
 pushd /kong
-  cp -r kong/include /tmp/build/usr/local/kong/lib/ || true
   ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
@@ -41,18 +40,19 @@ pushd /kong
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
-  cp kong/pluginsocket.proto /tmp/build/usr/local/kong/lib
+  # /usr/local/kong/include is usually created by other C libraries, like openssl
+  # call mkdir here to make sure it's created
+  mkdir -p /tmp/build/usr/local/kong/include
+  cp -r kong/include/* /tmp/build/usr/local/kong/include/
 
-  # collect proto files (for, at minimum, wrpc & analytics)
-  # see also:
-  #   https://github.com/Kong/kong-distributions/pull/774
-  if [ -d "/kong/kong/include/kong" ]; then
-    cp -r /kong/kong/include/kong /tmp/build/usr/local/kong/lib
+  # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
+  if [ -e "kong/pluginsocket.proto" ]; then
+        cp kong/pluginsocket.proto /tmp/build/usr/local/kong/include/kong
   fi
 
   curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
   unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
-  cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/lib
+  cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/include/
 popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/
