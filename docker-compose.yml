@@ -17,6 +17,10 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+  zipkin:
+    image: openzipkin/zipkin:2.19
+    ports:
+      - 9411:9411
   kong:
     image: "${KONG_TEST_IMAGE:-kong/kong-build-tools:test}"
     privileged: true
