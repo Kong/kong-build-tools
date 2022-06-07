@@ -1,5 +1,10 @@
 version: '2.1'
 services:
+  ad-server:
+    build: ./ad-server
+    privileged: true
+    ports:
+      - '389:389/tcp'
   grpcbin:
     image: moul/grpcbin
     container_name: grpcbin
@@ -35,7 +40,7 @@ services:
         condition: service_healthy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-#      - ./kong:/kong
+      #- ./kong:/kong
     environment:
       JOBS: 2
       TEST_SPLIT: ${TEST_SPLIT:-all}
