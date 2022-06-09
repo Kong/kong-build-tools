@@ -2,7 +2,7 @@ ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:$PACKAGE_TYPE-1.5.12
+FROM kong/kong-build-tools:$PACKAGE_TYPE-1.5.15
 
 ARG EDITION="community"
 ENV EDITION $EDITION
@@ -63,3 +63,13 @@ ARG DEBUG=1
 RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
+
+COPY kong /kong
+RUN rm -rf /distribution/*
+
+ARG GITHUB_TOKEN
+
+# Initial part of Dockerfile.kong for cache purposes
+COPY kong/.requirements kong/distribution/ /distribution/
+WORKDIR /distribution
+RUN if [ -f "/distribution/post-install.sh" ] ; then ./post-install.sh; fi
