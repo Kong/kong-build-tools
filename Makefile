@@ -79,12 +79,14 @@ else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
 endif
 
+DOCKER_BUILDKIT ?= 1
+
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=DOCKER_BUILDKIT=1 docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=DOCKER_BUILDKIT=1 docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
 endif
 
 # Set this to unique value to bust the cache
