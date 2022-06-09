@@ -194,6 +194,7 @@ else
 	--build-arg DEBUG=$(DEBUG) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
+	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
 endif
 
@@ -273,6 +274,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	--cache-from $(DOCKER_REPOSITORY):test \
+	--cache-from kong/kong-build-tools:test \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
 	
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
