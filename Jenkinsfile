@@ -171,21 +171,22 @@ pipeline {
                 }
             }
         }
-        post {
-            success {
-                agent {
-                    node {
-                        label 'bionic'
-                    }
+        stage('Release') {
+            agent {
+                node {
+                    label 'bionic'
                 }
-                environment {
-                    GITHUB_TOKEN = credentials('github_bot_access_token')
-                }
-                steps {
-                    sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
-                    sh '. ~/.nvm/nvm.sh && nvm install lts/*'
-                    sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
-                }
+            }
+            when {
+                branch 'master'
+            }
+            environment {
+                GITHUB_TOKEN = credentials('github_bot_access_token')
+            }
+            steps {
+                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
+                sh '. ~/.nvm/nvm.sh && nvm install lts/*'
+                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
             }
         }
     }
