@@ -14,7 +14,6 @@ pipeline {
     }
     options {
         retry(2)
-        timeout(time: 120, unit: 'MINUTES')
     }
     stages {
         stage('Enteprise Test Builds') {
@@ -179,7 +178,7 @@ pipeline {
                 }
             }
             when {
-                triggeredBy 'TimerTrigger'
+                branch 'master'
             }
             environment {
                 GITHUB_TOKEN = credentials('github_bot_access_token')
