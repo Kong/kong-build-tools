@@ -79,6 +79,8 @@ else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
 endif
 
+DOCKER_BUILDKIT ?= 1
+
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
@@ -182,6 +184,7 @@ else
 	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
@@ -191,6 +194,9 @@ else
 	--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	--build-arg DEBUG=$(DEBUG) \
+	--build-arg BUILDKIT_INLINE_CACHE=1 \
+	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
+	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
 endif
 
@@ -257,6 +263,7 @@ actual-build-kong: setup-kong-source
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
+	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 	-rm github-token
 
@@ -270,6 +277,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+	--build-arg BUILDKIT_INLINE_CACHE=1 \
+	--cache-from $(DOCKER_REPOSITORY):test \
+	--cache-from kong/kong-build-tools:test \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
 	
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
@@ -430,7 +440,10 @@ cleanup: cleanup-tests cleanup-build
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
 
 update-cache-images:
-	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX)
-	-docker tag $(DOCKER_REPOSITORY):$(PACKAGE_TYPE)-$(DOCKER_BASE_SUFFIX) $(DOCKER_REPOSITORY):$(PACKAGE_TYPE) || true
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX)
+	-docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX)
+	-docker tag $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
+	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test
