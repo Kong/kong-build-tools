@@ -95,7 +95,7 @@ assert_response() {
 it_runs_free_enterprise() {
   info=$(curl $KONG_ADMIN_URI)
   msg_test "it does not have ee-only plugins"
-  [ "$(echo $info | jq -r .plugins.available_on_server.collector)" != "true" ]
+  [ "$(echo $info | jq -r .plugins.available_on_server.canary)" != "true" ]
   msg_test "it does not enable vitals"
   [ "$(echo $info | jq -r .configuration.vitals)" == "false" ]
   msg_test "workspaces are not writable"
@@ -105,7 +105,7 @@ it_runs_free_enterprise() {
 it_runs_full_enterprise() {
   info=$(curl $KONG_ADMIN_URI)
   msg_test "it does have ee-only plugins"
-  [ "$(echo $info | jq -r .plugins.available_on_server.collector)" == "true" ]
+  [ "$(echo $info | jq -r .plugins.available_on_server.canary)" == "true" ]
   msg_test "it does enable vitals"
   [ "$(echo $info | jq -r .configuration.vitals)" == "true" ]
   msg_test "workspaces are writable"
