@@ -201,7 +201,7 @@ ifeq ($(BUILDX),false)
 	docker run -d --rm --name output $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
-	mv output/output/*.$(PACKAGE_TYPE)* output/
+	mv -fv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
 	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
@@ -209,7 +209,7 @@ else
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg KONG_SHA=$(KONG_SHA) .
-	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
+	mv -fv output/linux*/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 endif
 
