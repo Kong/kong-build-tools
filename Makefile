@@ -212,7 +212,7 @@ ifeq ($(BUILDX),false)
 	docker run -d --rm --name output $(DOCKER_REPOSITORY):kong-packaged-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
-	mv output/output/*.$(PACKAGE_TYPE)* output/
+	mv -fv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
 	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
