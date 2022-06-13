@@ -221,7 +221,7 @@ else
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
 	--build-arg KONG_SHA=$(KONG_SHA) .
-	mv output/linux*/output/*.$(PACKAGE_TYPE)* output/
+	mv -fv output/linux*/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 endif
 
