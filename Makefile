@@ -51,9 +51,9 @@ DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),xenial)
+else ifeq ($(RESTY_IMAGE_TAG),focal)
 	BUILDX=true
-else ifeq ($(RESTY_IMAGE_TAG),16.04)
+else ifeq ($(RESTY_IMAGE_TAG),20.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
@@ -260,23 +260,6 @@ test-kong: kong-test-container
 	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
 
 release-kong: test
-	ARCHITECTURE=amd64 \
-	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_VERSION=$(KONG_VERSION) \
-	PULP_PROD_USR=$(PULP_PROD_USR) \
-	PULP_PROD_PSW=$(PULP_PROD_PSW) \
-	PULP_HOST_PROD=$(PULP_HOST_PROD) \
-	PULP_STAGE_USR=$(PULP_STAGE_USR) \
-	PULP_STAGE_PSW=$(PULP_STAGE_PSW) \
-	PULP_HOST_STAGE=$(PULP_HOST_STAGE) \
-	PRIVATE_REPOSITORY=$(PRIVATE_REPOSITORY) \
-	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
-	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
-	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
-	DOCKER_LABEL_REVISION=$(KONG_SHA) \
-	./release-kong.sh
 ifeq ($(BUILDX),true)
 	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
 	DOCKER_TLS_VERIFY=1 \
