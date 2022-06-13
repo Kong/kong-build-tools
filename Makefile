@@ -50,9 +50,9 @@ DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),xenial)
+else ifeq ($(RESTY_IMAGE_TAG),focal)
 	BUILDX=true
-else ifeq ($(RESTY_IMAGE_TAG),16.04)
+else ifeq ($(RESTY_IMAGE_TAG),20.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
