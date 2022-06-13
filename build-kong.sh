@@ -32,7 +32,8 @@ pushd /kong
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
 
   mkdir -p /tmp/plugin
-  
+  git config --global url."https://github".insteadOf git://github
+
   luarocks purge --tree=/tmp/build/usr/local --old-versions || true
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
