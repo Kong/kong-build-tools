@@ -66,6 +66,7 @@ EDITION=$EDITION \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
+--boringssl $RESTY_BORINGSSL_VERSION \
 --resty-lmdb $RESTY_LMDB \
 --resty-websocket $RESTY_WEBSOCKET \
 --resty-events $RESTY_EVENTS \

@@ -44,6 +44,9 @@ Optional arguments:
       --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will
                                      not be build.
 
+      --boringssl <boringssl_ver>    Version of BoringSSL to build. If absent, BoringSSL will
+                                     not be build.
+
       --add-module <module_path>     Path to additional NGINX module to be built. This option can be
                                      repeated and will be passed to NGINX's configure in the order
                                      they were specified.
