@@ -54,6 +54,11 @@ then
   RESTY_EVENTS=0
 fi
 
+if [ -z "$RESTY_BORINGSSL_VERSION" ]
+then
+  RESTY_BORINGSSL_VERSION=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
