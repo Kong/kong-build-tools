@@ -1,3 +1,5 @@
+$(info starting make in kong-build-tools)
+
 VARS_OLD := $(.VARIABLES)
 
 .PHONY: test build-kong
