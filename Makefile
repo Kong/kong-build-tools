@@ -251,6 +251,9 @@ else
 build-kong: actual-build-kong
 endif
 
+kong-ci-cache-key:
+	@echo "CACHE_KEY=$(DOCKER_OPENRESTY_SUFFIX)"
+
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
