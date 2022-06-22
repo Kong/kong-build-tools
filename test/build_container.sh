@@ -34,7 +34,11 @@ pushd ./docker-kong
   else
     sed -i.bak 's/^FROM .*/FROM '${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}'/' Dockerfile.$PACKAGE_TYPE
   fi
-  
+
+  if [ -n "$DOCKER_LABEL_REVISION" ]; then
+    DOCKER_BUILD_ARGS+=(--label "org.opencontainers.image.revision=$DOCKER_LABEL_REVISION")
+  fi
+
   DOCKER_BUILD_ARGS+=(--no-cache)
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
 
