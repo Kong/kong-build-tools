@@ -38,6 +38,7 @@ DOCKER_RELEASE_REPOSITORY ?= `grep DOCKER_RELEASE_REPOSITORY $(KONG_SOURCE_LOCAT
 KONG_TEST_CONTAINER_NAME=kong-tests
 KONG_TEST_CONTAINER_TAG?=5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
 KONG_TEST_IMAGE_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
+
 # This logic should mirror the kong-build-tools equivalent
 KONG_VERSION?=`echo $(KONG_SOURCE_LOCATION)/kong-*.rockspec | sed 's,.*/,,' | cut -d- -f2`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -395,6 +396,7 @@ build-test-container:
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS) \
+	DOCKER_LABEL_REVISION=$(KONG_SHA) \
 	test/build_container.sh
 ifeq ($(BUILDX),true)
 	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
