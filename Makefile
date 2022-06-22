@@ -212,6 +212,7 @@ ifeq ($(DEBUG),1)
 	exit 1
 endif
 	make build-kong
+	-ls -al kong/plugins-ee/application-registration
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -256,6 +257,7 @@ kong-ci-cache-key:
 
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
+	-ls -al kong/plugins-ee/application-registration
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
@@ -290,11 +292,13 @@ endif
 setup-kong-source:
 	-rm -rf kong
 	-cp -R $(KONG_SOURCE_LOCATION) kong
+	-ls -al kong/plugins-ee/application-registration
 	-mkdir -pv kong/distribution
 	-git submodule update --init --recursive
 	-git submodule status
 	-git -C kong submodule update --init --recursive
 	-git -C kong submodule status
+	-ls -al kong/plugins-ee/application-registration
 	cp kong/.requirements kong/distribution/.requirements 
 
 test-kong: kong-test-container
