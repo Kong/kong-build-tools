@@ -30,6 +30,7 @@ pushd /kong
 
   mkdir -p /tmp/plugin
   
+  luarocks purge --tree=/tmp/build/usr/local --old-versions || true
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
@@ -43,7 +44,7 @@ pushd /kong
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
   mkdir -p /tmp/build/usr/local/kong/include
-  cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  cp -r kong/include/* /tmp/build/usr/local/kong/include/ || true
 
   # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
   if [ -e "kong/pluginsocket.proto" ]; then
