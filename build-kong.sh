@@ -24,7 +24,7 @@ export PATH=$PATH:/usr/local/openresty/luajit/bin
 /usr/local/openresty/bin/openresty -v
 
 pushd /kong
-  -ls -al plugins-ee/application-registration
+  ls -al plugins-ee/application-registration
   ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION%.*} \
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
@@ -37,6 +37,8 @@ pushd /kong
     YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
     YAML_INCDIR=/tmp/yaml \
     CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -std=gnu99 -fPIC"
+  
+  ls -al plugins-ee/application-registration
 
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
@@ -44,7 +46,9 @@ pushd /kong
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
   mkdir -p /tmp/build/usr/local/kong/include
+  ls -al plugins-ee/application-registration
   cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  ls -al plugins-ee/application-registration
 
   # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
   if [ -e "kong/pluginsocket.proto" ]; then
