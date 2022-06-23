@@ -12,9 +12,10 @@ if [ -n "$image_id" ]; then
   exit 0;
 fi
 
-rm -rf docker-kong || true
-git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
-chmod -R 755 docker-kong/*.sh
+if ! test -d docker-kong; then
+  git clone --single-branch --branch $DOCKER_KONG_VERSION https://github.com/Kong/docker-kong.git docker-kong
+  chmod -R 755 docker-kong/*.sh
+fi
 
 if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
