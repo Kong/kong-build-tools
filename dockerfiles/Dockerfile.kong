@@ -9,8 +9,8 @@ FROM ${DOCKER_REPOSITORY}:openresty-${PACKAGE_TYPE}-${DOCKER_OPENRESTY_SUFFIX}
 ARG ENABLE_LJBC=
 ENV ENABLE_LJBC $ENABLE_LJBC
 
+RUN rm -rf /kong && rm -rf /distribution/*
 COPY kong /kong
-RUN rm -rf /distribution/*
 
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
