@@ -20,7 +20,7 @@ pipeline {
             environment {
                 DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                 GITHUB_TOKEN = credentials('github_bot_access_token')
-                KONG_SOURCE = "master"
+                KONG_SOURCE = "fix/luarocks-cache-error"
                 PULP = credentials('PULP')
                 PULP_PASSWORD = "${env.PULP_PSW}"
                 PULP_USERNAME = "${env.PULP_USR}"
