@@ -79,6 +79,8 @@ else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
 endif
 
+DOCKER_BUILDKIT ?= 1
+
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
@@ -248,6 +250,9 @@ build-kong:
 else
 build-kong: actual-build-kong
 endif
+
+kong-ci-cache-key:
+	@echo "CACHE_KEY=$(DOCKER_OPENRESTY_SUFFIX)"
 
 actual-build-kong: setup-kong-source
 	touch id_rsa.private

@@ -14,7 +14,6 @@ pipeline {
     }
     options {
         retry(2)
-        timeout(time: 120, unit: 'MINUTES')
     }
     stages {
         stage('Enteprise Test Builds') {
@@ -170,24 +169,6 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                     }
                 }
-            }
-        }
-        stage('Release') {
-            agent {
-                node {
-                    label 'bionic'
-                }
-            }
-            when {
-                triggeredBy 'TimerTrigger'
-            }
-            environment {
-                GITHUB_TOKEN = credentials('github_bot_access_token')
-            }
-            steps {
-                sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash'
-                sh '. ~/.nvm/nvm.sh && nvm install lts/*'
-                sh '. ~/.nvm/nvm.sh && npx semantic-release@beta'
             }
         }
     }
