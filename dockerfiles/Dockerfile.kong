@@ -10,8 +10,8 @@ ENV GITHUB_TOKEN $GITHUB_TOKEN
 ARG ENABLE_LJBC=
 ENV ENABLE_LJBC $ENABLE_LJBC
 
+RUN rm -rf /kong && rm -rf /distribution/*
 COPY kong /kong
-RUN rm -rf /distribution/*
 
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
