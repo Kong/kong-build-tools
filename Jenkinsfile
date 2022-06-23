@@ -4,7 +4,7 @@ pipeline {
         cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
     }
     environment {
-        KONG_SOURCE = "master"
+        KONG_SOURCE = "fix/luarocks-cache-error"
         KONG_SOURCE_LOCATION = "/tmp/kong"
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
@@ -20,7 +20,7 @@ pipeline {
             environment {
                 DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                 GITHUB_TOKEN = credentials('github_bot_access_token')
-                KONG_SOURCE = "master"
+                KONG_SOURCE = "fix/luarocks-cache-error"
                 PULP = credentials('PULP')
                 PULP_PASSWORD = "${env.PULP_PSW}"
                 PULP_USERNAME = "${env.PULP_USR}"
