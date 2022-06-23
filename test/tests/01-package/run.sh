@@ -41,6 +41,9 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
     "/usr/local/share/lua/"
   )
 
+  docker exec ${USE_TTY} user-validation-tests luarocks list --porcelain | grep statsd
+  docker exec ${USE_TTY} user-validation-tests luarocks list --porcelain | grep statsd | grep 0.3.3
+
   for file in "${files[@]}"; do
     # Check if the 'chown -R kong:kong' ownership changes worked
     docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%U:%G" {} \; | grep -vc "kong:kong") == "0" ]'
