@@ -50,10 +50,10 @@ pipeline {
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2   package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7   package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7.9 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise src & Alpine'){
@@ -125,10 +125,10 @@ pipeline {
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2   package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7   package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7.9 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
                 stage('Kong OSS src & Alpine'){
