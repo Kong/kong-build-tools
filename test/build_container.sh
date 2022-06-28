@@ -27,7 +27,11 @@ else
 fi
 
 pushd ./docker-kong
-  if [ "$RESTY_IMAGE_BASE" == "rhel" ]; then
+  if \
+    [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
+    [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
+    [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
+  ; then
     major="${RESTY_IMAGE_TAG%%.*}"
 
     sed -i.bak "s|^FROM .*|FROM registry.access.redhat.com/ubi${major}/ubi:${RESTY_IMAGE_TAG}|" Dockerfile.$PACKAGE_TYPE
