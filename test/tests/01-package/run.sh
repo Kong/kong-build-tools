@@ -3,8 +3,8 @@ set -x
 if \
   [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
   [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
-  [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
-; then
+  [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]]
+then
   major="${RESTY_IMAGE_TAG%%.*}"
   docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${major}/ubi tail -f /dev/null
 else
