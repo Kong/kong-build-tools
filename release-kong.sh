@@ -59,6 +59,8 @@ DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
 
 
 function push_docker_images() {
+  KONG_BRANCH=${KONG_BRANCH:-master}
+
   docker tag \
     "localhost:5000/kong-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG" \
     "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
@@ -74,6 +76,11 @@ function push_docker_images() {
     -a "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE" \
        "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
   docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE"
+
+  docker manifest create \
+    -a "$DOCKER_REPOSITORY:$KONG_BRANCH" \
+       "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
+  docker manifest push "$DOCKER_REPOSITORY:$KONG_BRANCH"
 }
 
 
