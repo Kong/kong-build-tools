@@ -1,6 +1,10 @@
 set -x
 
-if [[ "$RESTY_IMAGE_BASE" == "rhel" ]]; then
+if \
+  [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
+  [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
+  [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
+; then
   docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi tail -f /dev/null
 else
   docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
@@ -55,7 +59,12 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "test -d /home/kong/"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
-  if [[ "$RESTY_IMAGE_BASE" == "amazonlinux" || "$RESTY_IMAGE_BASE" == "rhel" ]]; then
+  if \
+    [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]] || \
+    [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
+    [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
+    [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
+  ; then
     # Needed to run `su`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
 
