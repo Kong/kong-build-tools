@@ -5,7 +5,8 @@ if \
   [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
   [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
 ; then
-  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi tail -f /dev/null
+  major="${RESTY_IMAGE_TAG%%.*}"
+  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${major}/ubi tail -f /dev/null
 else
   docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
 fi
