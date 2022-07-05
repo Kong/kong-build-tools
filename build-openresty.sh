@@ -54,6 +54,11 @@ then
   RESTY_EVENTS=0
 fi
 
+if [ -z "$ATC_ROUTER" ]
+then
+  ATC_ROUTER=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -69,6 +74,7 @@ EDITION=$EDITION \
 --resty-lmdb $RESTY_LMDB \
 --resty-websocket $RESTY_WEBSOCKET \
 --resty-events $RESTY_EVENTS \
+--atc-router $ATC_ROUTER \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
