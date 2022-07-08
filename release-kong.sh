@@ -10,7 +10,7 @@ PULP_USERNAME=
 PULP_PASSWORD=
 
 # release finals into prod, others into stage
-if [[ "$KONG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+if [[ "$KONG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
   PULP_HOST="$PULP_HOST_PROD"
   PULP_USERNAME="$PULP_PROD_USR"
   PULP_PASSWORD="$PULP_PROD_PSW"
