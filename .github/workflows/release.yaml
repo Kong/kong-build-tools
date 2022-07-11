@@ -1,5 +1,5 @@
 ---
-name: BRelease
+name: Release
 
 on:  # yamllint disable-line rule:truthy
   pull_request:
@@ -19,4 +19,3 @@ jobs:
       uses: ahmadnassri/action-semantic-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
