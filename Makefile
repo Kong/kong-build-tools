@@ -54,7 +54,7 @@ RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"="
 LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
-DOCKER_KONG_VERSION = 'master'
+DOCKER_KONG_VERSION = '2.8.1'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
@@ -84,10 +84,13 @@ DOCKER_BUILDKIT ?= 1
 
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
+DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
+
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64 $(DOCKER_LABELS)
+		
 else
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
 
 # Set this to unique value to bust the cache
@@ -318,8 +321,7 @@ release-kong: test
 	EDITION=$(EDITION) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
-	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
-	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	DOCKER_LABELS=$(DOCKER_LABELS) \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
@@ -339,8 +341,7 @@ ifeq ($(BUILDX),true)
 	PULP_STAGE_PSW=$(PULP_STAGE_PSW) \
 	PULP_HOST_STAGE=$(PULP_HOST_STAGE) \
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
-	DOCKER_LABEL_CREATED=`date -u +'%Y-%m-%dT%H:%M:%SZ'` \
-	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	DOCKER_LABELS=$(DOCKER_LABELS) \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	./release-kong.sh
 endif
@@ -396,7 +397,7 @@ build-test-container:
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS) \
-	DOCKER_LABEL_REVISION=$(KONG_SHA) \
+	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	test/build_container.sh
 ifeq ($(BUILDX),true)
 	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
@@ -411,6 +412,7 @@ ifeq ($(BUILDX),true)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
+	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	test/build_container.sh
 endif
 
