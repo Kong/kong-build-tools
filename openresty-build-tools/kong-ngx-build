@@ -661,7 +661,9 @@ main() {
         )
 
         if [ "$EDITION" == 'enterprise' ]; then
-          OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
+            OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          fi
           OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
         fi
 
