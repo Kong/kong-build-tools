@@ -17,6 +17,7 @@ KONG_NGINX_MODULE=master
 RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 RESTY_EVENTS=main
+ATC_ROUTER=main
 DEBUG=0
 NPROC=
 OS=
@@ -104,6 +105,10 @@ main() {
         ;;
       --resty-events)
         RESTY_EVENTS=$2
+        shift 2
+        ;;
+      --atc-router)
+        ATC_ROUTER=$2
         shift 2
         ;;
       -f|--force)
@@ -414,6 +419,25 @@ main() {
         popd
       popd
     fi
+
+    # atc-router
+    if [ $ATC_ROUTER != 0 ]; then
+      if [[ $ATC_ROUTER == "main" ]]; then
+        ATC_ROUTER="origin/main"
+      fi
+      pushd $DOWNLOAD_CACHE
+        if [ ! -d atc-router ]; then
+          warn "atc-router source not found, cloning..."
+          git clone https://github.com/Kong/atc-router --recursive
+        fi
+
+        pushd atc-router
+          git fetch
+          # Accept both tags, branches and SHAs
+          git reset --hard $ATC_ROUTER || git reset --hard origin/$ATC_ROUTER
+        popd
+      popd
+    fi
   popd
 
   if [ ! -z "$DOWNLOAD_ONLY" ]; then
@@ -720,7 +744,7 @@ main() {
           OPENRESTY_OPTS+=('--with-debug')
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
-        
+
         eval ./configure ${OPENRESTY_OPTS[*]}
 
         if [ -n "$BORINGSSL_VER" ]; then
@@ -748,6 +772,13 @@ main() {
       if [ $RESTY_EVENTS != 0 ]; then
         pushd $DOWNLOAD_CACHE/lua-resty-events
           warn "installing library files for lua-resty-events..."
+          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+        popd
+      fi
+
+      if [ $ATC_ROUTER != 0 ]; then
+        pushd $DOWNLOAD_CACHE/atc-router
+          warn "installing dynamic library and Lua files for atc-router..."
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
         popd
       fi
