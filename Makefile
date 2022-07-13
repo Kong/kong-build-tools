@@ -24,6 +24,7 @@ TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+ENABLE_KONG_LICENSING?=`grep ENABLE_KONG_LICENSING $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
 KONG_LICENSE?="ASL 2.0"
 
@@ -194,6 +195,7 @@ else
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
+	--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
 	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
 	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
 	--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
