@@ -782,11 +782,24 @@ main() {
           warn "installing dynamic library and Lua files for atc-router..."
           source "$HOME/.cargo/env"
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
+          # tmp... how can I check the current target?
           if [ $atc_router_install_succeed -eq 1 ]; then
             warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
             export RUSTFLAGS="-C target-feature=-crt-static"
             make clean
-            make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+            make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib && atc_router_install_succeed=0
+            if [ $atc_router_install_succeed -eq 1 ]; then
+              warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-lgcc'..."
+              make clean
+              rustup target add aarch64-unknown-linux-gnu
+              rustup toolchain install stable-aarch64-unknown-linux-gnu
+              unset RUSTFLAGS
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
+              export CARGO_BUILD_TARGET=aarch64-unknown-linux-gnu
+              make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+          fi
           fi
         popd
       fi
