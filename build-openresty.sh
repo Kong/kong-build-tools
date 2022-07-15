@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 export PING_SLEEP=50s
 export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export BUILD_OUTPUT=$WORKDIR/build.out
@@ -59,6 +61,16 @@ then
   ATC_ROUTER=0
 fi
 
+if [ -z "$RESTY_BORINGSSL_VERSION" ]
+then
+  RESTY_BORINGSSL_VERSION=0
+fi
+
+if [ -z "$RESTY_OPENSSL_VERSION" ]
+then
+  RESTY_OPENSSL_VERSION=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -72,6 +84,8 @@ ENABLE_KONG_LICENSING=$ENABLE_KONG_LICENSING \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
+--boringssl $RESTY_BORINGSSL_VERSION \
+--ssl-provider $SSL_PROVIDER \
 --resty-lmdb $RESTY_LMDB \
 --resty-websocket $RESTY_WEBSOCKET \
 --resty-events $RESTY_EVENTS \
