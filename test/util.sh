@@ -43,7 +43,11 @@ wait_for() {
 }
 
 start_kong() {
-  KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" up -d
+  KONG_FIPS=off
+  if [ "$SSL_PROVIDER" = "boringssl" ]; then
+    KONG_FIPS=on
+  fi
+  KONG_FIPS=$KONG_FIPS KONG_TEST_IMAGE_NAME=${1:-$KONG_TEST_IMAGE_NAME} docker-compose -f "$TEST_COMPOSE_PATH" up -d
 }
 
 stop_kong() {
