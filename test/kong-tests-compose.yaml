@@ -14,6 +14,7 @@ services:
       KONG_PG_HOST: db
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_FIPS: ${KONG_FIPS:-off}
     restart: always
     networks:
       - kong-net
@@ -30,6 +31,7 @@ services:
       KONG_PG_HOST: db
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kong}
       KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_FIPS: ${KONG_FIPS:-off}
     restart: always
     networks:
       - kong-net
@@ -59,6 +61,7 @@ services:
       KONG_PORTAL: "on"
       KONG_ENFORCE_RBAC:
       KONG_LICENSE_DATA:
+      KONG_FIPS: ${KONG_FIPS:-off}
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
