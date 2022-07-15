@@ -81,34 +81,42 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get -y install procps"
   fi
 
+  KONG_OPTS=
+  if [ "$SSL_PROVIDER" = "boringssl" ]; then
+    KONG_OPTS="KONG_FIPS=on"
+  fi
+
   # We're capable of running as the kong user
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong start'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong health'"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong start'"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong restart'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong health'"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong restart'"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off kong stop'"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong stop'"
 
   # Default kong runs as root user
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong start"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong health"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong start"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong health"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong restart"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong health"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong restart"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong health"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong stop"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong stop"
 fi
 docker stop user-validation-tests
 
 # openresty
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -v 2>&1 | grep -q ${RESTY_VERSION}"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/kong/lib/libssl.so.1.1"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/kong/lib/libcrypto.so.1.1"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q '/usr/local/kong/lib/libssl.so*'"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q '/usr/local/kong/lib/libcrypto.so*'"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ldd /usr/local/openresty/bin/openresty | grep -q /usr/local/openresty/luajit/lib/libluajit-5.1.so.2"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -V 2>&1 | grep /work/pcre-${RESTY_PCRE_VERSION}"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/openresty/bin/resty -e 'print(jit.version)' | grep -q 'LuaJIT[[:space:]][[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+-[[:digit:]]\{8\}'"
 
+if [ "$SSL_PROVIDER" = "boringssl" ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/openresty/bin/openresty -V 2>&1 | grep 'running with BoringSSL'"
+fi
 
 # lua-resty-websocket library (sourced from OpenResty or Kong/lua-resty-websocket)
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/openresty/lualib/resty/websocket/*.lua"
@@ -130,7 +138,10 @@ if [[ "$EDITION" == "enterprise" ]]; then
 fi
 
 # kong binaries
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
+
+if [ "$SSL_PROVIDER" = "openssl" ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
+fi
 
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
@@ -147,6 +158,12 @@ if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
 [Service]
 Environment=KONG_DATABASE=off
 EOD"
+  if [ "$SSL_PROVIDER" = "boringssl" ]; then
+    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD >> /etc/systemd/system/kong.service.d/override.conf
+[Service]
+Environment=$KONG_OPTS
+EOD"
+  fi
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl daemon-reload"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
