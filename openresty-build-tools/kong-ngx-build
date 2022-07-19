@@ -17,7 +17,7 @@ KONG_NGINX_MODULE=master
 RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 RESTY_EVENTS=main
-ATC_ROUTER=main
+ATC_ROUTER=${ATC_ROUTER:-0}
 DEBUG=0
 NPROC=
 OS=
@@ -685,7 +685,9 @@ main() {
         )
 
         if [ "$EDITION" == 'enterprise' ]; then
-          OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
+            OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+          fi
           OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
         fi
 
@@ -780,7 +782,7 @@ main() {
         local atc_router_install_succeed=0
         pushd $DOWNLOAD_CACHE/atc-router
           warn "installing dynamic library and Lua files for atc-router..."
-          source "$HOME/.cargo/env"
+          source "${CARGO_HOME:-$HOME/.cargo}"/env
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
           if [ $atc_router_install_succeed -eq 1 ]; then
             warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
