@@ -781,7 +781,7 @@ main() {
       if [ $ATC_ROUTER != 0 ]; then
         pushd $DOWNLOAD_CACHE/atc-router
           warn "installing dynamic library and Lua files for atc-router..."
-          source "$HOME/.cargo/env"
+          source "${CARGO_HOME:-$HOME/.cargo}"/env
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
         popd
       fi
