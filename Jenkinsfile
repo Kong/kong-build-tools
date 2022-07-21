@@ -135,8 +135,7 @@ pipeline {
                         }
                     }
                     environment {
-                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                        AWS_ACCESS_KEY = "instance-profile"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         PACKAGE_TYPE = "rpm"
                     }
@@ -156,8 +155,7 @@ pipeline {
                         }
                     }
                     environment {
-                        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
-                        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+                        AWS_ACCESS_KEY = "instance-profile"
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
