@@ -13,6 +13,8 @@ RESTY_IMAGE_TAG?=20.04
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
 
+SSL_PROVIDER?=openssl
+
 TEST_ADMIN_PROTOCOL?=http://
 TEST_ADMIN_PORT?=8001
 TEST_HOST?=localhost
@@ -46,6 +48,7 @@ RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk
 KONG_GO_PLUGINSERVER_VERSION ?= `grep KONG_GO_PLUGINSERVER_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_BORINGSSL_VERSION ?= `grep RESTY_BORINGSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -127,6 +130,13 @@ endif
 
 DOCKER_REPOSITORY?=kong/kong-build-tools
 
+AWS_INSTANCE_TYPE ?= a1.xlarge
+AWS_REGION ?= us-east-1
+AWS_VPC ?= vpc-0316062370efe1cff
+
+# us-east-1 bionic 18.04 arm64 hvm-ssd 20220308
+AWS_AMI ?= ami-05c5fea40f596a84c
+
 # this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
 # value (within single quotes) and the expanded variable value (without quotes)
@@ -152,10 +162,10 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
-	--amazonec2-instance-type a1.xlarge \
-	--amazonec2-region us-east-1 \
-	--amazonec2-ami ami-0c46f9f09e3a8c2b5 \
-	--amazonec2-vpc-id vpc-74f9ac0c \
+	--amazonec2-instance-type $(AWS_INSTANCE_TYPE) \
+	--amazonec2-region $(AWS_REGION) \
+	--amazonec2-ami $(AWS_AMI) \
+	--amazonec2-vpc-id $(AWS_VPC) \
 	--amazonec2-monitoring \
 	--amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
@@ -187,6 +197,8 @@ else
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
+	--build-arg RESTY_BORINGSSL_VERSION=$(RESTY_BORINGSSL_VERSION) \
+	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
@@ -363,6 +375,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
 	RESTY_VERSION=$(RESTY_VERSION) \
 	RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
+	SSL_PROVIDER=$(SSL_PROVIDER) \
 	RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	CACHE_COMMAND="$(CACHE_COMMAND)" \

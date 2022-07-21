@@ -7,8 +7,9 @@ PREFIX=
 DOWNLOAD_CACHE=work
 DOWNLOAD_ONLY=
 OPENRESTY_VER=
-OPENSSL_VER=
-BORINGSSL_VER=
+OPENSSL_VER=0
+BORINGSSL_VER=0
+SSL_PROVIDER=openssl
 LUAROCKS_VER=
 PCRE_VER=
 FORCE=0
@@ -17,7 +18,7 @@ KONG_NGINX_MODULE=master
 RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 RESTY_EVENTS=main
-ATC_ROUTER=main
+ATC_ROUTER=${ATC_ROUTER:-0}
 DEBUG=0
 NPROC=
 OS=
@@ -69,6 +70,10 @@ main() {
         ;;
       --boringssl)
         BORINGSSL_VER="$2"
+        shift 2
+        ;;
+      --ssl-provider)
+        SSL_PROVIDER="$2"
         shift 2
         ;;
       --luarocks)
@@ -174,6 +179,16 @@ main() {
     fatal "OpenSSL and BoringSSL version can not both be empty"
   fi
 
+  if [ "$OPENSSL_VER" = 0 -a "$SSL_PROVIDER" = "openssl" ]; then
+    show_usage
+    fatal "OpenSSL version not specified"
+  fi
+
+  if [ "$BORINGSSL_VER" = 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
+    show_usage
+    fatal "BoringSSL version not specified"
+  fi
+
   # retrieve DIST info of DIST-specific patches
 
   if [ -f /etc/os-release ]; then
@@ -198,7 +213,7 @@ main() {
   OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-$PREFIX/openresty}
   OPENRESTY_INSTALL=$(canon_path $OPENRESTY_DESTDIR/$OPENRESTY_PREFIX)
 
-  if [ -n "$OPENSSL_VER" ]; then
+  if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
     OPENSSL_DOWNLOAD=$DOWNLOAD_CACHE/openssl-$OPENSSL_VER
     OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
     OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/openssl}
@@ -210,8 +225,11 @@ main() {
     fi
   fi
 
-  if [ -n "$BORINGSSL_VER" ]; then
+  if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
     BORINGSSL_DOWNLOAD=$DOWNLOAD_CACHE/boringssl-$BORINGSSL_VER
+    OPENSSL_DESTDIR=${OPENSSL_DESTDIR:-/}
+    OPENSSL_PREFIX=${OPENSSL_PREFIX:-$PREFIX/.openssl}
+    OPENSSL_INSTALL=$(canon_path $OPENSSL_DESTDIR/$OPENSSL_PREFIX/)
   fi
 
   if version_lt $NGINX_CORE_VER 1.13.6; then
@@ -223,7 +241,7 @@ main() {
 
   pushd $DOWNLOAD_CACHE
 
-    if [ -n "$OPENSSL_VER" ]; then
+    if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
       # OpenSSL
 
       if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
@@ -246,7 +264,7 @@ main() {
       fi
     fi
 
-    if [ -n "$BORINGSSL_VER" ]; then
+    if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
       # Boring SSL
 
       if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
@@ -546,7 +564,7 @@ main() {
 
   # Building OpenSSL
 
-  if [ -n "$OPENSSL_VER" ]; then
+  if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
     if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
       notice "Building OpenSSL..."
 
@@ -600,33 +618,81 @@ main() {
     fi
   fi
 
-  if [ -n "$BORINGSSL_VER" ]; then
+  if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
     if [ ! -d "$BORINGSSL_DOWNLOAD/.openssl/lib" ]; then
       notice "Building BoringSSL..."
 
+      arch=$(uname -m)
+      if [ "$(arch)" != "x86_64" ]; then
+        echo "Error: BoringSSL builds only supported in x86_64; got $arch" >&2
+        exit 1
+      fi
+
       pushd $BORINGSSL_DOWNLOAD
 
-        notice "BoringSSL: downloading toolchain..."
+        # BoringCrypto Security Policy
+        # (https://csrc.nist.gov/CSRC/media/projects/cryptographic-module-validation-program/documents/security-policies/140sp3678.pdf)
+        # Establishes the requirement of specific versions of the toolchain,
+        # comprised of:
+        #   clang compiler v7.0.1
+        #   golang v1.12.7
+        #   ninja build system v1.9.0
+        #
+        # XXX DO NOT change lines below unless otherwise mandates by newer
+        # revisions of the Security Policy
+
+        clang_version=7.0.1
+        golang_version=1.12.7
+        ninja_version=1.9.0
+
         OLD_PATH="$PATH"
         OLD_HOME="$HOME"
         export HOME="$PWD"
 
-        # TODO: checksum
-        curl -sSL https://releases.llvm.org/7.0.1/clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz | tar Jxf -
-        export PATH="$PWD/clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04/bin:$PATH"
-        printf "set(CMAKE_C_COMPILER \"clang\")\nset(CMAKE_CXX_COMPILER \"clang++\")\n" > ${HOME}/toolchain
-        notice "BoringSSL: using clang $(clang --version)"
+        notice "BoringSSL: setting up local toolchain..."
 
-        curl -sSL https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz | tar zxf -
-        export GOPATH="$PWD/gopath"
-        export GOROOT="$PWD/go"
-        export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
-        notice "BoringSSL: using golang $(go version)"
+        # clang
+          llvm_url="https://releases.llvm.org/$clang_version/clang+llvm-$clang_version-x86_64-linux-gnu-ubuntu-16.04.tar.xz"
+          llvm_checksum="02ad925add5b2b934d64c3dd5cbd1b2002258059f7d962993ba7f16524c3089c"
+          mkdir llvm
+          curl -sSL "$llvm_url" -o llvm.tar.xz
+          echo "$llvm_checksum llvm.tar.xz" | sha256sum -c
 
-        curl -sSL https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip -o ninja-linux.zip
-        unzip -o ninja-linux.zip
-        export PATH="$PWD:$PATH"
-        notice "BoringSSL: using ninja $(ninja --version)"
+          tar -C llvm --strip-components 1 -Jxf llvm.tar.xz
+          export PATH="$PWD/llvm/bin:$PATH"
+          printf "set(CMAKE_C_COMPILER \"clang\")\nset(CMAKE_CXX_COMPILER \"clang++\")\n" > ${HOME}/toolchain
+          notice "BoringSSL: using clang $(clang --version)"
+        #
+
+        # golang
+          golang_url="https://go.dev/dl/go${golang_version}.linux-amd64.tar.gz"
+          golang_checksum="66d83bfb5a9ede000e33c6579a91a29e6b101829ad41fffb5c5bb6c900e109d9"
+          curl -sSL "$golang_url" -o golang.tar.gz
+          echo "$golang_checksum golang.tar.gz" | sha256sum -c
+          tar -zxf golang.tar.gz
+
+          export GOPATH="$PWD/gopath"
+          export GOROOT="$PWD/go"
+          export PATH="$GOPATH/bin:$GOROOT/bin:$PATH"
+          notice "BoringSSL: using golang $(go version)"
+        #
+
+        # ninja
+          ninja_url="https://github.com/ninja-build/ninja/archive/refs/tags/v$ninja_version.zip"
+          ninja_checksum="8e2e654a418373f10c22e4cc9bdbe9baeca8527ace8d572e0b421e9d9b85b7ef"
+          curl -sSL "$ninja_url" -o ninja.zip
+          echo "$ninja_checksum ninja.zip" | sha256sum -c
+          unzip -o ninja.zip
+          pushd ninja-$ninja_version
+            ln -s /usr/bin/python3 /usr/local/bin/python
+            export PATH="$PATH:/usr/local/bin"
+            ./configure.py --bootstrap
+            export PATH="$PWD:$PATH"
+          popd
+          notice "BoringSSL: using ninja $(ninja --version)"
+        #
+
+        # build boringssl in fips mode
 
         mkdir -p build
         pushd build
@@ -634,7 +700,7 @@ main() {
                 -DCMAKE_TOOLCHAIN_FILE=${HOME}/toolchain \
                 -DFIPS=1 \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DBUILD_SHARED_LIBS=1 ..  
+                -DBUILD_SHARED_LIBS=1 ..
           ninja
         popd #build
 
@@ -647,6 +713,8 @@ main() {
         pushd .openssl
           ln -s ../include .
         popd #.openssl
+
+        cp -vp build/crypto/libcrypto.* build/ssl/libssl.* $OPENSSL_DESTDIR$OPENSSL_PREFIX/lib
 
       popd # $OPENRESTY_DOWNLOAD
       succ "BoringSSL $BORINGSSL_VER has been built successfully!"
@@ -725,8 +793,8 @@ main() {
 
         OPENRESTY_RPATH=${OPENRESTY_RPATH:-$OPENSSL_INSTALL/lib}
 
+        if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
 
-        if [ -n "$BORINGSSL_VER" ]; then
           OPENRESTY_OPTS+=(
             "--with-cc-opt='-I$BORINGSSL_DOWNLOAD/.openssl/include'"
             "--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -L$BORINGSSL_DOWNLOAD/.openssl/lib -Wl,--disable-new-dtags,-rpath,$OPENRESTY_RPATH'"
@@ -749,7 +817,7 @@ main() {
 
         eval ./configure ${OPENRESTY_OPTS[*]}
 
-        if [ -n "$BORINGSSL_VER" ]; then
+        if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
           touch $BORINGSSL_DOWNLOAD/.openssl/include/openssl/ssl.h
         fi
       fi
@@ -779,10 +847,16 @@ main() {
       fi
 
       if [ $ATC_ROUTER != 0 ]; then
+        local atc_router_install_succeed=0
         pushd $DOWNLOAD_CACHE/atc-router
           warn "installing dynamic library and Lua files for atc-router..."
-          source "$HOME/.cargo/env"
-          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+          source "${CARGO_HOME:-$HOME/.cargo}"/env
+          make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
+          if [ $atc_router_install_succeed -eq 1 ]; then
+            warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
+            export RUSTFLAGS="-C target-feature=-crt-static"
+            make clean install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
+          fi
         popd
       fi
     popd
@@ -944,6 +1018,12 @@ show_usage() {
   echo "  -p, --prefix <prefix>              Location where components should be installed."
   echo "      --openresty <openresty_ver>    Version of OpenResty to build, such as 1.13.6.2."
   echo "      --openssl <openssl_ver>        Version of OpenSSL to build, such as 1.1.1c."
+  echo ""
+  echo "      --boringssl <boringssl_ver>    Version of BoringSSL to build. If absent, BoringSSL will"
+  echo "                                     not be build."
+  echo ""
+  echo "      --ssl-provider                 Specify a provider for SSL libraries"
+  echo "                                     (Can be set to \"openssl\" or \"boringssl\")"
   echo ""
   echo "Optional arguments:"
   echo "      --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty."

@@ -11,7 +11,7 @@ rocks_trees = {
 " > $ROCKS_CONFIG
 
 if [[ -d /usr/local/share/lua ]]; then
-  cp -R /usr/local/share/lua/ /tmp/build/usr/local/share/ 
+  cp -R /usr/local/share/lua/ /tmp/build/usr/local/share/
 fi
 cp -R /tmp/build/* /
 
@@ -20,8 +20,12 @@ export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/shar
 export PATH=$PATH:/usr/local/openresty/luajit/bin
 
 /usr/local/bin/luarocks --version
-/usr/local/kong/bin/openssl version
-/usr/local/openresty/bin/openresty -v
+/usr/local/kong/bin/openssl version || true
+ldd /usr/local/openresty/nginx/sbin/nginx || true
+strings /usr/local/openresty/nginx/sbin/nginx | grep rpath || true
+strings /usr/local/openresty/bin/openresty | grep rpath || true
+find /usr/local/kong/lib/ || true
+/usr/local/openresty/bin/openresty -V || true
 
 pushd /kong
   ROCKSPEC_VERSION=`basename /kong/kong-*.rockspec` \
@@ -29,7 +33,7 @@ pushd /kong
     && ROCKSPEC_VERSION=${ROCKSPEC_VERSION#"kong-"}
 
   mkdir -p /tmp/plugin
-  
+
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
