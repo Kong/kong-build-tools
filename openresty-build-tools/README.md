@@ -11,6 +11,110 @@ is so you always ends up with the same binary, every time.
 ./kong-ngx-build -p buildroot --openresty 1.13.6.2 --openssl 1.1.1b --luarocks 3.0.4 --pcre 8.43 --debug
 ```
 
+# Build
+
+## Prerequisites
+
+These are the needed tools and libraries that aren't installed out of the box on Ubuntu and Fedora, respectively.  Run one of these, either as root or with `sudo`.
+
+Ubuntu/Debian:
+
+```shell
+sudo apt update \
+&& sudo apt install -y \
+    automake \
+    build-essential \
+    curl \
+    docker \
+    docker-compose \
+    git \
+    libpcre3 \
+    libyaml-dev \
+    m4 \
+    openssl \
+    perl \
+    procps \
+    unzip \
+    zlib1g-dev \
+    valgrind \
+    rustc \
+    g++
+```
+
+Fedora:
+
+```shell
+dnf install \
+    automake \
+    docker \
+    docker-compose \
+    gcc \
+    gcc-c++ \
+    git \
+    libyaml-devel \
+    make \
+    patch \
+    pcre-devel \
+    unzip \
+    zlib-devel \
+    valgrind \
+    rustc \
+    g++
+```
+
+## Versions
+
+To run the script we need to find out what versions of dependencies the current build of Kong requires, and use that as arguments. <span class="x x-first x-last">Their </span>exact versions can be found on the [`.requirements`](https://github.com/Kong/kong/blob/master/.requirements) file.
+You could manually copy the versions, or follow the steps below.
+
+```shell
+# get .requirements and then
+export RESTY_VERSION=$(grep -oP 'RESTY_VERSION=\K.*' .requirements)
+export RESTY_LUAROCKS_VERSION=$(grep -oP 'RESTY_LUAROCKS_VERSION=\K.*' .requirements)
+export RESTY_OPENSSL_VERSION=$(grep -oP 'RESTY_OPENSSL_VERSION=\K.*' .requirements)
+export RESTY_PCRE_VERSION=$(grep -oP 'RESTY_PCRE_VERSION=\K.*' .requirements)
+export RESTY_LMDB_VERSION=$(grep -oP 'RESTY_LMDB_VERSION=\K.*' .requirements)
+export RESTY_EVENTS_VERSION=$(grep -oP 'RESTY_EVENTS_VERSION=\K.*' .requirements)
+export ATC_ROUTER_VERSION=$(grep -oP 'ATC_ROUTER_VERSION=\K.*' .requirements)
+export KONG_NGINX_MODULE_BRANCH=$(grep -oP 'KONG_NGINX_MODULE_BRANCH=\K.*' .requirements)
+```
+
+You could use root or call with sudo if you want to install to `/usr/local` or anywhere require that privilege.
+
+```shell
+# Somewhere you're able or prefer to build
+export BUILDROOT=$(realpath ~/kong-dep)
+mkdir ${BUILDROOT} -p
+
+cd kong-build-tools/openresty-build-tools
+
+# You might want to add also --debug
+./kong-ngx-build -p ${BUILDROOT} \
+  --openresty ${RESTY_VERSION} \
+  --luarocks ${RESTY_LUAROCKS_VERSION} \
+  --openssl ${RESTY_OPENSSL_VERSION} \
+  --pcre ${RESTY_PCRE_VERSION}\
+  --resty-lmdb ${RESTY_LMDB_VERSION}\
+  --resty-events ${RESTY_EVENTS_VERSION}\
+  --atc-router ${ATC_ROUTER_VERSION}\
+  --kong-nginx-module ${KONG_NGINX_MODULE_BRANCH}\
+  --debug # include this for debugging
+```
+
+After that, we could set environment variables needed for kong building with commands below:
+
+```shell
+# Add those paths for later use
+export OPENSSL_DIR=${BUILDROOT}/openssl
+export CRYPTO_DIR=${BUILDROOT}/openssl
+export PATH=${BUILDROOT}/luarocks/bin:${BUILDROOT}/openresty/bin:${PATH}
+eval $(luarocks path)
+```
+
+The `$OPENSSL_DIR` variable is needed when compiling Kong, to make sure it uses the correct version of OpenSSL.
+
+You could add these lines to your `.profile` or `.bashrc` file.
+
 # Usage
 ```
 $ ./kong-ngx-build -h
