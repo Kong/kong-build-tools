@@ -28,6 +28,13 @@ KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 ENABLE_KONG_LICENSING?=`grep ENABLE_KONG_LICENSING $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
+# this flag must be an empty string when EE_PORTS are undesired
+KONG_EE_PORTS?=8002 8445 8003 8446 8004 8447
+KONG_EE_PORTS_FLAG?=
+ifeq ($(strip $(EDITION)),enterprise)
+KONG_EE_PORTS_FLAG?=--build-arg EE_PORTS="$(KONG_EE_PORTS)"
+endif
+
 KONG_LICENSE?="ASL 2.0"
 
 KONG_PACKAGE_NAME ?= `grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -92,10 +99,9 @@ BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64 $(DOCKER_LABELS)
-		
+	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --build-arg BUILDPLATFORM=x/amd64 $(DOCKER_LABELS)
 else
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
 
 # Set this to unique value to bust the cache
@@ -301,9 +307,9 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--cache-from $(DOCKER_REPOSITORY):test \
 	--cache-from kong/kong-build-tools:test \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
-	
+
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
-	
+
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX)
 endif
 
@@ -315,7 +321,7 @@ setup-kong-source:
 	-git submodule status
 	-git -C kong submodule update --init --recursive
 	-git -C kong submodule status
-	cp kong/.requirements kong/distribution/.requirements 
+	cp kong/.requirements kong/distribution/.requirements
 
 test-kong: kong-test-container
 	docker-compose up -d
