@@ -431,6 +431,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 endif
 
 build-test-container:
+ifneq ($(RESTY_IMAGE_BASE),src)
 	touch test/kong_license.private
 	ARCHITECTURE=amd64 \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
@@ -459,6 +460,7 @@ ifeq ($(BUILDX),true)
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	test/build_container.sh
+endif
 endif
 
 setup-tests: cleanup-tests
