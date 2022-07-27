@@ -43,11 +43,12 @@ OFFICIAL_RELEASE ?= true
 PACKAGE_CONFLICTS ?= `grep PACKAGE_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-DOCKER_RELEASE_REPOSITORY ?= `grep DOCKER_RELEASE_REPOSITORY $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+DOCKER_RELEASE_REPOSITORY?="kong/kong"
 
 KONG_TEST_CONTAINER_NAME=kong-tests
-KONG_TEST_CONTAINER_TAG?=5000/kong-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
-KONG_TEST_IMAGE_NAME?=localhost:$(KONG_TEST_CONTAINER_TAG)
+KONG_TEST_CONTAINER_TAG?=$(KONG_VERSION)-$(RESTY_IMAGE_BASE)-$(RESTY_IMAGE_TAG)
+ADDITIONAL_TAG_LIST?=
+KONG_TEST_IMAGE_NAME?=$(DOCKER_RELEASE_REPOSITORY):$(KONG_TEST_CONTAINER_TAG)
 
 # This logic should mirror the kong-build-tools equivalent
 KONG_VERSION?=`$(KONG_SOURCE_LOCATION)/distribution/grep-kong-version.sh`
@@ -328,6 +329,26 @@ test-kong: kong-test-container
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
 	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
 
+release-kong-docker-images: test
+ifeq ($(BUILDX),false)
+	docker push $(KONG_TEST_IMAGE_NAME)
+else
+	docker push $(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG)
+	docker push $(DOCKER_RELEASE_REPOSITORY):arm64-$(KONG_TEST_CONTAINER_TAG)
+	docker manifest create $(KONG_TEST_IMAGE_NAME) -a \
+		$(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG) \
+		$(DOCKER_RELEASE_REPOSITORY):arm64-$(KONG_TEST_CONTAINER_TAG)
+	docker manifest push $(KONG_TEST_IMAGE_NAME)
+
+	for ADDITIONAL_TAG in $(ADDITIONAL_TAG_LIST); do \
+		docker run -t --rm \
+			-v ~/.docker/config.json:/tmp/auth.json \
+			quay.io/skopeo/stable:latest \
+			copy --all docker://docker.io/$(KONG_TEST_IMAGE_NAME) \
+			docker://docker.io/$(DOCKER_RELEASE_REPOSITORY):$$ADDITIONAL_TAG ; \
+	done
+endif
+
 release-kong: test
 	ARCHITECTURE=amd64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
@@ -416,24 +437,25 @@ build-test-container:
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
+	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
+	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS) \
 	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	test/build_container.sh
+	docker tag $(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG) \
+		$(DOCKER_RELEASE_REPOSITORY):$(KONG_TEST_CONTAINER_TAG)
+	docker tag $(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG) \
+		$(KONG_TEST_IMAGE_NAME)
 ifeq ($(BUILDX),true)
-	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
-	DOCKER_TLS_VERIFY=1 \
-	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
-	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes && \
 	ARCHITECTURE=arm64 \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	KONG_VERSION=$(KONG_VERSION) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
+	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
+	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	test/build_container.sh
