@@ -11,7 +11,6 @@ pipeline {
         DOCKERHUB = credentials('dockerhub')
         DOCKER_CLI_EXPERIMENTAL = "enabled"
         DEBUG = 0
-        KONG_VERSION = "0.0.0"
     }
     options {
         retry(2)
