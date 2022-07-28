@@ -100,7 +100,7 @@ BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --build-arg BUILDPLATFORM=x/amd64 $(DOCKER_LABELS)
+	DOCKER_COMMAND?=docker build --build-arg TARGETPLATFORM=linux/amd64 --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) $(DOCKER_LABELS)
 else
 	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
@@ -434,6 +434,7 @@ build-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	touch test/kong_license.private
 	ARCHITECTURE=amd64 \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \

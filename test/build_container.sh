@@ -21,7 +21,7 @@ chmod -R 755 docker-kong/*.sh
 if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  cp output/kong-${KONG_VERSION}.${ARCHITECTURE}.apk.tar.gz docker-kong/kong.apk.tar.gz
+  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${ARCHITECTURE}.apk.tar.gz docker-kong/kong.apk.tar.gz
 elif [ "$PACKAGE_TYPE" == "deb" ]; then
   cp output/*${ARCHITECTURE}*.deb docker-kong/kong.deb
 else
