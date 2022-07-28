@@ -22,17 +22,42 @@ Packaging arm64 architectures additionally requires:
 
 - [Docker-machine](https://github.com/docker/machine)
 - [Buildx Docker plugin](https://github.com/docker/buildx)
-- AWS Credentials
+- AWS Credentials (or access via an instance profile)
 
-## Packaging a Kong Distribution
+Packaging kong-ee additionally requires:
 
-The default build task builds an Ubuntu bionic package of Kong where the Kong source is assumed to be
-in a sibling directory to where this repository is cloned
+- A `GITHUB_TOKEN` environment variable with access to Kong's private github repositories
+
+## Building a Kong Package
 
 ```
+export PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 # defaults if not set
 make package-kong
 ls output/
-kong-0.0.0.bionic.all.deb
+kong-x.y.z.20.04.all.deb
+```
+
+## Building a Kong Docker Image
+
+Prerequisite: you did the packaging step
+```
+export KONG_TEST_CONTAINER_NAME=kong/kong:x.y.z-ubuntu-20.04 #default if not set
+make build-test-container
+```
+
+## Running Kong Smoke Tests
+
+Prerequisite: you did the packaging step
+```
+make test
+```
+
+## Releasing Docker Images
+
+Prerequisite: you did the packaging step and you're logged into docker with the necessary push permissions
+```
+export DOCKER_RELEASE_REPOSITORY=kong/kong KONG_TEST_CONTAINER_TAG=x.y.z-ubuntu-20.04 #default if not set
+make release-kong-docker-images
 ```
 
 **Environment variables:**
@@ -55,7 +80,7 @@ The Docker files in the dockerfiles directory build on each other in the followi
 - `Dockerfile.package` builds on top of the result of `Dockerfile.kong` to package Kong using `fpm-entrypoint.sh`
 - `Dockerfile.kong` builds on top of the result of `Dockerfile.openresty` to build Kong using `build-kong.sh`
 - `Dockerfile.openresty` builds on top of the result of `Dockerfile.(deb|apk|rpm)` to build the Kong prerequisites using `openresty-build-tools/kong-ngx-build`
-- `Dockerfile.(deb|apk|rpm)` builds the compilation / building prerequisites
+- [github://kong/kong-build-tools-base-images](https://github.com/Kong/kong-build-tools-base-images) builds the compilation / building prerequisites
 
 ## Running Kong Tests
 
