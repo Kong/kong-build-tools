@@ -37,40 +37,6 @@ ls output/
 kong-x.y.z.20.04.all.deb
 ```
 
-## Building a Kong Docker Image
-
-Prerequisite: you did the packaging step
-```
-export KONG_TEST_CONTAINER_NAME=kong/kong:x.y.z-ubuntu-20.04 #default if not set
-make build-test-container
-```
-
-## Running Kong Smoke Tests
-
-Prerequisite: you did the packaging step
-```
-make test
-```
-
-## Releasing Docker Images
-
-Prerequisite: you did the packaging step and you're logged into docker with the necessary push permissions
-```
-export DOCKER_RELEASE_REPOSITORY=kong/kong KONG_TEST_CONTAINER_TAG=x.y.z-ubuntu-20.04 #default if not set
-make release-kong-docker-images
-```
-
-**Environment variables:**
-
-You can find all available environment variables at the top of the [Makefile](https://github.com/Kong/kong-build-tools/blob/master/Makefile).
-The most common ones are the following:
-
-```
-RESTY_IMAGE_BASE=ubuntu|centos|rhel|debian|alpine|amazonlinux
-RESTY_IMAGE_TAG=18.04|20.04|7|8|9|10|11|latest|latest
-PACKAGE_TYPE=deb|rpm|apk
-```
-
 ### Details
 
 ![building kong](/docs/Package%20Kong.png?raw=true)
@@ -81,6 +47,22 @@ The Docker files in the dockerfiles directory build on each other in the followi
 - `Dockerfile.kong` builds on top of the result of `Dockerfile.openresty` to build Kong using `build-kong.sh`
 - `Dockerfile.openresty` builds on top of the result of `Dockerfile.(deb|apk|rpm)` to build the Kong prerequisites using `openresty-build-tools/kong-ngx-build`
 - [github://kong/kong-build-tools-base-images](https://github.com/Kong/kong-build-tools-base-images) builds the compilation / building prerequisites
+
+## Building a Kong Docker Image
+
+Prerequisite: you did the packaging step
+```
+export KONG_TEST_CONTAINER_NAME=kong/kong:x.y.z-ubuntu-20.04 #default if not set
+make build-test-container
+```
+
+## Releasing Docker Images
+
+Prerequisite: you did the packaging step and you're logged into docker with the necessary push permissions
+```
+export DOCKER_RELEASE_REPOSITORY=kong/kong KONG_TEST_CONTAINER_TAG=x.y.z-ubuntu-20.04 #default if not set
+make release-kong-docker-images
+```
 
 ## Running Kong Tests
 
@@ -107,29 +89,7 @@ TEST_SUITE = "dbless|plugins|unit|integration"
 - `Dockerfile.openresty` builds on top of the result of `Dockerfile.(deb|apk|rpm)` to build the Kong prerequisites using `openresty-build-tools/kong-ngx-build`
 - `Dockerfile.(deb|apk|rpm)` builds the compilation / building prerequisites
 
-### Debugging Tests
-
-If you want to mirror a failed test from CI pull the test image the CI built and retag it:
-
-```
-docker pull mashape/kong-build-tools:test-33c8ceb-e2bb1fd54f8d5c12f989a801a44979b610-14
-docker tag mashape/kong-build-tools:test-33c8ceb-e2bb1fd54f8d5c12f989a801a44979b610-14 mashape/kong-build-tools:test
-```
-
-If you're trying to test local Kong source code build the test image:
-
-```
-make kong-test-container
-```
-
-Now spin up the containers using docker-compose and jump into the Kong image
-```
-docker-compose up -d
-docker-compose exec kong /bin/bash
-./ci/run_tests.sh
-```
-
-## Running Functional Tests
+## Running Packaging / Smoke Tests
 
 The Kong Build Tools functional tests suite run a tests on a Kong package which we then integrate
 into our official docker build image dockerfile.

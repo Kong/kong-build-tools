@@ -452,6 +452,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 ifeq ($(BUILDX),true)
 	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes && \
 	ARCHITECTURE=arm64 \
+	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
