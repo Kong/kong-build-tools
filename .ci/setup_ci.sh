@@ -39,6 +39,7 @@ if ! [ -x "$(command -v docker-machine)" ]; then
     sudo install docker-machine /usr/local/bin/docker-machine
 fi
 
+set -e
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true
 echo "$REDHAT_PASSWORD" | docker login -u "$REDHAT_USERNAME" registry.access.redhat.com --password-stdin || true
 docker-machine version

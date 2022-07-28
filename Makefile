@@ -61,7 +61,7 @@ endif
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker build --build-arg TARGETPLATFORM=linux/amd64 --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) $(DOCKER_LABELS)
 else
 	DOCKER_COMMAND?=docker buildx build --push --platform="linux/arm64"
 endif
