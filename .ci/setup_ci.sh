@@ -42,4 +42,9 @@ docker-machine version
 docker version
 docker buildx version
 
+sudo apt-get install -y \
+    qemu \
+    binfmt-support \
+    qemu-user-static
+
 export BUILDX=true

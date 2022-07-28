@@ -59,7 +59,6 @@ pushd ./docker-kong
     ${DOCKER_LABELS} \
     "${DOCKER_BUILD_ARGS[@]}"
 
-  docker run -t $KONG_TEST_IMAGE_NAME kong version
   msg_test "Tests image Name: $KONG_TEST_IMAGE_NAME"
 popd
 
