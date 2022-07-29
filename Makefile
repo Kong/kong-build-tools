@@ -339,7 +339,7 @@ else
 		$(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG) \
 		$(DOCKER_RELEASE_REPOSITORY):arm64-$(KONG_TEST_CONTAINER_TAG)
 	docker manifest push $(KONG_TEST_IMAGE_NAME)
-
+endif
 	for ADDITIONAL_TAG in $(ADDITIONAL_TAG_LIST); do \
 		docker run -t --rm \
 			-v ~/.docker/config.json:/tmp/auth.json \
@@ -347,7 +347,6 @@ else
 			copy --all docker://docker.io/$(KONG_TEST_IMAGE_NAME) \
 			docker://docker.io/$(DOCKER_RELEASE_REPOSITORY):$$ADDITIONAL_TAG ; \
 	done
-endif
 
 release-kong: test
 	ARCHITECTURE=amd64 \
