@@ -44,9 +44,19 @@ pushd /kong
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
+
+  # clone dp-spec
+  DP_SPEC = /tmp/kong-dp-spec
+  git clone https://github.com/Kong/kong-dp-spec ${DP_SPEC} --recursive
+  git -C ${DP_SPEC} checkout ${KONG_DP_SPEC_VERSION:-f9432f8}
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
   mkdir -p /tmp/build/usr/local/kong/include
+  # wrpc related protos
+  cp -r ${DP_SPEC}/spec/proto/* /tmp/build/usr/local/kong/include/
+  mkdir /tmp/build/usr/local/kong/include/wrpc
+  cp ${DP_SPEC}/spec/wrpc/wrpc.proto /tmp/build/usr/local/kong/include/wrpc/
+  # other protos
   cp -r kong/include/* /tmp/build/usr/local/kong/include/
 
   # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
