@@ -55,7 +55,7 @@ pushd /kong
   # wrpc related protos
   cp -r ${DP_SPEC}/spec/proto/* /tmp/build/usr/local/kong/include/
   mkdir /tmp/build/usr/local/kong/include/wrpc
-  cp ${DP_SPEC}/spec/wrpc/wrpc.proto /tmp/build/usr/local/kong/include/wrpc/
+  cp ${DP_SPEC}/wrpc/wrpc.proto /tmp/build/usr/local/kong/include/wrpc/
   # other protos
   cp -r kong/include/* /tmp/build/usr/local/kong/include/
 
