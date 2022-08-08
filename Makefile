@@ -5,9 +5,11 @@ VARS_OLD := $(.VARIABLES)
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
-export SHELL:=/bin/bash
+SHELL:=/bin/bash
+.SHELLFLAGS:=-x -e -c
 
 VERBOSE?=false
+
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=20.04
 PACKAGE_TYPE?=deb
@@ -25,8 +27,13 @@ TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
-EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-ENABLE_KONG_LICENSING?=`grep ENABLE_KONG_LICENSING $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
+define _req
+grep -E '$(1)' '$(KONG_SOURCE_LOCATION)/.requirements' | cut -d'=' -f2-
+endef
+
+EDITION?=`$(call _req,EDITION)`
+ENABLE_KONG_LICENSING ?= `$(call _req,ENABLE_KONG_LICENSING)`
 
 # this flag must be an empty string when EE_PORTS are undesired
 KONG_EE_PORTS?=8002 8445 8003 8446 8004 8447
@@ -37,12 +44,12 @@ endif
 
 KONG_LICENSE?="ASL 2.0"
 
-KONG_PACKAGE_NAME ?= `grep KONG_PACKAGE_NAME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+KONG_PACKAGE_NAME ?= `$(call _req,KONG_PACKAGE_NAME)`
 OFFICIAL_RELEASE ?= true
 
-PACKAGE_CONFLICTS ?= `grep PACKAGE_CONFLICTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+PACKAGE_CONFLICTS ?= `$(call _req,PACKAGE_CONFLICTS)`
+PACKAGE_PROVIDES ?= `$(call _req,PACKAGE_PROVIDES)`
+PACKAGE_REPLACES ?= `$(call _req,PACKAGE_REPLACES)`
 DOCKER_RELEASE_REPOSITORY?="kong/kong"
 
 KONG_TEST_CONTAINER_NAME=kong-tests
@@ -52,20 +59,20 @@ KONG_TEST_IMAGE_NAME?=$(DOCKER_RELEASE_REPOSITORY):$(KONG_TEST_CONTAINER_TAG)
 
 # This logic should mirror the kong-build-tools equivalent
 KONG_VERSION?=`$(KONG_SOURCE_LOCATION)/distribution/grep-kong-version.sh`
-RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_GO_PLUGINSERVER_VERSION ?= `grep KONG_GO_PLUGINSERVER_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_OPENSSL_VERSION ?= `grep RESTY_OPENSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_BORINGSSL_VERSION ?= `grep RESTY_BORINGSSL_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_PCRE_VERSION ?= `grep RESTY_PCRE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_GMP_VERSION ?= `grep KONG_GMP_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_NETTLE_VERSION ?= `grep KONG_NETTLE_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-ATC_ROUTER ?= `grep ATC_ROUTER $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+RESTY_VERSION ?= `$(call _req,RESTY_VERSION)`
+KONG_GO_PLUGINSERVER_VERSION ?= `$(call _req,KONG_GO_PLUGINSERVER_VERSION)`
+RESTY_LUAROCKS_VERSION ?= `$(call _req,RESTY_LUAROCKS_VERSION)`
+RESTY_OPENSSL_VERSION ?= `$(call _req,RESTY_OPENSSL_VERSION)`
+RESTY_BORINGSSL_VERSION ?= `$(call _req,RESTY_BORINGSSL_VERSION)`
+RESTY_PCRE_VERSION ?= `$(call _req,RESTY_PCRE_VERSION)`
+KONG_GMP_VERSION ?= `$(call _req,KONG_GMP_VERSION)`
+KONG_NETTLE_VERSION ?= `$(call _req,KONG_NETTLE_VERSION)`
+KONG_NGINX_MODULE ?= `$(call _req,KONG_NGINX_MODULE)`
+RESTY_EVENTS ?= `$(call _req,RESTY_EVENTS)`
+RESTY_LMDB ?= `$(call _req,RESTY_LMDB)`
+ATC_ROUTER ?= `$(call _req,ATC_ROUTER)`
+LIBYAML_VERSION ?= `$(call _req,^LIBYAML_VERSION)`
+RESTY_WEBSOCKET ?= `$(call _req,RESTY_WEBSOCKET)`
 OPENRESTY_PATCHES ?= 1
 DOCKER_KONG_VERSION = '2.8.1'
 DEBUG ?= 0
@@ -79,7 +86,7 @@ GITHUB_TOKEN ?=
 DOCKER_BUILD_PROGRESS ?= auto
 
 # whether to enable bytecompilation of kong lua files or not
-ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+ENABLE_LJBC ?= `$(call _req,ENABLE_LJBC)`
 
 # We build ARM64 for alpine and bionic only at this time
 BUILDX?=false
@@ -149,9 +156,10 @@ AWS_AMI ?= ami-05c5fea40f596a84c
 # value (within single quotes) and the expanded variable value (without quotes)
 #
 # variables whose value does not expand are only printed once ("uniq"-ed )
+debug: .SHELLFLAGS:=$(.SHELLFLAGS:-x=)
 debug:
 	@$(foreach v, \
-		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
+		$(sort $(filter-out $(VARS_OLD) VARS_OLD _req,$(.VARIABLES))), \
 		( \
 			echo '$(v) = $($(v))' ; echo \
 			      $(v) = $($(v)) ;  \
