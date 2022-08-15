@@ -1,4 +1,5 @@
 /usr/local/kong/logs/*.log {
+  su kong kong
   rotate 14
   daily
   missingok
