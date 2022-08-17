@@ -34,6 +34,10 @@ pushd /kong
 
   mkdir -p /tmp/plugin
 
+  if [ "$SSL_PROVIDER" = "boringssl" ]; then
+    sed -i 's/fips = off/fips = on/g' kong/templates/kong_defaults.lua
+  fi
+
   /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
@@ -44,6 +48,7 @@ pushd /kong
   mkdir -p /tmp/build/etc/kong
   cp kong.conf.default /tmp/build/usr/local/lib/luarocks/rock*/kong/$ROCKSPEC_VERSION/
   cp kong.conf.default /tmp/build/etc/kong/kong.conf.default
+
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
   mkdir -p /tmp/build/usr/local/kong/include
