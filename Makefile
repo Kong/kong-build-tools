@@ -297,6 +297,7 @@ actual-build-kong: setup-kong-source
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
+	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 	-rm github-token
 
