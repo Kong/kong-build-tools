@@ -85,6 +85,7 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   KONG_OPTS=
   if [ "$SSL_PROVIDER" = "boringssl" ]; then
     KONG_OPTS="KONG_FIPS=on"
+    KONG_PACKAGE_NAME="kong-enterprise-edition-fips"
   fi
 
   # We're capable of running as the kong user
