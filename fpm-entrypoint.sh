@@ -19,10 +19,33 @@ then
   PACKAGE_PROVIDES=kong-community-edition
 fi
 
-
 if [ -z "$PACKAGE_REPLACES" ]
 then
   PACKAGE_REPLACES=kong-community-edition
+fi
+
+if [ "$KONG_PACKAGE_NAME" = "kong" ];
+then
+  PACKAGE_CONFLICTS=kong-enterprise-edition
+  PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
+
+  PACKAGE_REPLACES=kong-enterprise-edition
+  PACKAGE_REPLACES_2=kong-enterprise-edition-fips
+
+elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition" ]
+then
+  PACKAGE_CONFLICTS=kong-community-edition
+  PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
+
+  PACKAGE_REPLACES=kong-community-edition
+  PACKAGE_REPLACES_2=kong-enterprise-edition-fips
+
+  if [ "$SSL_PROVIDER" = "boringssl" ];
+  then
+    KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME-fips
+    PACKAGE_CONFLICTS_2=kong-enterprise-edition
+    PACKAGE_REPLACES_2=kong-enterprise-edition-fips
+  fi
 fi
 
 FPM_PARAMS=""
@@ -62,8 +85,10 @@ else
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
     --conflicts $PACKAGE_CONFLICTS \
+    --conflicts $PACKAGE_CONFLICTS_2 \
     --provides $PACKAGE_PROVIDES \
     --replaces $PACKAGE_REPLACES \
+    --replaces $PACKAGE_REPLACES_2 \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
