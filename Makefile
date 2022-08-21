@@ -141,7 +141,7 @@ AWS_INSTANCE_TYPE ?= c5a.4xlarge
 AWS_REGION ?= us-east-1
 AWS_VPC ?= vpc-0316062370efe1cff
 
-# us-east-1 bionic 18.04 arm64 hvm-ssd 20220308
+# us-east-1 bionic 18.04 amd64 hvm-ssd 20220308
 AWS_AMI ?= ami-0d73480446600f555
 
 # this prints out variables defined within this Makefile by filtering out
