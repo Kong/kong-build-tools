@@ -2,7 +2,7 @@ $(info starting make in kong-build-tools)
 
 VARS_OLD := $(.VARIABLES)
 
-.PHONY: test build-kong
+.PHONY: test build-kong scan-kong
 .DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
@@ -143,6 +143,17 @@ AWS_VPC ?= vpc-0316062370efe1cff
 
 # us-east-1 bionic 18.04 arm64 hvm-ssd 20220308
 AWS_AMI ?= ami-05c5fea40f596a84c
+
+# Anchore SBOM and Vulnerability Scanning parameters
+ANCHORE_SCAN?=false
+# Supports docker_image / source
+# TODO: Fix anchorectl to work with source sbom
+ANCHORE_SCAN_TYPE?=image
+ANCHORE_WORKFLOW_NAME?=localhost
+ANCHORE_CONFIG_FILE?=
+ANCHORE_SOURCE_DIR?=$(KONG_SOURCE_LOCATION)
+ANCHORE_SCAN_DOCKER_REPOSITORY?=kong/kong-gateway-internal
+ANCHORE_SCAN_DOCKER_TAG?=master-alpine
 
 # this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
@@ -294,6 +305,7 @@ actual-build-kong: setup-kong-source
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
 
+#Unused
 kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) || \
@@ -324,6 +336,7 @@ setup-kong-source:
 	-git -C kong submodule status
 	cp kong/.requirements kong/distribution/.requirements
 
+#Unused
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
@@ -499,3 +512,19 @@ update-cache-images:
 	-docker tag $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test
+
+scan-kong: 
+ifeq ($(ANCHORE_SCAN_TYPE),image)
+	ANCHORE_SCAN_TYPE=$(ANCHORE_SCAN_TYPE) \
+	ANCHORE_CONFIG_FILE=$(ANCHORE_CONFIG_FILE) \
+	ANCHORE_SCAN_DOCKER_REPOSITORY=$(ANCHORE_SCAN_DOCKER_REPOSITORY) \
+	ANCHORE_SCAN_DOCKER_TAG=$(ANCHORE_SCAN_DOCKER_TAG) \
+	DOCKERFILE=$(DOCKER_FILE) \
+	./scan-kong.sh
+else ifeq ($(ANCHORE_SCAN_TYPE),source)
+	ANCHORE_SCAN_TYPE=$(ANCHORE_SCAN_TYPE) \
+	ANCHORE_CONFIG_FILE=$(ANCHORE_CONFIG_FILE) \
+	ANCHORE_WORKFLOW_NAME=$(ANCHORE_WORKFLOW_NAME) \
+	ANCHORE_SOURCE_DIR=$(ANCHORE_SOURCE_DIR) \
+	./scan-kong.sh
+endif

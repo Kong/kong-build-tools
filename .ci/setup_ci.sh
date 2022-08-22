@@ -8,6 +8,10 @@ if [ "$RESTY_IMAGE_TAG" != "bionic" ] && [ "$RESTY_IMAGE_TAG" != "18.04" ] && [ 
     exit 0
 fi
 
+if uname -a | grep -i 'darwin'; then
+    exit 0
+fi
+
 sudo apt-get install -y \
     qemu \
     binfmt-support \
