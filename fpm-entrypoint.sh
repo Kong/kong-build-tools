@@ -95,7 +95,13 @@ else
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   set -x
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
-    gpg --import /kong.private.asc
+    mkdir -p ~/.gnupg/
+    touch ~/.gnupg/gpg.conf
+    echo use-agent >> ~/.gnupg/gpg.conf
+    echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
+    echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
+    echo RELOADAGENT | gpg-connect-agent
+    gpg --import --yes /kong.private.asc
     echo "$PRIVATE_KEY_PASSPHRASE" | rpm --addsign /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   fi
 fi
