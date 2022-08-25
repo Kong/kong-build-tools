@@ -95,8 +95,16 @@ else
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   set -x
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
-    gpg --import /kong.private.asc
-    echo "$PRIVATE_KEY_PASSPHRASE" | rpm --addsign /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
+    apt-get install -y expect
+    mkdir -p ~/.gnupg/
+    touch ~/.gnupg/gpg.conf
+    echo use-agent >> ~/.gnupg/gpg.conf
+    echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
+    echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
+    echo RELOADAGENT | gpg-connect-agent
+    cp /.rpmmacros ~/
+    gpg --batch --import /kong.private.asc
+    /sign-rpm.exp /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   fi
 fi
 
