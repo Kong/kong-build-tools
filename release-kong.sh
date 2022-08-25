@@ -20,7 +20,9 @@ else
   PULP_PASSWORD="$PULP_STAGE_PSW"
 fi
 
-
+if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
+  rpm -qi /src/kong.rpm | grep 2cac36c51d5f3726
+fi
 
 PULP_DOCKER_IMAGE="kong/release-script"
 
