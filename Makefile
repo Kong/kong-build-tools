@@ -111,7 +111,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
 REQUIREMENTS_SHA=$$(find kong/distribution -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum  | cut -d' ' -f 1)
-BUILD_TOOLS_SHA=colin
+BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
 DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
@@ -367,6 +367,7 @@ release-kong: test
 	DOCKER_RELEASE_REPOSITORY=$(DOCKER_RELEASE_REPOSITORY) \
 	DOCKER_LABELS='$(DOCKER_LABELS)' \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	./release-kong.sh
 ifeq ($(BUILDX),true)
 	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
@@ -387,6 +388,7 @@ ifeq ($(BUILDX),true)
 	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
 	DOCKER_LABELS=$(DOCKER_LABELS) \
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
+	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	./release-kong.sh
 endif
 
