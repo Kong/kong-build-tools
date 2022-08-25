@@ -102,7 +102,7 @@ else
     echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
     echo RELOADAGENT | gpg-connect-agent
     gpg --batch --import /kong.private.asc
-    echo "$PRIVATE_KEY_PASSPHRASE" | rpm --addsign --no-tty /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
+    ./output/sign-rpm.exp /output/${KONG_PACKAGE_NAME}-${KONG_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   fi
 fi
 
