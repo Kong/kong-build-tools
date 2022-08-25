@@ -11,8 +11,7 @@ fi
 sudo apt-get install -y \
     qemu \
     binfmt-support \
-    qemu-user-static \
-    expect
+    qemu-user-static
 
 docker version
 RESULT=$?

@@ -8,7 +8,7 @@ FROM ${DOCKER_REPOSITORY}:kong-${PACKAGE_TYPE}-${DOCKER_KONG_SUFFIX} as KONG
 FROM kong/fpm:latest as FPM
 
 COPY --from=KONG /tmp/build /tmp/build
-COPY fpm-entrypoint.sh /fpm-entrypoint.sh
+COPY fpm-entrypoint.sh sign-rpm.exp .rpmmacros /
 COPY after-install.sh /after-install.sh
 COPY .rpmmacros /root/.rpmmacros
 ARG PRIVATE_KEY_FILE
