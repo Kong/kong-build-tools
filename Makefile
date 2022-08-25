@@ -111,7 +111,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
 REQUIREMENTS_SHA=$$(find kong/distribution -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum  | cut -d' ' -f 1)
-BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
+BUILD_TOOLS_SHA=colin
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
 
 DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
