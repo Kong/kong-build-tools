@@ -67,6 +67,21 @@ then
   RESTY_OPENSSL_VERSION=0
 fi
 
+if [ -z "$NGX_WASM_MODULE" ]
+then
+  NGX_WASM_MODULE=0
+fi
+
+if [ -z "$WASM_RUNTIME" ]
+then
+  WASM_RUNTIME=0
+fi
+
+if [ -z "$WASM_RUNTIME_VERSION" ]
+then
+  WASM_RUNTIME_VERSION=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -88,6 +103,9 @@ ENABLE_KONG_LICENSING=$ENABLE_KONG_LICENSING \
 --atc-router $ATC_ROUTER \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
+--ngx_wasm_module $NGX_WASM_MODULE \
+--wasm-runtime $WASM_RUNTIME \
+--wasm-runtime-version $WASM_RUNTIME_VERSION \
 --pcre $RESTY_PCRE_VERSION \
 --work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
 

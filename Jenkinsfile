@@ -4,7 +4,7 @@ pipeline {
         cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
     }
     environment {
-        KONG_SOURCE = "master"
+        KONG_SOURCE = "feat/ngx_wasm_module-support"
         KONG_SOURCE_LOCATION = "/tmp/kong"
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"

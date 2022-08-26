@@ -71,8 +71,11 @@ RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 ATC_ROUTER ?= `grep ATC_ROUTER $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+NGX_WASM_MODULE ?= `grep NGX_WASM_MODULE_BRANCH $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+WASM_RUNTIME ?= `grep WEBASSEMBLY_RUNTIME $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+WASM_RUNTIME_VERSION ?= `grep WEBASSEMBLY_RT_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
-DOCKER_KONG_VERSION = '2.8.1'
+DOCKER_KONG_VERSION = 'feat/wasm_support'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
@@ -225,6 +228,9 @@ else
 		--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
 		--build-arg ATC_ROUTER=$(ATC_ROUTER) \
 		--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
+		--build-arg NGX_WASM_MODULE=$(NGX_WASM_MODULE) \
+		--build-arg WASM_RUNTIME=$(WASM_RUNTIME) \
+		--build-arg WASM_RUNTIME_VERSION=$(WASM_RUNTIME_VERSION) \
 		--build-arg DEBUG=$(DEBUG) \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
@@ -470,6 +476,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	DOCKER_BUILD_PROGRESS=$(DOCKER_BUILD_PROGRESS) \
 	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	EDITION="$(EDITION)" \
+	WASM_RUNTIME="$(WASM_RUNTIME)" \
 	test/build_container.sh
 	docker tag $(DOCKER_RELEASE_REPOSITORY):amd64-$(KONG_TEST_CONTAINER_TAG) \
 		$(DOCKER_RELEASE_REPOSITORY):$(KONG_TEST_CONTAINER_TAG)
@@ -488,6 +495,7 @@ ifeq ($(BUILDX),true)
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	DOCKER_LABELS="$(DOCKER_LABELS)" \
 	EDITION="$(EDITION)" \
+	WASM_RUNTIME="$(WASM_RUNTIME)" \
 	test/build_container.sh
 endif
 endif

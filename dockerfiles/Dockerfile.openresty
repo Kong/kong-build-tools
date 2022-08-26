@@ -52,6 +52,10 @@ LABEL resty_events="${RESTY_EVENTS}"
 ARG ATC_ROUTER=0
 LABEL atc_router="${ATC_ROUTER}"
 
+ARG NGX_WASM_MODULE=0
+ARG WASM_RUNTIME=0
+ARG WASM_RUNTIME_VERSION=0
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
