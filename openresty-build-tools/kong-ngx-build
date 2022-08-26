@@ -19,6 +19,9 @@ RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 RESTY_EVENTS=main
 ATC_ROUTER=${ATC_ROUTER:-0}
+NGX_WASM_MODULE=
+WASM_RUNTIME=
+WASM_RUNTIME_VERSION=
 DEBUG=0
 NPROC=
 OS=
@@ -116,6 +119,18 @@ main() {
         ATC_ROUTER=$2
         shift 2
         ;;
+      --ngx_wasm_module)
+        NGX_WASM_MODULE=$2
+        shift 2
+        ;;
+      --wasm-runtime)
+        WASM_RUNTIME=$2
+        shift 2
+        ;;
+      --wasm-runtime-version)
+        WASM_RUNTIME_VERSION=$2
+        shift 2
+        ;;
       -f|--force)
         FORCE=1
         shift 1
@@ -187,6 +202,16 @@ main() {
   if [ "$BORINGSSL_VER" = 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
     show_usage
     fatal "BoringSSL version not specified"
+  fi
+
+  if [ "$NGX_WASM_MODULE" != 0 -a -z "$WASM_RUNTIME" ]; then
+    show_usage
+    fatal "Wasm runtime is required for ngx_wasm_module"
+  fi
+
+  if [ "$WASM_RUNTIME" != 0 -a -z "$WASM_RUNTIME_VERSION" ]; then
+    show_usage
+    fatal "Wasm runtime version not specified"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -454,6 +479,37 @@ main() {
           # Accept both tags, branches and SHAs
           git reset --hard $ATC_ROUTER || git reset --hard origin/$ATC_ROUTER
         popd
+      popd
+    fi
+
+    if [ $WASM_RUNTIME != 0 ]; then
+      wasm_arch=$(uname -m)
+      wasm_os=$(uname | tr '[:upper:]' '[:lower:]')
+      pushd $DOWNLOAD_CACHE
+      if [ $WASM_RUNTIME == "wasmer" ]; then
+        if [ "$wasm_arch" == "x86_64" ]; then
+          wasm_arch="amd64"
+        fi
+        # TODO musl support
+        WASMER_DOWNLOAD="wasmer-$wasm_os-$wasm_arch.tar.gz"
+        if [ ! -f $WASMER_DOWNLOAD ]; then
+          warn "Wasmer runtime not found, downloading..."
+          curl -sSLO https://github.com/wasmerio/wasmer/releases/download/$WASM_RUNTIME_VERSION/$WASMER_DOWNLOAD
+        fi
+      elif [ $WASM_RUNTIME == "wasmtime" ]; then
+        if [ "$wasm_os" == "darwin" ]; then
+          wasm_os = "macos"
+        fi
+        WASMTIME_DOWNLOAD="wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz"
+        if [ ! -f $WASMTIME_DOWNLOAD ]; then
+          warn "Wasmtime runtime not found, downloading..."
+          curl -sSLO https://github.com/bytecodealliance/wasmtime/releases/download/v$WASM_RUNTIME_VERSION/$WASMTIME_DOWNLOAD
+        fi
+      elif [ $WASM_RUNTIME == "v8" ]; then
+        fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
+      else
+        fatal "Unknown Wasm runtime"
+      fi
       popd
     fi
   popd
@@ -756,6 +812,39 @@ main() {
           if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
             OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
           fi
+          if [ $NGX_WASM_MODULE != 0 ]; then
+            OPENRESTY_OPTS+=("--add-module=/distribution/ngx_wasm_module")
+            WASM_RUNTIME_PREFIX=${WASM_RUNTIME_PREFIX:-$PREFIX/wasm-runtime}
+            mkdir -p $WASM_RUNTIME_PREFIX
+            pushd $DOWNLOAD_CACHE
+            wasm_arch=$(uname -m)
+            wasm_os=$(uname | tr '[:upper:]' '[:lower:]')
+            if [ $WASM_RUNTIME == "wasmer" ]; then
+              warn "installing Wasmer..."
+              if [ "$wasm_arch" == "x86_64" ]; then
+                # TODO musl support
+                wasm_arch="amd64"
+              fi
+              tar -zx -f "wasmer-$wasm_os-$wasm_arch.tar.gz" -C $WASM_RUNTIME_PREFIX
+              export NGX_WASM_RUNTIME=wasmer
+            elif [ $WASM_RUNTIME == "wasmtime" ]; then
+              warn "installing Wasmtime..."
+              if [ "$wasm_os" == "darwin" ]; then
+                wasm_os = "macos"
+              fi
+              tar -x -f "wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz" -C $WASM_RUNTIME_PREFIX
+              export NGX_WASM_RUNTIME=wasmtime
+            elif [ $WASM_RUNTIME == "v8" ]; then
+              warn "installing v8..."
+              fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
+              export NGX_WASM_RUNTIME=v8
+            fi
+            popd
+            #NGX_WASM_RUNTIME_INC=$WASM_RUNTIME_PREFIX/include
+            #NGX_WASM_RUNTIME_LIB=$WASM_RUNTIME_PREFIX/lib
+            OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib -l$WASM_RUNTIME -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
+          fi
           OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
         fi
 
@@ -815,6 +904,7 @@ main() {
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
 
+        set -x
         eval ./configure ${OPENRESTY_OPTS[*]}
 
         if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
@@ -859,6 +949,14 @@ main() {
           fi
         popd
       fi
+
+      if [ "$EDITION" == 'enterprise' -a $NGX_WASM_MODULE != 0 ]; then
+        mkdir -p $OPENRESTY_INSTALL/lualib/resty/http
+        cp /distribution/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
+        cp /distribution/ngx_wasm_module/lib/resty/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/
+        cp /distribution/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
+      fi
+
     popd
 
     succ "OpenResty $OPENRESTY_VER has been built successfully!"
@@ -1047,6 +1145,14 @@ show_usage() {
   echo ""
   echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
   echo "                                     not be build."
+  echo ""
+  echo "      --ngx_wasm_module <branch>     Specify a ngx_wasm_module branch to use when patching and compiling."
+  echo "                                     (Defaults to \"master\")"
+  echo ""
+  echo "      --wasm-runtime <name>          Specify a WebAssembly runtime to be used."
+  echo "                                     (Can be set to \"wasmer\", \"wasmtime\" or \"v8\")"
+  echo ""
+  echo "      --wasm-runtime-version <ver>   Specify the WebAssemby runtime version to be used."
   echo ""
   echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
   echo "                                     repeated and will be passed to NGINX's configure in the order"
