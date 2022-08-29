@@ -59,24 +59,6 @@ esac
 
 DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
 
-
-function push_docker_images() {
-  docker tag \
-    "localhost:5000/kong-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG" \
-    "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-
-  echo "FROM $DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION" | docker build \
-    ${DOCKER_LABELS} \
-    -t "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION" -
-  docker push "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-
-  docker manifest create \
-    -a "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE" \
-       "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION-$RESTY_IMAGE_BASE"
-}
-
-
 function push_package() {
   # src has no dist-version
   local dist_version="--dist-version $RESTY_IMAGE_TAG"
@@ -121,14 +103,8 @@ function push_package() {
 }
 
 
-# only push docker images for alpine builds
-# this is for "release per commit" builds
-if [[ "$RELEASE_DOCKER" == "true" ]]; then
-  push_docker_images
-
-  if [[ "$RELEASE_DOCKER_ONLY" == "true" ]]; then
-    exit 0
-  fi
+if [[ "$RELEASE_DOCKER_ONLY" == "true" ]]; then
+  exit 0
 fi
 
 

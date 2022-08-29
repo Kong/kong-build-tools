@@ -391,6 +391,9 @@ ifeq ($(BUILDX),true)
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	./release-kong.sh
 endif
+ifeq ($(RELEASE_DOCKER),true)
+	make push_docker_images
+endif
 
 test: build-test-container
 ifneq ($(RESTY_IMAGE_BASE),src)
