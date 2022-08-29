@@ -51,6 +51,10 @@ pushd ./docker-kong
   DOCKER_BUILD_ARGS+=(--no-cache)
   DOCKER_BUILD_ARGS+=(--pull)
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
+
+  if [[ "$EDITION" == 'enterprise' ]]; then
+    DOCKER_BUILD_ARGS+=(--build-arg EE_PORTS="8002 8445 8003 8446 8004 8447")
+  fi
   
   docker build \
     --progress=${DOCKER_BUILD_PROGRESS:-auto} \
