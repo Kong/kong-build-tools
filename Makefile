@@ -392,7 +392,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 ifeq ($(RELEASE_DOCKER),true)
-	make push_docker_images
+	make release-kong-docker-images
 endif
 
 test: build-test-container
