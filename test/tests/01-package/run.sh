@@ -6,12 +6,41 @@ if \
   [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]]
 then
   major="${RESTY_IMAGE_TAG%%.*}"
-  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${major}/ubi tail -f /dev/null
+  IMAGE_BASE="registry.access.redhat.com/ubi${major}/ubi"
 else
-  docker rmi ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} --force
-  docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG} tail -f /dev/null
+  IMAGE_BASE="${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}"
 fi
 
+# docker system call amd64 "x86_64" and arm64 "aarch64"
+DOCKER_SYSTEM_ARCHITECTURE="$(docker system info --format '{{.Architecture}}')"
+
+# fall back on uname -m
+DOCKER_SYSTEM_ARCHITECTURE="${DOCKER_SYSTEM_ARCHITECTURE:-$(
+  uname -m
+)}"
+
+case "_${DOCKER_SYSTEM_ARCHITECTURE}" in
+  _aarch64|_arm64)
+    BASE_DOCKER_PLATFORM='linux/arm64/v8'
+    ;;
+  _x86_64|_amd64)
+    BASE_DOCKER_PLATFORM='linux/amd64'
+    ;;
+  _|_*)
+    # docker run allows this to be an empty string (aka default platform)
+    BASE_DOCKER_PLATFORM=''
+    ;;
+esac
+
+docker run \
+  -d \
+  --name user-validation-tests \
+  --rm \
+  --platform "$BASE_DOCKER_PLATFORM" \
+  -e KONG_DATABASE=off \
+  -v "${PWD}:/src" \
+  "$IMAGE_BASE" \
+  tail -f /dev/null
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm procps"
