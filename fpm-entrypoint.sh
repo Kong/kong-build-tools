@@ -40,8 +40,9 @@ then
   PACKAGE_REPLACES=kong-community-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition-fips
 
-elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition-fips" ]
+elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition-fips" ] || [ "$SSL_PROVIDER" = "boringssl" ]
 then
+  KONG_PACKAGE_NAME=kong-enterprise-edition-fips
   PACKAGE_CONFLICTS=kong-community-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition
 
