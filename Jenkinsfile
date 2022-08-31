@@ -110,6 +110,7 @@ pipeline {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         DOCKER_REPOSITORY = "kong/kong-build-tools-private"
+                        KONG_PACKAGE_NAME = "kong-enterprise-edition-fips"
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
