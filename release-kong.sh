@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-
 CWD=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 BUILD_DIR="$CWD/output"
 
@@ -9,15 +8,15 @@ PULP_HOST=
 PULP_USERNAME=
 PULP_PASSWORD=
 
-# release finals into prod, others into stage
-if [[ "$KONG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+# release finals into prod, others into dev
+if [[ "$OFFICIAL_RELEASE" == "true" ]]; then
   PULP_HOST="$PULP_HOST_PROD"
   PULP_USERNAME="$PULP_PROD_USR"
   PULP_PASSWORD="$PULP_PROD_PSW"
 else
-  PULP_HOST="$PULP_HOST_STAGE"
-  PULP_USERNAME="$PULP_STAGE_USR"
-  PULP_PASSWORD="$PULP_STAGE_PSW"
+  PULP_HOST="$PULP_HOST_DEV"
+  PULP_USERNAME="$PULP_DEV_USR"
+  PULP_PASSWORD="$PULP_DEV_PSW"
 fi
 
 #if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
@@ -29,6 +28,7 @@ PULP_DOCKER_IMAGE="kong/release-script"
 
 KONG_PACKAGE_NAME=$KONG_PACKAGE_NAME
 KONG_VERSION=$KONG_VERSION
+KONG_RELEASE_LABEL=$KONG_RELEASE_LABEL
 
 
 DOCKER_REPOSITORY="kong/kong"
@@ -57,17 +57,29 @@ case "$RESTY_IMAGE_BASE" in
 esac
 
 
-DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
+DIST_FILE="$KONG_PACKAGE_NAME-$KONG_RELEASE_LABEL$OUTPUT_FILE_SUFFIX"
 
 function push_package() {
-  # src has no dist-version
+
   local dist_version="--dist-version $RESTY_IMAGE_TAG"
+  
+  if [[ "$RESTY_IMAGE_BASE" == *"rhel"* ]]; then
+    major="${RESTY_IMAGE_TAG%%.*}"
+    dist_version="--dist-version ${major}"
+  fi
+  
+  # src has no dist-version
   if [ "$RESTY_IMAGE_BASE" == "src" ]; then
     dist_version=
-    curl -L "https://github.com/Kong/kong/archive/$KONG_VERSION.tar.gz" \
-      -o "output/$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
+    curl -L "https://github.com/Kong/kong/archive/$KONG_RELEASE_LABEL.tar.gz" \
+      -o "output/$KONG_PACKAGE_NAME-$KONG_RELEASE_LABEL$OUTPUT_FILE_SUFFIX"
   fi
-
+  if [ "$RESTY_IMAGE_TAG" == "18.04" ]; then
+    dist_version="--dist-version bionic"
+  fi
+  if [ "$RESTY_IMAGE_TAG" == "20.04" ]; then
+    dist_version="--dist-version focal"
+  fi
   if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
     dist_version=
   fi
@@ -97,7 +109,7 @@ function push_package() {
     -i $PULP_DOCKER_IMAGE \
           --file "/files/$DIST_FILE" \
           --dist-name "$RESTY_IMAGE_BASE" $dist_version \
-          --major-version "${KONG_VERSION%%.*}.x" \
+          --major-version "${KONG_RELEASE_LABEL%%.*}.x" \
           $release_args
   set +x
 }
@@ -111,7 +123,7 @@ fi
 push_package
 
 
-echo -e "\nReleasing Kong version '$KONG_VERSION' of '$RESTY_IMAGE_BASE $RESTY_IMAGE_TAG' done"
+echo -e "\nReleasing Kong '$KONG_RELEASE_LABEL' of '$RESTY_IMAGE_BASE $RESTY_IMAGE_TAG' done"
 
 
 exit 0

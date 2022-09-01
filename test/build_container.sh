@@ -21,7 +21,7 @@ chmod -R 755 docker-kong/*.sh
 if [ "$RESTY_IMAGE_BASE" == "src" ]; then
   exit 0
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${ARCHITECTURE}.apk.tar.gz docker-kong/kong.apk.tar.gz
+  cp output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}.${ARCHITECTURE}.apk.tar.gz docker-kong/kong.apk.tar.gz
 elif [ "$PACKAGE_TYPE" == "deb" ]; then
   cp output/*${ARCHITECTURE}*.deb docker-kong/kong.deb
 else
@@ -51,6 +51,10 @@ pushd ./docker-kong
   DOCKER_BUILD_ARGS+=(--no-cache)
   DOCKER_BUILD_ARGS+=(--pull)
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
+
+  if [[ "$EDITION" == 'enterprise' ]]; then
+    DOCKER_BUILD_ARGS+=(--build-arg EE_PORTS="8002 8445 8003 8446 8004 8447")
+  fi
   
   docker build \
     --progress=${DOCKER_BUILD_PROGRESS:-auto} \
