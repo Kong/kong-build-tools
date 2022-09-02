@@ -16,6 +16,8 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
+    postgresql \
+    postgresql-contrib \
     ca-certificates \
     tzdata \
     vim \
@@ -25,8 +27,7 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
     net-tools \
     valgrind \
     net-tools && \
-    dpkg-reconfigure --frontend noninteractive tzdata && \
-    apt-get install -y postgresql
+    dpkg-reconfigure --frontend noninteractive tzdata
 
 RUN rm -rf /kong/* || true
 COPY kong /kong

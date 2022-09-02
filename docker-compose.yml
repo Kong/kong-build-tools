@@ -18,10 +18,11 @@ services:
       timeout: 10s
       retries: 10
   kong:
-    image: mashape/kong-build-tools:test
+    image: kong/kong-build-tools:test
     privileged: true
     network_mode: host
     container_name: kong
+    command: tail -f /dev/null
     depends_on:
       cassandra:
         condition: service_healthy
@@ -29,17 +30,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-#    volumes:
-#      - ./kong:/kong
+    volumes:
+      - ./kong/:/kong
     environment:
       JOBS: 2
-      TEST_SPLIT: ${TEST_SPLIT:-all}
+      TEST_SPLIT: ${TEST_SPLIT:-first}
       TEST_SUITE: ${TEST_SUITE:-integration}
       KONG_DATABASE: ${TEST_DATABASE:-postgres}
       KONG_TEST_DATABASE: ${TEST_DATABASE:-postgres}
-      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
       KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
-      KONG_TEST_PG_DATABASE: ${KONG_PG_DATABASE:-kong_tests}
+      KONG_TEST_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
       KONG_TEST_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
       KONG_CASSANDRA_CONTACT_POINTS: 127.0.0.1
       KONG_TEST_CASSANDRA_CONTACT_POINTS: 127.0.0.1
@@ -78,7 +79,7 @@ services:
     image: postgres:${POSTGRES_VERSION:-13}
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_DB: ${KONG_PG_DATABASE:-kong_tests}
+      POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
       POSTGRES_PASSWORD: ${KONG_PG_PASSWORD:-kongpassword}
     ports:
