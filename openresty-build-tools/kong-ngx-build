@@ -486,30 +486,39 @@ main() {
       wasm_arch=$(uname -m)
       wasm_os=$(uname | tr '[:upper:]' '[:lower:]')
       pushd $DOWNLOAD_CACHE
-      if [ $WASM_RUNTIME == "wasmer" ]; then
-        if [ "$wasm_arch" == "x86_64" ]; then
-          wasm_arch="amd64"
+        if [ $WASM_RUNTIME == "wasmer" ]; then
+          if [ "$wasm_arch" == "x86_64" ]; then
+            wasm_arch="amd64"
+            if [ "$wasm_os" == "linux" ]; then
+              distro=$(grep -E "^ID=(.+)$" /etc/os-release | awk -F"=" '{print $2}')
+              if [ "$distro" == "alpine" ]; then
+                wasm_os="linux-musl"
+              fi
+            fi
+          fi
+
+          WASMER_DOWNLOAD="wasmer-$wasm_os-$wasm_arch.tar.gz"
+          if [ ! -f $WASMER_DOWNLOAD ]; then
+            warn "Wasmer runtime not found, downloading..."
+            curl -sSLO https://github.com/wasmerio/wasmer/releases/download/$WASM_RUNTIME_VERSION/$WASMER_DOWNLOAD
+          fi
+
+        elif [ $WASM_RUNTIME == "wasmtime" ]; then
+          if [ "$wasm_os" == "darwin" ]; then
+            wasm_os = "macos"
+          fi
+
+          WASMTIME_DOWNLOAD="wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz"
+          if [ ! -f $WASMTIME_DOWNLOAD ]; then
+            warn "Wasmtime runtime not found, downloading..."
+            curl -sSLO https://github.com/bytecodealliance/wasmtime/releases/download/v$WASM_RUNTIME_VERSION/$WASMTIME_DOWNLOAD
+          fi
+
+        elif [ $WASM_RUNTIME == "v8" ]; then
+          fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
+        else
+          fatal "Unknown Wasm runtime"
         fi
-        # TODO musl support
-        WASMER_DOWNLOAD="wasmer-$wasm_os-$wasm_arch.tar.gz"
-        if [ ! -f $WASMER_DOWNLOAD ]; then
-          warn "Wasmer runtime not found, downloading..."
-          curl -sSLO https://github.com/wasmerio/wasmer/releases/download/$WASM_RUNTIME_VERSION/$WASMER_DOWNLOAD
-        fi
-      elif [ $WASM_RUNTIME == "wasmtime" ]; then
-        if [ "$wasm_os" == "darwin" ]; then
-          wasm_os = "macos"
-        fi
-        WASMTIME_DOWNLOAD="wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz"
-        if [ ! -f $WASMTIME_DOWNLOAD ]; then
-          warn "Wasmtime runtime not found, downloading..."
-          curl -sSLO https://github.com/bytecodealliance/wasmtime/releases/download/v$WASM_RUNTIME_VERSION/$WASMTIME_DOWNLOAD
-        fi
-      elif [ $WASM_RUNTIME == "v8" ]; then
-        fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
-      else
-        fatal "Unknown Wasm runtime"
-      fi
       popd
     fi
   popd
