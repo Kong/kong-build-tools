@@ -7,6 +7,9 @@ DOCKER_BUILD_ARGS=()
 
 KONG_TEST_IMAGE_NAME=$DOCKER_RELEASE_REPOSITORY:$ARCHITECTURE-$KONG_TEST_CONTAINER_TAG
 
+NGX_WASM_RUNTIME_INC="/usr/local/wasm-runtime/include"
+NGX_WASM_RUNTIME_LIB="/usr/local/wasm-runtime/lib"
+
 image_id=$(docker image inspect -f '{{.ID}}' "$KONG_TEST_IMAGE_NAME" || true)
 if [ -n "$image_id" ]; then
   msg_test "Tests image Name: $KONG_TEST_IMAGE_NAME"
@@ -45,6 +48,12 @@ pushd ./docker-kong
 
   if [ -n "$DOCKER_LABEL_REVISION" ]; then
     DOCKER_BUILD_ARGS+=(--label "org.opencontainers.image.revision=$DOCKER_LABEL_REVISION")
+  fi
+
+  if [ ! -z $WASM_RUNTIME ]; then
+    DOCKER_BUILD_ARGS+=(--build-arg "WASM_RUNTIME=$WASM_RUNTIME")
+    DOCKER_BUILD_ARGS+=(--build-arg "NGX_WASM_RUNTIME_INC=$NGX_WASM_RUNTIME_INC")
+    DOCKER_BUILD_ARGS+=(--build-arg "NGX_WASM_RUNTIME_LIB=$NGX_WASM_RUNTIME_LIB")
   fi
 
   DOCKER_BUILD_ARGS+=(--platform linux/${ARCHITECTURE})
