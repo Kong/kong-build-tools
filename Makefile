@@ -88,6 +88,9 @@ DOCKER_BUILD_PROGRESS ?= auto
 # whether to enable bytecompilation of kong lua files or not
 ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
+# whether to compile opentracing components or not
+ENABLE_OPENTRACING ?= `grep ENABLE_OPENTRACING $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
+
 # We build ARM64 for alpine and bionic only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
@@ -229,6 +232,7 @@ else
 	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 	--build-arg DEBUG=$(DEBUG) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
+	--build-arg ENABLE_OPENTRACING=$(ENABLE_OPENTRACING) \
 	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
@@ -302,6 +306,7 @@ actual-build-kong: setup-kong-source
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
+	--build-arg ENABLE_OPENTRACING=$(ENABLE_OPENTRACING) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )

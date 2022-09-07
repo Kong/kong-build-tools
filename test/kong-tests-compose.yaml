@@ -59,6 +59,8 @@ services:
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PORTAL: "on"
+      KONG_TRACING:
+      KONG_TRACING_WRITE_ENDPOINT: "/dev/stdout"
       KONG_ENFORCE_RBAC:
       KONG_LICENSE_DATA:
       KONG_FIPS: ${KONG_FIPS:-off}

@@ -757,6 +757,10 @@ main() {
             OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
           fi
           OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
+
+          if [ "$ENABLE_OPENTRACING" != "false" ]; then
+            OPENRESTY_OPTS+=('--add-module=/tmp/opentracing/nginx-opentracing/opentracing')
+          fi
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then

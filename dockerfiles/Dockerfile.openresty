@@ -60,6 +60,9 @@ LABEL resty_events="${RESTY_EVENTS}"
 ARG ATC_ROUTER=0
 LABEL atc_router="${ATC_ROUTER}"
 
+ARG ENABLE_OPENTRACING=
+LABEL ENABLE_OPENTRACING="${ENABLE_OPENTRACING}"
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh

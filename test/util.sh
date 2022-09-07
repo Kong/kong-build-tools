@@ -96,6 +96,14 @@ assert_response() {
   [ "$resp_code" == "$expected_code" ] || err_exit "  expected $2, got $resp_code"
 }
 
+assert_contains() {
+  local endpoint=$1
+  local expected_string="$2"
+  response="$(curl -v -L "$endpoint")"
+  echo "$response" | grep -E "$expected_string" \
+    || err_exit "did not find ('${expected_string}') in response"
+}
+
 it_runs_free_enterprise() {
   info=$(curl $KONG_ADMIN_URI)
   msg_test "it does not have ee-only plugins"
