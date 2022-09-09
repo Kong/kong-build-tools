@@ -98,6 +98,7 @@ else
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
   set -x
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
+    apt-get update
     apt-get install -y expect
     mkdir -p ~/.gnupg/
     touch ~/.gnupg/gpg.conf
