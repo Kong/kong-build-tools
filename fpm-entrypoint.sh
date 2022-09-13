@@ -83,7 +83,6 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   fi
 fi
 OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo "$TARGETPLATFORM" | awk -F "/" '{ print $2}')
-ROCKSPEC_VERSION=`basename /tmp/build/build/usr/local/lib/luarocks/rocks/kong/*`
 
 if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
