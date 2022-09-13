@@ -40,6 +40,9 @@ ENV PACKAGE_REPLACES $PACKAGE_REPLACES
 ARG SSL_PROVIDER
 ENV SSL_PROVIDER $SSL_PROVIDER
 
+ARG DEBUG=0
+ENV DEBUG $DEBUG
+
 RUN mkdir -p /tmp/build/lib/systemd/system/
 COPY kong.service /tmp/build/lib/systemd/system/kong.service
 COPY kong.logrotate /tmp/build/etc/kong/kong.logrotate

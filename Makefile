@@ -265,6 +265,7 @@ endif
 	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	--build-arg PRIVATE_KEY_FILE=kong.private.gpg-key.asc \
 	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
+	--build-arg DEBUG=$(DEBUG) \
 	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) .
 ifeq ($(BUILDX),false)
 	docker run -d --rm --name output $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
