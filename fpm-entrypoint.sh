@@ -4,13 +4,31 @@ set -o errexit
 
 cd /tmp/build
 
-KONG_PACKAGE_NAME=${KONG_PACKAGE_NAME:-kong}
+# ubuntu | debian | centos | amazonlinux | alpine | rhel
+readonly DISTRO_NAME=${RESTY_IMAGE_BASE:-}
 
+# typically this is a version number (e.g. "7" or "18.04"), but sometimes
+# it is a label/nickname corresponding to that version instead (e.g. "bionic")
+readonly DISTRO_VERSION=${RESTY_IMAGE_TAG:-}
+
+# linux/amd64  => amd64
+# linux/arm/v7 => arm
+PLATFORM_ARCH=${TARGETPLATFORM#*/}
+readonly PLATFORM_ARCH=${PLATFORM_ARCH%%/*}
+
+# deb | rpm | apk
+readonly PACKAGE_TYPE=${PACKAGE_TYPE:?PACKAGE_TYPE is undefined}
+
+# Kong tag or Kong version
+readonly PACKAGE_VERSION=${KONG_RELEASE_LABEL:-}
+
+PACKAGE_NAME=${KONG_PACKAGE_NAME:-kong}
 PACKAGE_CONFLICTS=${PACKAGE_CONFLICTS:-kong-enterprise-edition}
 PACKAGE_PROVIDES=${PACKAGE_PROVIDES:-kong-community-edition}
 PACKAGE_REPLACES=${PACKAGE_REPLACES:-kong-community-edition}
 
-if [ "$KONG_PACKAGE_NAME" = "kong" ];
+
+if [ "$PACKAGE_NAME" = "kong" ];
 then
   PACKAGE_CONFLICTS=kong-enterprise-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
@@ -18,7 +36,7 @@ then
   PACKAGE_REPLACES=kong-enterprise-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition-fips
 
-elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition" ]
+elif [ "$PACKAGE_NAME" = "kong-enterprise-edition" ]
 then
   PACKAGE_CONFLICTS=kong-community-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
@@ -26,9 +44,9 @@ then
   PACKAGE_REPLACES=kong-community-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition-fips
 
-elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition-fips" ] || [ "$SSL_PROVIDER" = "boringssl" ]
+elif [ "$PACKAGE_NAME" = "kong-enterprise-edition-fips" ] || [ "$SSL_PROVIDER" = "boringssl" ]
 then
-  KONG_PACKAGE_NAME=kong-enterprise-edition-fips
+  PACKAGE_NAME=kong-enterprise-edition-fips
   PACKAGE_CONFLICTS=kong-community-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition
 
@@ -36,6 +54,7 @@ then
   PACKAGE_REPLACES_2=kong-enterprise-edition
 fi
 
+OUTPUT_FILE_SUFFIX=""
 FPM_PARAMS=()
 if [ "$PACKAGE_TYPE" == "deb" ]; then
   FPM_PARAMS=(
@@ -43,7 +62,7 @@ if [ "$PACKAGE_TYPE" == "deb" ]; then
     -d perl
     -d zlib1g-dev
   )
-  OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
+  OUTPUT_FILE_SUFFIX=".${DISTRO_VERSION}"
 
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS=(
@@ -53,13 +72,13 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
     -d zlib
     -d zlib-devel
   )
-  OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
+  OUTPUT_FILE_SUFFIX=".rhel${DISTRO_VERSION}"
 
-  if [ "$RESTY_IMAGE_TAG" == "7" ]; then
+  if [ "$DISTRO_VERSION" == "7" ]; then
     FPM_PARAMS+=(-d hostname)
   fi
 
-  if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+  if [ "$DISTRO_NAME" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
     FPM_PARAMS+=(
       -d /usr/sbin/useradd
@@ -67,25 +86,25 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
     )
   fi
 
-  if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
-    OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
+  if [ "$DISTRO_NAME" == "centos" ]; then
+    OUTPUT_FILE_SUFFIX=".el${DISTRO_VERSION}"
   fi
 fi
 
-OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo "$TARGETPLATFORM" | awk -F "/" '{ print $2}')
+OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}.${PLATFORM_ARCH}"
 
 if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
     mkdir /output
-    tar -zcvf "/output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.apk.tar.gz" usr etc
+    tar -zcvf "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz" usr etc
   popd
 
 else
   fpm -f -s dir \
     -t "$PACKAGE_TYPE" \
     -m 'support@konghq.com' \
-    -n "$KONG_PACKAGE_NAME" \
-    -v "$KONG_RELEASE_LABEL" \
+    -n "$PACKAGE_NAME" \
+    -v "$PACKAGE_VERSION" \
     "${FPM_PARAMS[@]}" \
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
@@ -98,7 +117,7 @@ else
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
-  && mv kong*.* "/output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
+  && mv kong*.* "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
 
   set -x
 
@@ -113,7 +132,7 @@ else
     echo RELOADAGENT | gpg-connect-agent
     cp /.rpmmacros ~/
     gpg --batch --import /kong.private.asc
-    /sign-rpm.exp "/output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
+    /sign-rpm.exp "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
   fi
 fi
 
