@@ -35,6 +35,9 @@ PACKAGE_PROVIDES=${PACKAGE_PROVIDES:-kong-community-edition}
 PACKAGE_CONFLICTS=( "${PACKAGE_CONFLICTS:-kong-enterprise-edition}" )
 PACKAGE_REPLACES=( "${PACKAGE_REPLACES:-kong-community-edition}" )
 
+# openssl | boringssl
+readonly SSL_PROVIDER=${SSL_PROVIDER:-openssl}
+
 case "$PACKAGE_NAME/$SSL_PROVIDER" in
   kong/*)
     PACKAGE_CONFLICTS=( "$KONG_EE" "$KONG_EE_FIPS" )
