@@ -78,34 +78,36 @@ case "$PACKAGE_TYPE/$DISTRO_NAME" in
 esac
 
 
-FPM_PARAMS=()
-if [ "$PACKAGE_TYPE" == "deb" ]; then
-  FPM_PARAMS=(
-    -d libpcre3
-    -d perl
-    -d zlib1g-dev
-  )
+PACKAGE_DEPS=(perl)
+case "$PACKAGE_TYPE/$DISTRO_NAME/$DISTRO_VERSION" in
+  apk/*)
+    PACKAGE_DEPS=()
+    ;;
 
-elif [ "$PACKAGE_TYPE" == "rpm" ]; then
-  FPM_PARAMS=(
-    -d pcre
-    -d perl
-    -d perl-Time-HiRes
-    -d zlib
-    -d zlib-devel
-  )
+  deb/*/*)
+    PACKAGE_DEPS+=( libpcre3
+                    zlib1g-dev
+    ) ;;
 
-  if [ "$DISTRO_VERSION" == "7" ]; then
-    FPM_PARAMS+=(-d hostname)
-  fi
+  rpm/*/*)
+    PACKAGE_DEPS+=( pcre
+                    perl-Time-HiRes
+                    zlib
+                    zlib-devel
+    ) ;;&
 
-  if [ "$DISTRO_NAME" == "amazonlinux" ]; then
-    FPM_PARAMS+=(
-      -d /usr/sbin/useradd
-      -d /usr/sbin/groupadd
-    )
-  fi
-fi
+  rpm/*/7)
+    PACKAGE_DEPS+=( hostname
+    ) ;;&
+
+  rpm/amazonlinux/*)
+    PACKAGE_DEPS+=( /usr/sbin/useradd
+                    /usr/sbin/groupadd
+    ) ;;&
+
+  *)
+    ;;
+esac
 
 if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
@@ -114,6 +116,11 @@ if [ "$PACKAGE_TYPE" == "apk" ]; then
   popd
 
 else
+  FPM_PARAMS=()
+  for dep in "${PACKAGE_DEPS[@]}"; do
+    FPM_PARAMS+=(-d "$dep")
+  done
+
   fpm -f -s dir \
     -t "$PACKAGE_TYPE" \
     -m 'support@konghq.com' \
