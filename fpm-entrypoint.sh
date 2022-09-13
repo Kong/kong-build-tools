@@ -34,7 +34,6 @@ then
 
   PACKAGE_REPLACES=kong-community-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition
-
 fi
 
 FPM_PARAMS=()
@@ -45,6 +44,7 @@ if [ "$PACKAGE_TYPE" == "deb" ]; then
     -d zlib1g-dev
   )
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
+
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS=(
     -d pcre
@@ -54,9 +54,11 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
     -d zlib-devel
   )
   OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
+
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
     FPM_PARAMS+=(-d hostname)
   fi
+
   if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
     FPM_PARAMS+=(
@@ -64,10 +66,12 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
       -d /usr/sbin/groupadd
     )
   fi
+
   if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
     OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
   fi
 fi
+
 OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}."$(echo "$TARGETPLATFORM" | awk -F "/" '{ print $2}')
 
 if [ "$PACKAGE_TYPE" == "apk" ]; then
@@ -75,6 +79,7 @@ if [ "$PACKAGE_TYPE" == "apk" ]; then
     mkdir /output
     tar -zcvf "/output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.apk.tar.gz" usr etc
   popd
+
 else
   fpm -f -s dir \
     -t "$PACKAGE_TYPE" \
@@ -94,7 +99,9 @@ else
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
   && mv kong*.* "/output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
+
   set -x
+
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
     apt-get update
     apt-get install -y expect
