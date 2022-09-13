@@ -107,6 +107,20 @@ case "$PACKAGE_TYPE/$DISTRO_NAME/$DISTRO_VERSION" in
     ;;
 esac
 
+echo "Building package..."
+echo ">>>"
+echo "         name: $PACKAGE_NAME"
+echo "      version: $PACKAGE_VERSION"
+echo "         type: $PACKAGE_TYPE"
+echo "       distro: $DISTRO_NAME $DISTRO_VERSION"
+echo "         arch: $PLATFORM_ARCH"
+echo "     provides: $PACKAGE_PROVIDES"
+echo "     replaces: ${PACKAGE_REPLACES[*]}"
+echo "    conflicts: ${PACKAGE_CONFLICTS[*]}"
+echo " dependencies: ${PACKAGE_DEPS[*]}"
+echo "     filename: $PACKAGE_FILENAME"
+echo "<<<"
+
 if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
     mkdir /output
