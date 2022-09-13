@@ -2,8 +2,6 @@
 
 set -eu
 
-cd /tmp/build
-
 # ubuntu | debian | centos | amazonlinux | alpine | rhel
 readonly DISTRO_NAME=${RESTY_IMAGE_BASE:-}
 
@@ -121,55 +119,57 @@ echo " dependencies: ${PACKAGE_DEPS[*]}"
 echo "     filename: $PACKAGE_FILENAME"
 echo "<<<"
 
-if [ "$PACKAGE_TYPE" == "apk" ]; then
-  pushd /tmp/build
-    mkdir /output
-    tar -zcvf "$PACKAGE_FILENAME" usr etc
-  popd
+mkdir -v /output
+cd /tmp/build
 
-else
-  FPM_PARAMS=()
-  for dep in "${PACKAGE_DEPS[@]}"; do
-    FPM_PARAMS+=(-d "$dep")
-  done
+case "$PACKAGE_TYPE" in
+  apk)
+    tar -zcvf \
+      "$PACKAGE_FILENAME" \
+      usr etc
+    ;;
 
-  for c in "${PACKAGE_CONFLICTS[@]}"; do
-    FPM_PARAMS+=(--conflicts "$c")
-  done
+  deb | rpm )
+    FPM_PARAMS=()
+    for dep in "${PACKAGE_DEPS[@]}"; do
+      FPM_PARAMS+=(-d "$dep")
+    done
 
-  for r in "${PACKAGE_REPLACES[@]}"; do
-    FPM_PARAMS+=(--replaces "$r")
-  done
+    for c in "${PACKAGE_CONFLICTS[@]}"; do
+      FPM_PARAMS+=(--conflicts "$c")
+    done
 
-  fpm -f -s dir \
-    -t "$PACKAGE_TYPE" \
-    -m 'support@konghq.com' \
-    -n "$PACKAGE_NAME" \
-    -v "$PACKAGE_VERSION" \
-    "${FPM_PARAMS[@]}" \
-    --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
-    --vendor 'Kong Inc.' \
-    --license "ASL 2.0" \
-    --provides "$PACKAGE_PROVIDES" \
-    --after-install '/after-install.sh' \
-    --url 'https://getkong.org/' usr etc lib \
-  && mkdir /output/ \
-  && mv kong*.* "$PACKAGE_FILENAME"
+    for r in "${PACKAGE_REPLACES[@]}"; do
+      FPM_PARAMS+=(--replaces "$r")
+    done
 
-  set -x
+    fpm -f -s dir \
+      -t "$PACKAGE_TYPE" \
+      -m 'support@konghq.com' \
+      -n "$PACKAGE_NAME" \
+      -v "$PACKAGE_VERSION" \
+      "${FPM_PARAMS[@]}" \
+      --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
+      --vendor 'Kong Inc.' \
+      --license "ASL 2.0" \
+      --provides "$PACKAGE_PROVIDES" \
+      --after-install '/after-install.sh' \
+      --url 'https://getkong.org/' usr etc lib \
 
-  if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
-    apt-get update
-    apt-get install -y expect
-    mkdir -p ~/.gnupg/
-    touch ~/.gnupg/gpg.conf
-    echo use-agent >> ~/.gnupg/gpg.conf
-    echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
-    echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
-    echo RELOADAGENT | gpg-connect-agent
-    cp /.rpmmacros ~/
-    gpg --batch --import /kong.private.asc
-    /sign-rpm.exp "$PACKAGE_FILENAME"
-  fi
-fi
+      mv kong*.* "$PACKAGE_FILENAME"
 
+    if [[ $PACKAGE_TYPE == rpm ]] && [[ -n "${PRIVATE_KEY_PASSPHRASE:-}" ]]; then
+      apt-get update
+      apt-get install -y expect
+      mkdir -p ~/.gnupg/
+      touch ~/.gnupg/gpg.conf
+      echo use-agent >> ~/.gnupg/gpg.conf
+      echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
+      echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
+      echo RELOADAGENT | gpg-connect-agent
+      cp /.rpmmacros ~/
+      gpg --batch --import /kong.private.asc
+      /sign-rpm.exp "$PACKAGE_FILENAME"
+    fi
+    ;;
+esac
