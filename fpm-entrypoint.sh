@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -o errexit
+set -eu
 
 cd /tmp/build
 
