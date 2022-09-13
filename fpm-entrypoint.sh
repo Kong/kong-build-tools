@@ -23,36 +23,34 @@ readonly PACKAGE_TYPE=${PACKAGE_TYPE:?PACKAGE_TYPE is undefined}
 readonly PACKAGE_VERSION=${KONG_RELEASE_LABEL:-}
 
 PACKAGE_NAME=${KONG_PACKAGE_NAME:-kong}
-PACKAGE_CONFLICTS=${PACKAGE_CONFLICTS:-kong-enterprise-edition}
+
+readonly KONG_CE=kong-community-edition
+readonly KONG_EE=kong-enterprise-edition
+readonly KONG_EE_FIPS=kong-enterprise-edition-fips
+
 PACKAGE_PROVIDES=${PACKAGE_PROVIDES:-kong-community-edition}
-PACKAGE_REPLACES=${PACKAGE_REPLACES:-kong-community-edition}
+PACKAGE_CONFLICTS=( "${PACKAGE_CONFLICTS:-kong-enterprise-edition}" )
+PACKAGE_REPLACES=( "${PACKAGE_REPLACES:-kong-community-edition}" )
 
+case "$PACKAGE_NAME/$SSL_PROVIDER" in
+  kong/*)
+    PACKAGE_CONFLICTS=( "$KONG_EE" "$KONG_EE_FIPS" )
+    PACKAGE_REPLACES=( "$KONG_EE" "$KONG_EE_FIPS" )
+    ;;
 
-if [ "$PACKAGE_NAME" = "kong" ];
-then
-  PACKAGE_CONFLICTS=kong-enterprise-edition
-  PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
+  kong-enterprise-edition/*)
+    PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE_FIPS" )
+    PACKAGE_REPLACES=( "$KONG_CE" "$KONG_EE_FIPS" )
+    ;;
 
-  PACKAGE_REPLACES=kong-enterprise-edition
-  PACKAGE_REPLACES_2=kong-enterprise-edition-fips
+  kong-enterprise-edition-fips/* | */boringssl )
+    # normalize the package name if needed
+    PACKAGE_NAME=kong-enterprise-edition-fips
 
-elif [ "$PACKAGE_NAME" = "kong-enterprise-edition" ]
-then
-  PACKAGE_CONFLICTS=kong-community-edition
-  PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
-
-  PACKAGE_REPLACES=kong-community-edition
-  PACKAGE_REPLACES_2=kong-enterprise-edition-fips
-
-elif [ "$PACKAGE_NAME" = "kong-enterprise-edition-fips" ] || [ "$SSL_PROVIDER" = "boringssl" ]
-then
-  PACKAGE_NAME=kong-enterprise-edition-fips
-  PACKAGE_CONFLICTS=kong-community-edition
-  PACKAGE_CONFLICTS_2=kong-enterprise-edition
-
-  PACKAGE_REPLACES=kong-community-edition
-  PACKAGE_REPLACES_2=kong-enterprise-edition
-fi
+    PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE" )
+    PACKAGE_REPLACES=( "$KONG_CE" "$KONG_EE" )
+    ;;
+esac
 
 PACKAGE_FILENAME=/output/${PACKAGE_NAME}-${PACKAGE_VERSION}
 case "$PACKAGE_TYPE/$DISTRO_NAME" in
@@ -121,6 +119,14 @@ else
     FPM_PARAMS+=(-d "$dep")
   done
 
+  for c in "${PACKAGE_CONFLICTS[@]}"; do
+    FPM_PARAMS+=(--conflicts "$c")
+  done
+
+  for r in "${PACKAGE_REPLACES[@]}"; do
+    FPM_PARAMS+=(--replaces "$r")
+  done
+
   fpm -f -s dir \
     -t "$PACKAGE_TYPE" \
     -m 'support@konghq.com' \
@@ -130,11 +136,7 @@ else
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
-    --conflicts "$PACKAGE_CONFLICTS" \
-    --conflicts "$PACKAGE_CONFLICTS_2" \
     --provides "$PACKAGE_PROVIDES" \
-    --replaces "$PACKAGE_REPLACES" \
-    --replaces "$PACKAGE_REPLACES_2" \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
