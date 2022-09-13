@@ -56,12 +56,12 @@ fi
 
 PACKAGE_FILENAME=/output/${PACKAGE_NAME}-${PACKAGE_VERSION}
 case "$PACKAGE_TYPE/$DISTRO_NAME" in
-  deb/*)
-    PACKAGE_FILENAME=${PACKAGE_FILENAME}.${DISTRO_VERSION}.deb
-    ;;
-
   apk/*)
     PACKAGE_FILENAME=${PACKAGE_FILENAME}.apk.tar.gz
+    ;;
+
+  deb/*)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.${DISTRO_VERSION}.deb
     ;;
 
   rpm/amazonlinux)
