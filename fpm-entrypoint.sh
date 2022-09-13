@@ -2,6 +2,10 @@
 
 set -eu
 
+if (( ${DEBUG:-0} == 1 )); then
+    set -x
+fi
+
 # ubuntu | debian | centos | amazonlinux | alpine | rhel
 readonly DISTRO_NAME=${RESTY_IMAGE_BASE:-}
 
