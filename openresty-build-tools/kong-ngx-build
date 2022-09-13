@@ -850,8 +850,15 @@ main() {
         local atc_router_install_succeed=0
         pushd $DOWNLOAD_CACHE/atc-router
           warn "installing dynamic library and Lua files for atc-router..."
-          source "${CARGO_HOME:-$HOME/.cargo}"/env
+
+          # this env script adds the cargo bin dir to PATH if missing
+          #
+          # ending with || true allows for when cargo is already on PATH, such as for homebrew-kong
+          source "${CARGO_HOME:-$HOME/.cargo}"/env || true
+          
+          # the atc-router makefile also tests for availability of cargo
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
+
           if [ $atc_router_install_succeed -eq 1 ]; then
             warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
             export RUSTFLAGS="-C target-feature=-crt-static"
