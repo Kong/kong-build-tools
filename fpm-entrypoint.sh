@@ -158,9 +158,10 @@ case "$PACKAGE_TYPE" in
       --license "ASL 2.0" \
       --provides "$PACKAGE_PROVIDES" \
       --after-install '/after-install.sh' \
-      --url 'https://getkong.org/' usr etc lib \
+      --url 'https://getkong.org/' \
+      usr etc lib
 
-      mv kong*.* "$PACKAGE_FILENAME"
+    mv kong*.* "$PACKAGE_FILENAME"
 
     if [[ $PACKAGE_TYPE == rpm ]] && [[ -n "${PRIVATE_KEY_PASSPHRASE:-}" ]]; then
       apt-get update
