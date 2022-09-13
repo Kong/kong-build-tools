@@ -54,7 +54,30 @@ then
   PACKAGE_REPLACES_2=kong-enterprise-edition
 fi
 
-OUTPUT_FILE_SUFFIX=""
+PACKAGE_FILENAME=/output/${PACKAGE_NAME}-${PACKAGE_VERSION}
+case "$PACKAGE_TYPE/$DISTRO_NAME" in
+  deb/*)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.${DISTRO_VERSION}.deb
+    ;;
+
+  apk/*)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.apk.tar.gz
+    ;;
+
+  rpm/amazonlinux)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.aws.rpm
+    ;;
+
+  rpm/centos)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.el${DISTRO_VERSION}.rpm
+    ;;
+
+  rpm/*)
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.rhel${DISTRO_VERSION}.rpm
+    ;;
+esac
+
+
 FPM_PARAMS=()
 if [ "$PACKAGE_TYPE" == "deb" ]; then
   FPM_PARAMS=(
@@ -62,7 +85,6 @@ if [ "$PACKAGE_TYPE" == "deb" ]; then
     -d perl
     -d zlib1g-dev
   )
-  OUTPUT_FILE_SUFFIX=".${DISTRO_VERSION}"
 
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS=(
@@ -72,31 +94,23 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
     -d zlib
     -d zlib-devel
   )
-  OUTPUT_FILE_SUFFIX=".rhel${DISTRO_VERSION}"
 
   if [ "$DISTRO_VERSION" == "7" ]; then
     FPM_PARAMS+=(-d hostname)
   fi
 
   if [ "$DISTRO_NAME" == "amazonlinux" ]; then
-    OUTPUT_FILE_SUFFIX=".aws"
     FPM_PARAMS+=(
       -d /usr/sbin/useradd
       -d /usr/sbin/groupadd
     )
   fi
-
-  if [ "$DISTRO_NAME" == "centos" ]; then
-    OUTPUT_FILE_SUFFIX=".el${DISTRO_VERSION}"
-  fi
 fi
-
-OUTPUT_FILE_SUFFIX="${OUTPUT_FILE_SUFFIX}.${PLATFORM_ARCH}"
 
 if [ "$PACKAGE_TYPE" == "apk" ]; then
   pushd /tmp/build
     mkdir /output
-    tar -zcvf "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.apk.tar.gz" usr etc
+    tar -zcvf "$PACKAGE_FILENAME" usr etc
   popd
 
 else
@@ -117,7 +131,7 @@ else
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
-  && mv kong*.* "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
+  && mv kong*.* "$PACKAGE_FILENAME"
 
   set -x
 
@@ -132,7 +146,7 @@ else
     echo RELOADAGENT | gpg-connect-agent
     cp /.rpmmacros ~/
     gpg --batch --import /kong.private.asc
-    /sign-rpm.exp "/output/${PACKAGE_NAME}-${PACKAGE_VERSION}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}"
+    /sign-rpm.exp "$PACKAGE_FILENAME"
   fi
 fi
 
