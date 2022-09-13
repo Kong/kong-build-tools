@@ -69,7 +69,7 @@ case "$PACKAGE_TYPE/$DISTRO_NAME" in
     ;;
 
   rpm/amazonlinux)
-    PACKAGE_FILENAME=${PACKAGE_FILENAME}.aws.${PLATFORM_ARCH}rpm
+    PACKAGE_FILENAME=${PACKAGE_FILENAME}.aws.${PLATFORM_ARCH}.rpm
     ;;
 
   rpm/centos)
