@@ -7,22 +7,23 @@ if (( ${DEBUG:-0} == 1 )); then
 fi
 
 # ubuntu | debian | centos | amazonlinux | alpine | rhel
-readonly DISTRO_NAME=${RESTY_IMAGE_BASE:-}
+readonly DISTRO_NAME=${RESTY_IMAGE_BASE:?RESTY_IMAGE_BASE is required}
 
 # typically this is a version number (e.g. "7" or "18.04"), but sometimes
 # it is a label/nickname corresponding to that version instead (e.g. "bionic")
-readonly DISTRO_VERSION=${RESTY_IMAGE_TAG:-}
+readonly DISTRO_VERSION=${RESTY_IMAGE_TAG:?RESTY_IMAGE_TAG is required}
 
 # linux/amd64  => amd64
 # linux/arm/v7 => arm
-PLATFORM_ARCH=${TARGETPLATFORM#*/}
+PLATFORM_ARCH=${TARGETPLATFORM:?TARGETPLATFORM is required}
+PLATFORM_ARCH=${PLATFORM_ARCH#*/}
 readonly PLATFORM_ARCH=${PLATFORM_ARCH%%/*}
 
 # deb | rpm | apk
-readonly PACKAGE_TYPE=${PACKAGE_TYPE:?PACKAGE_TYPE is undefined}
+readonly PACKAGE_TYPE=${PACKAGE_TYPE:?PACKAGE_TYPE is required}
 
 # Kong tag or Kong version
-readonly PACKAGE_VERSION=${KONG_RELEASE_LABEL:-}
+readonly PACKAGE_VERSION=${KONG_RELEASE_LABEL:?KONG_RELEASE_LABEL is required}
 
 PACKAGE_NAME=${KONG_PACKAGE_NAME:-kong}
 
