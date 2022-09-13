@@ -51,19 +51,32 @@ then
 
 fi
 
-FPM_PARAMS=""
+FPM_PARAMS=()
 if [ "$PACKAGE_TYPE" == "deb" ]; then
-  FPM_PARAMS="-d libpcre3 -d perl -d zlib1g-dev"
+  FPM_PARAMS=(
+    -d libpcre3
+    -d perl
+    -d zlib1g-dev
+  )
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
-  FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib -d zlib-devel"
+  FPM_PARAMS=(
+    -d pcre
+    -d perl
+    -d perl-Time-HiRes
+    -d zlib
+    -d zlib-devel
+  )
   OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
-    FPM_PARAMS="$FPM_PARAMS -d hostname"
+    FPM_PARAMS+=(-d hostname)
   fi
   if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
-    FPM_PARAMS="$FPM_PARAMS -d /usr/sbin/useradd -d /usr/sbin/groupadd"
+    FPM_PARAMS+=(
+      -d /usr/sbin/useradd
+      -d /usr/sbin/groupadd
+    )
   fi
   if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
     OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
@@ -83,7 +96,7 @@ else
     -m 'support@konghq.com' \
     -n "$KONG_PACKAGE_NAME" \
     -v "$KONG_RELEASE_LABEL" \
-    $FPM_PARAMS \
+    "${FPM_PARAMS[@]}" \
     --description 'Kong is a distributed gateway for APIs and Microservices, focused on high performance and reliability.' \
     --vendor 'Kong Inc.' \
     --license "ASL 2.0" \
