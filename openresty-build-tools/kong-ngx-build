@@ -851,10 +851,8 @@ main() {
         pushd $DOWNLOAD_CACHE/atc-router
           warn "installing dynamic library and Lua files for atc-router..."
 
-          # this env script adds the cargo bin dir to PATH if missing
-          #
-          # ending with || true allows for when cargo is already on PATH, such as for homebrew-kong
-          source "${CARGO_HOME:-$HOME/.cargo}"/env || true
+          # the env script adds the cargo bin dir to PATH if missing
+          which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env
           
           # the atc-router makefile also tests for availability of cargo
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
