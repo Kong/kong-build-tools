@@ -519,6 +519,9 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf github-token
 	-git submodule deinit -f .
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
+	-docker rmi amd64-$(KONG_TEST_CONTAINER_TAG)
+	-docker rmi arm64-$(KONG_TEST_CONTAINER_TAG)
+
 
 update-cache-images:
 ifeq ($(BUILDX),false)
