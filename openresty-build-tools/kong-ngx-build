@@ -841,7 +841,7 @@ main() {
               if [ "$wasm_os" == "darwin" ]; then
                 wasm_os = "macos"
               fi
-              tar -x -f "wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz" -C $WASM_RUNTIME_PREFIX
+              tar -x --strip-components 1 -f "wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz" -C $WASM_RUNTIME_PREFIX
               export NGX_WASM_RUNTIME=wasmtime
             elif [ $WASM_RUNTIME == "v8" ]; then
               warn "installing v8..."
