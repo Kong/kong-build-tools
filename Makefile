@@ -144,12 +144,12 @@ endif
 
 DOCKER_REPOSITORY?=kong/kong-build-tools
 
-AWS_INSTANCE_TYPE ?= a1.xlarge
+AWS_INSTANCE_TYPE ?= c5a.4xlarge
 AWS_REGION ?= us-east-1
 AWS_VPC ?= vpc-0316062370efe1cff
 
-# us-east-1 bionic 18.04 arm64 hvm-ssd 20220308
-AWS_AMI ?= ami-05c5fea40f596a84c
+# us-east-1 bionic 18.04 amd64 hvm-ssd 20220308
+AWS_AMI ?= ami-0d73480446600f555
 
 # this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
@@ -512,6 +512,9 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf output/*
 	-git submodule deinit -f .
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
+	-docker rmi amd64-$(KONG_TEST_CONTAINER_TAG)
+	-docker rmi arm64-$(KONG_TEST_CONTAINER_TAG)
+
 
 update-cache-images:
 ifeq ($(BUILDX),false)

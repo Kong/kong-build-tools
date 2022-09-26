@@ -24,9 +24,6 @@ RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/
     && make install \
     && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
-# `rustc` for atc-router
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
 RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
