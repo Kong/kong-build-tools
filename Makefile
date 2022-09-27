@@ -207,31 +207,34 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
-	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
-	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
-	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
-	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
-	--build-arg RESTY_BORINGSSL_VERSION=$(RESTY_BORINGSSL_VERSION) \
-	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
-	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
-	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
-	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
-	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
-	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg EDITION=$(EDITION) \
-	--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
-	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
-	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
-	--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
-	--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
-	--build-arg ATC_ROUTER=$(ATC_ROUTER) \
-	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
-	--build-arg DEBUG=$(DEBUG) \
-	--build-arg BUILDKIT_INLINE_CACHE=1 \
-	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
-	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
-	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
+	( \
+		eval "docker pull --quiet $$(sed -ne 's/FROM //p' dockerfiles/Dockerfile.openresty)"; \
+		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
+		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
+		--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
+		--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
+		--build-arg RESTY_BORINGSSL_VERSION=$(RESTY_BORINGSSL_VERSION) \
+		--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
+		--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
+		--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
+		--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+		--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
+		--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
+		--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
+		--build-arg EDITION=$(EDITION) \
+		--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
+		--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
+		--build-arg RESTY_LMDB=$(RESTY_LMDB) \
+		--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
+		--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
+		--build-arg ATC_ROUTER=$(ATC_ROUTER) \
+		--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
+		--build-arg DEBUG=$(DEBUG) \
+		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
+		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . \
+	)
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
