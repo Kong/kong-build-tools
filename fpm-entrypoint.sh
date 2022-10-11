@@ -139,8 +139,11 @@ echo " dependencies: ${PACKAGE_DEPS[*]}"
 echo "     filename: $PACKAGE_FILENAME"
 echo "<<<"
 
-mkdir -v /output
-cd /tmp/build
+mkdir /output
+cd /tmp/build || {
+  echo "Fatal: expected /tmp/build directory to exist"
+  exit 1
+}
 
 case "$PACKAGE_TYPE" in
   apk)
