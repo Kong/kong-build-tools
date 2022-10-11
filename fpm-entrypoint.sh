@@ -56,6 +56,11 @@ case "$PACKAGE_NAME/$SSL_PROVIDER" in
     PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE" )
     PACKAGE_REPLACES=( "$KONG_CE" "$KONG_EE" )
     ;;
+
+  *)
+    echo "Fatal: unexpected PACKAGE_NAME ($PACKAGE_NAME) or SSL_PROVIDER ($SSL_PROVIDER)"
+    exit 1
+    ;;
 esac
 
 _PREFIX=/output/${PACKAGE_NAME}-${PACKAGE_VERSION}
@@ -79,6 +84,11 @@ case "$PACKAGE_TYPE/$DISTRO_NAME" in
 
   rpm/*)
     PACKAGE_FILENAME=${_PREFIX}.rhel${DISTRO_VERSION}.${PLATFORM_ARCH}.rpm
+    ;;
+
+  *)
+    echo "Fatal: unknown PACKAGE_TYPE ($PACKAGE_TYPE) or DISTRO_NAME ($DISTRO_NAME)"
+    exit 1
     ;;
 esac
 readonly PACKAGE_FILENAME
