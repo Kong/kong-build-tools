@@ -211,7 +211,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --output output --platform linux/arm64 -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --output output --platform="linux/amd64,linux/arm64" -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
