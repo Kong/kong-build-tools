@@ -7,11 +7,6 @@ FROM kong/kong-build-tools:$PACKAGE_TYPE
 ARG EDITION="community"
 ENV EDITION $EDITION
 
-RUN curl -fsSLo tmate.tar.xz https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-arm64v8.tar.xz
-RUN tar -xvf tmate.tar.xz
-RUN mv tmate-*/tmate .
-RUN ./tmate -F -n session-name new-session
-
 ARG LIBYAML_VERSION=0.2.5
 ENV LIBYAML_VERSION $LIBYAML_VERSION
 RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
