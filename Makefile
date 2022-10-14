@@ -98,6 +98,13 @@ endif
 
 DOCKER_REPOSITORY?=mashape/kong-build-tools
 
+AWS_INSTANCE_TYPE ?= c5a.4xlarge
+AWS_REGION ?= us-east-1
+AWS_VPC ?= vpc-0316062370efe1cff
+
+# us-east-1 bionic 18.04 amd64 hvm-ssd 20220308
+AWS_AMI ?= ami-0d73480446600f555
+
 debug:
 	@echo ${CACHE}
 	@echo ${BUILDX}
@@ -119,10 +126,10 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
 	docker-machine create --driver amazonec2 \
-	--amazonec2-instance-type a1.xlarge \
-	--amazonec2-region us-east-1 \
-	--amazonec2-ami ami-0c46f9f09e3a8c2b5 \
-	--amazonec2-vpc-id vpc-74f9ac0c \
+	--amazonec2-instance-type $(AWS_INSTANCE_TYPE) \
+	--amazonec2-region $(AWS_REGION) \
+	--amazonec2-ami $(AWS_AMI) \
+	--amazonec2-vpc-id $(AWS_VPC) \
 	--amazonec2-monitoring \
 	--amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
