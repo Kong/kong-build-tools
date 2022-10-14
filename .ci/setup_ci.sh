@@ -8,6 +8,11 @@ if [ "$RESTY_IMAGE_TAG" != "xenial" ] && [ "$RESTY_IMAGE_TAG" != "16.04" ] && [ 
     exit 0
 fi
 
+sudo apt-get install -y \
+    qemu \
+    binfmt-support \
+    qemu-user-static
+
 docker version
 RESULT=$?
 if [ "$RESULT" != "0" ]; then

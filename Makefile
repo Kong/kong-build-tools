@@ -63,7 +63,7 @@ BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 ifeq ($(BUILDX),false)
 	DOCKER_COMMAND?=docker build --build-arg BUILDPLATFORM=x/amd64
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/amd64,linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/arm64"
 endif
 
 # Set this to unique value to bust the cache
@@ -211,7 +211,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --output output --platform linux/arm64 -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
