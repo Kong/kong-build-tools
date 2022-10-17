@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 source test/util.sh
-set -e
+set -ex
 
 DOCKER_BUILD_ARGS=()
 
@@ -23,9 +23,11 @@ if [ "$RESTY_IMAGE_BASE" == "ubuntu" ] || [ "$RESTY_IMAGE_BASE" == "debian" ]; t
   cp output/*${RESTY_IMAGE_TAG}.${ARCHITECTURE}.deb docker-kong/ubuntu/kong.deb
   BUILD_DIR="ubuntu"
 elif [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  cp output/${KONG_PACKAGE_NAME}-${KONG_VERSION}.${ARCHITECTURE}.apk.tar.gz docker-kong/kong.apk.tar.gz
-elif [ "$PACKAGE_TYPE" == "deb" ]; then
-  cp output/*${ARCHITECTURE}*.deb docker-kong/kong.deb
+  cp output/*.${ARCHITECTURE}.apk.tar.gz docker-kong/alpine/kong.tar.gz
+  BUILD_DIR="alpine"
+elif [ "$RESTY_IMAGE_BASE" == "centos" ] || [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
+  cp output/*.${ARCHITECTURE}.rpm docker-kong/centos/kong.rpm
+  BUILD_DIR="centos"
 else
   cp output/*.${PACKAGE_TYPE} docker-kong/kong.${PACKAGE_TYPE}
 fi
