@@ -63,7 +63,7 @@ BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 ifeq ($(BUILDX),false)
 	DOCKER_COMMAND?=docker build --build-arg TARGETPLATFORM=linux/amd64 --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) $(DOCKER_LABELS)
 else
-	DOCKER_COMMAND?=docker buildx build --push --platform="linux/arm64"
+	DOCKER_COMMAND?=docker buildx build --push --platform="linux/arm64,linux/amd64"
 endif
 
 # Set this to unique value to bust the cache
@@ -96,7 +96,7 @@ else
 	UPDATE_CACHE_COMMAND?=false
 endif
 
-DOCKER_REPOSITORY?=mashape/kong-build-tools
+DOCKER_REPOSITORY?=kong/kong-build-tools
 
 AWS_INSTANCE_TYPE ?= c5a.4xlarge
 AWS_REGION ?= us-east-1
