@@ -368,10 +368,7 @@ build-test-container:
 	DOCKER_KONG_VERSION=$(DOCKER_KONG_VERSION) \
 	test/build_container.sh
 ifeq ($(BUILDX),true)
-	DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
-	DOCKER_TLS_VERIFY=1 \
-	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
-	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes && \
 	ARCHITECTURE=arm64 \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
