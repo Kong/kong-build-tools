@@ -62,21 +62,12 @@ DIST_FILE="$KONG_PACKAGE_NAME-$KONG_VERSION$OUTPUT_FILE_SUFFIX"
 
 
 function push_docker_images() {
-  docker tag \
-    "localhost:5000/kong-$RESTY_IMAGE_BASE-$RESTY_IMAGE_TAG" \
-    "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-
-  echo "FROM $DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION" | docker build \
-    --label org.opencontainers.image.version="$KONG_VERSION" \
-    --label org.opencontainers.image.created="$DOCKER_LABEL_CREATED" \
-    --label org.opencontainers.image.revision="$DOCKER_LABEL_REVISION" \
-    -t "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION" -
-  docker push "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-
-  docker manifest create \
-    -a "$DOCKER_REPOSITORY:$KONG_VERSION" \
-       "$DOCKER_REPOSITORY:$ARCHITECTURE-$KONG_VERSION"
-  docker manifest push "$DOCKER_REPOSITORY:$KONG_VERSION"
+	docker push $DOCKER_RELEASE_REPOSITORY:amd64-$KONG_TEST_CONTAINER_TAG
+	docker push $DOCKER_RELEASE_REPOSITORY:arm64-$KONG_TEST_CONTAINER_TAG
+	docker manifest create $KONG_TEST_IMAGE_NAME -a \
+		$DOCKER_RELEASE_REPOSITORY:amd64-$KONG_TEST_CONTAINER_TAG \
+		$DOCKER_RELEASE_REPOSITORY:arm64-$KONG_TEST_CONTAINER_TAG
+	docker manifest push $KONG_TEST_IMAGE_NAME
 }
 
 
@@ -115,7 +106,9 @@ function push_package() {
 # only push docker images for alpine builds
 # this is for "release per commit" builds
 if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
-  push_docker_images
+  if [ "$ARCHITECTURE" == "amd64" ]; then
+    push_docker_images
+  fi
 
   if [ "$RELEASE_DOCKER_ONLY" == "true" ]; then
     exit 0
