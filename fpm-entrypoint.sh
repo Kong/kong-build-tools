@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -o errexit
-
+set -x
 cd /tmp/build
 
 FPM_PARAMS=""
