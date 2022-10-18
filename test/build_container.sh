@@ -49,13 +49,13 @@ else
 fi
 
 pushd docker-kong/${BUILD_DIR}
+  DOCKER_BUILD_ARGS+=(--platform linux/${ARCHITECTURE})
   DOCKER_BUILD_ARGS+=(--no-cache)
+  DOCKER_BUILD_ARGS+=(--pull)
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
 
   docker build -t $KONG_TEST_IMAGE_NAME \
     "${DOCKER_BUILD_ARGS[@]}"
-
-  docker run -t $KONG_TEST_IMAGE_NAME kong version
 popd
 
 rm -rf docker-kong || true
