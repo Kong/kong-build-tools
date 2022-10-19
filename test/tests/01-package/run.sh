@@ -1,5 +1,8 @@
 set -x
 
+docker rmi --force ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
+docker pull --platform linux/amd64 ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
+
 if [[ "$RESTY_IMAGE_BASE" == "rhel" ]]; then
   docker run -d --name user-validation-tests --rm -e KONG_DATABASE=off -v $PWD:/src registry.access.redhat.com/ubi${RESTY_IMAGE_TAG}/ubi tail -f /dev/null
 else
