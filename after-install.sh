@@ -10,7 +10,6 @@ create_user() {
   FILES="${FILES} /usr/local/bin/lua2json"
   FILES="${FILES} /usr/local/bin/luarocks"
   FILES="${FILES} /usr/local/bin/luarocks-admin"
-  FILES="${FILES} /usr/local/bin/openapi2kong"
   FILES="${FILES} /usr/local/etc/luarocks/"
   FILES="${FILES} /usr/local/etc/passwdqc/"
   FILES="${FILES} /usr/local/kong/"

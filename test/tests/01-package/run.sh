@@ -163,7 +163,6 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l
 if [[ "$EDITION" == "enterprise" ]]; then
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "passwdqc"'
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "jq"'
-  #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} openapi2kong 2>&1 | head -1 | grep 'missing required parameter:'
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} ls -l /usr/local/kong/include/kong/pluginsocket.proto
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/bash -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
 fi
