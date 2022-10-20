@@ -39,6 +39,8 @@ RUN /usr/local/bin/luarocks make kong-*.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
     YAML_LIBDIR=/usr/local/kong/lib \
+    EXPAT_DIR=/usr/local/kong \
+    LIBXML2_DIR=/usr/local/kong \
     CFLAGS="-L/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -fPIC"
 RUN make dev
 
