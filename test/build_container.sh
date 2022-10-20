@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 source test/util.sh
-set -e
+set -ex
 
 DOCKER_BUILD_ARGS=()
 
@@ -56,8 +56,11 @@ pushd ./docker-kong
     DOCKER_BUILD_ARGS+=(--build-arg EE_PORTS="8002 8445 8003 8446 8004 8447")
   fi
   
+
+  BUILDKIT_PROGRESS=plain \
+  DOCKER_BUILD_PROGRESS=plain \
   docker build \
-    --progress=${DOCKER_BUILD_PROGRESS:-auto} \
+    --progress=plain \
     -t $KONG_TEST_IMAGE_NAME \
     -f Dockerfile.$PACKAGE_TYPE \
     ${DOCKER_LABELS} \
