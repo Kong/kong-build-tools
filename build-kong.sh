@@ -43,6 +43,8 @@ pushd /kong
     OPENSSL_DIR=/usr/local/kong \
     YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
     YAML_INCDIR=/tmp/yaml \
+    EXPAT_DIR=/usr/local/kong \
+    LIBXML2_DIR=/usr/local/kong \
     CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -std=gnu99 -fPIC"
 
   mkdir -p /tmp/build/etc/kong
