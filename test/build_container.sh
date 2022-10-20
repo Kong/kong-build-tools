@@ -55,7 +55,6 @@ pushd ./docker-kong
   if [[ "$EDITION" == 'enterprise' ]]; then
     DOCKER_BUILD_ARGS+=(--build-arg EE_PORTS="8002 8445 8003 8446 8004 8447")
   fi
-  
 
   BUILDKIT_PROGRESS=plain \
   DOCKER_BUILD_PROGRESS=plain \
