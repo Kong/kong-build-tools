@@ -34,7 +34,7 @@ pipeline {
                     }
                     environment {
                         AWS_ACCESS_KEY = "instance-profile"
-                        PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
