@@ -139,6 +139,7 @@ pipeline {
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         PACKAGE_TYPE = "rpm"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
                         PRIVATE_KEY_PASSPHRASE = credentials('kong.private.gpg-key.asc.password')
                     }
@@ -160,6 +161,7 @@ pipeline {
                     }
                     environment {
                         AWS_ACCESS_KEY = "instance-profile"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -178,6 +180,7 @@ pipeline {
                     }
                     environment {
                         PACKAGE_TYPE = "deb"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }
                     steps {
