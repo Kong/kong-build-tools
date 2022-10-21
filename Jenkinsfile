@@ -16,11 +16,7 @@ pipeline {
         stage('OSS Test Builds') {
             when {
                 beforeAgent true
-                anyOf {
-                    buildingTag()
-                    branch 'master'
-                    changeRequest target: 'master'
-                }
+                branch 'chore/test-3.0.0'
             }
             parallel {
                 stage('Kong OSS src & Alpine'){
@@ -31,9 +27,12 @@ pipeline {
                     }
                     environment {
                         AWS_ACCESS_KEY = "instance-profile"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` package-kong test cleanup'
                     }
