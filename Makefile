@@ -28,11 +28,16 @@ KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 ENABLE_KONG_LICENSING?=`grep ENABLE_KONG_LICENSING $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
+DOCKER_REPOSITORY?=kong/kong-build-tools
+
 # this flag must be an empty string when EE_PORTS are undesired
 KONG_EE_PORTS?=8002 8445 8003 8446 8004 8447
 KONG_EE_PORTS_FLAG?=
 ifeq ($(strip $(EDITION)),enterprise)
 KONG_EE_PORTS_FLAG?=--build-arg EE_PORTS="$(KONG_EE_PORTS)"
+DOCKER_REPOSITORY=kong/kong-build-tools-private
+else
+unexport GITHUB_TOKEN
 endif
 
 KONG_LICENSE?="ASL 2.0"
@@ -141,8 +146,6 @@ ifeq ($(UPDATE_CACHE),true)
 else
 	UPDATE_CACHE_COMMAND?=false
 endif
-
-DOCKER_REPOSITORY?=kong/kong-build-tools
 
 AWS_INSTANCE_TYPE ?= c5a.4xlarge
 AWS_REGION ?= us-east-1
