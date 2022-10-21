@@ -180,7 +180,7 @@ else ifeq ($(BUILDX),true)
 	--amazonec2-ami $(AWS_AMI) \
 	--amazonec2-vpc-id $(AWS_VPC) \
 	--amazonec2-monitoring \
-	--amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	--amazonec2-tags created-by,${USER},created-via,kong-build-tools ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
