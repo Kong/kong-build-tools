@@ -47,6 +47,9 @@ pipeline {
                         PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
                         PRIVATE_KEY_PASSPHRASE = credentials('kong.private.gpg-key.asc.password')
                     }
+                    options {
+                        retry(2)
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
@@ -67,6 +70,9 @@ pipeline {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
+                    options {
+                        retry(2)
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
@@ -86,6 +92,9 @@ pipeline {
                         PACKAGE_TYPE = "deb"
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -109,6 +118,9 @@ pipeline {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         DOCKER_REPOSITORY = "kong/kong-build-tools-private"
                         KONG_PACKAGE_NAME = "kong-enterprise-edition-fips"
+                    }
+                    options {
+                        retry(2)
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -143,6 +155,9 @@ pipeline {
                         PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
                         PRIVATE_KEY_PASSPHRASE = credentials('kong.private.gpg-key.asc.password')
                     }
+                    options {
+                        retry(2)
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
@@ -163,6 +178,9 @@ pipeline {
                         AWS_ACCESS_KEY = "instance-profile"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
+                    options {
+                        retry(2)
+                    }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
@@ -182,6 +200,9 @@ pipeline {
                         PACKAGE_TYPE = "deb"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
+                    }
+                    options {
+                        retry(2)
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
