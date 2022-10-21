@@ -16,7 +16,11 @@ pipeline {
         stage('OSS Test Builds') {
             when {
                 beforeAgent true
-                branch 'chore/test-3.0.0'
+                anyOf {
+                    buildingTag()
+                    branch 'master'
+                    changeRequest target: 'master'
+                }
             }
             parallel {
                 stage('Kong OSS src & Alpine'){
