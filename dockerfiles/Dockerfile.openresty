@@ -75,7 +75,8 @@ COPY lua-kong-nginx-module /distribution/lua-kong-nginx-module
 COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
 ARG DEBUG=1
-RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
+ENV DEBUG $DEBUG
+RUN /tmp/build-openresty.sh || /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 
