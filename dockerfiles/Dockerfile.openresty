@@ -2,7 +2,11 @@ ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:$PACKAGE_TYPE
+FROM kong/kong-build-tools:apk-1.6.1 as APK
+FROM kong/kong-build-tools:deb-1.6.1 as DEB
+FROM kong/kong-build-tools:rpm-1.6.1 as RPM
+
+FROM $PACKAGE_TYPE
 
 ARG EDITION="community"
 ENV EDITION $EDITION
@@ -71,7 +75,8 @@ COPY lua-kong-nginx-module /distribution/lua-kong-nginx-module
 COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
 ARG DEBUG=1
-RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
+ENV DEBUG $DEBUG
+RUN /tmp/build-openresty.sh || /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 
