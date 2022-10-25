@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 # If an error occurs, run our error handler to output a tail of the build
 
 mkdir -p /tmp/build/usr/local/openresty
