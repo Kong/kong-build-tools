@@ -50,8 +50,7 @@ PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements
 PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 DOCKER_RELEASE_REPOSITORY?="kong/kong"
 
-# This logic should mirror the kong-build-tools equivalent
-KONG_VERSION?=`$(KONG_SOURCE_LOCATION)/distribution/grep-kong-version.sh`
+KONG_VERSION?=`./grep-kong-version.sh $(KONG_SOURCE_LOCATION)`
 # If Kong is tagged, we want to use that as the release label, regardless of what the meta.lua file shows as the version
 ifneq ($(KONG_TAG),)
 KONG_RELEASE_LABEL=$(KONG_TAG)
@@ -184,7 +183,7 @@ else ifeq ($(BUILDX),true)
 	--amazonec2-ami $(AWS_AMI) \
 	--amazonec2-vpc-id $(AWS_VPC) \
 	--amazonec2-monitoring \
-	--amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	--amazonec2-tags created-by,${USER},created-via,kong-build-tools ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
