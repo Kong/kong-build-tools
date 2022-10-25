@@ -14,6 +14,7 @@ pipeline {
     }
     options {
         retry(2)
+        timeout(time: 5, unit: 'HOURS')
     }
     stages {
         stage('Enteprise Test Builds') {
@@ -49,6 +50,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -72,6 +74,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -95,6 +98,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -122,6 +126,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -159,6 +164,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -182,6 +188,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -205,6 +212,7 @@ pipeline {
                     }
                     options {
                         retry(2)
+                        timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
