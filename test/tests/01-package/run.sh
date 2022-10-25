@@ -87,7 +87,6 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   # Check if 'useradd -U -m -s /bin/sh kong' worked
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent passwd kong"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent group kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "test -d /home/kong/"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
   if \
