@@ -187,7 +187,7 @@ if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "mkdir -p /etc/systemd/system/kong.service.d/"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD > /etc/systemd/system/kong.service.d/override.conf
 [Service]
-Environment=KONG_DATABASE=off
+Environment=KONG_DATABASE=off KONG_NGINX_MAIN_WORKER_PROCESSES=2
 EOD"
   if [ "$SSL_PROVIDER" = "boringssl" ]; then
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD >> /etc/systemd/system/kong.service.d/override.conf
@@ -198,7 +198,9 @@ EOD"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl daemon-reload"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
-  sleep 5
+
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c 'for i in {1..15}; do if test -s /usr/local/kong/pids/nginx.pid; then break; fi; echo waiting for pidfile...; sleep 1; done'
+
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
   sleep 5
