@@ -5,3 +5,4 @@ kong_license.private
 *.deb
 *.rpm
 openresty-build-tools/build
+github-token
