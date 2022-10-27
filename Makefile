@@ -176,15 +176,17 @@ build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm github-token
+	echo $$GITHUB_TOKEN > github-token
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
+	--secret id=github-token,src=github-token \
 	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
 	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
 	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 	--build-arg EDITION=$(EDITION) \
@@ -198,6 +200,7 @@ else
 	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
+	-rm github-token
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -436,6 +439,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+	-rm -rf github-token
 	-git submodule deinit -f .
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
 
