@@ -79,7 +79,7 @@ endif
 BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --progress=$(DOCKER_BUILD_PROGRESS) --build-arg BUILDPLATFORM=x/amd64
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64"
 else
 	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --push --platform="linux/amd64,linux/arm64"
 endif
@@ -247,15 +247,18 @@ endif
 
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
+	-rm github-token
+	echo $$GITHUB_TOKEN > github-token
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
+	--secret id=github-token,src=github-token \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
+	-rm github-token
 
 kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
