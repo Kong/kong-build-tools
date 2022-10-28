@@ -203,7 +203,6 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
-		-rm github-token; \
 		echo $$GITHUB_TOKEN > github-token; \
 		eval "docker pull --quiet $$(sed -ne 's/FROM //p' dockerfiles/Dockerfile.openresty)"; \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
@@ -420,6 +419,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_PROXY_PORT=8000 \
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
+	KONG_SOURCE_LOCATION=$(KONG_SOURCE_LOCATION) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
