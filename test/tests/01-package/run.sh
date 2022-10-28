@@ -159,15 +159,19 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "grep 
 # kong shipped files
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong*.logrotate"
-#docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/kong/pluginsocket.proto"
-#docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/wrpc/wrpc.proto"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
+
+if [ -e ${KONG_SOURCE_LOCATION}/kong/include/kong/pluginsocket.proto ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/kong/pluginsocket.proto"
+fi
+if [ -e ${KONG_SOURCE_LOCATION}/kong/include/wrpc/wrpc.proto ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/wrpc/wrpc.proto"
+fi
 
 if [[ "$EDITION" == "enterprise" ]]; then
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "passwdqc"'
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "jq"'
   #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} openapi2kong 2>&1 | head -1 | grep 'missing required parameter:'
-  #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} ls -l /usr/local/kong/include/kong/pluginsocket.proto
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/bash -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
 fi
 
