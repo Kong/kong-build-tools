@@ -49,6 +49,7 @@ pushd ./docker-kong
   DOCKER_BUILD_ARGS+=(--build-arg ASSET=local .)
 
   docker build --progress=${DOCKER_BUILD_PROGRESS:-auto} -t $KONG_TEST_IMAGE_NAME -f Dockerfile.$PACKAGE_TYPE \
+    ${DOCKER_LABELS} \
     "${DOCKER_BUILD_ARGS[@]}"
 
   docker run -t $KONG_TEST_IMAGE_NAME kong version
