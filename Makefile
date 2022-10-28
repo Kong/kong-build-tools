@@ -201,10 +201,11 @@ build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm github-token
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
-		eval "docker pull --quiet $$(sed -ne 's/FROM //p' dockerfiles/Dockerfile.openresty)"; \
+		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 		--secret id=github-token,src=github-token \
 		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -228,7 +229,10 @@ else
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
-		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
+		( \
+			rm github-token || true \
+		) \
 	)
 endif
 
