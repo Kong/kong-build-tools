@@ -1,3 +1,5 @@
+# syntax = docker/dockerfile:1.2
+
 ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
@@ -15,6 +17,7 @@ ENV ENABLE_KONG_LICENSING $ENABLE_KONG_LICENSING
 
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
+
 RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
 ARG KONG_NGINX_MODULE=master
@@ -68,9 +71,8 @@ RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 COPY kong /kong
 RUN rm -rf /distribution/*
 
-ARG GITHUB_TOKEN
-
 # Initial part of Dockerfile.kong for cache purposes
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
-RUN if [ -f "/distribution/post-install.sh" ] ; then ./post-install.sh; fi
+
+RUN --mount=type=secret,id=github-token if [ -f "/distribution/post-install.sh" ] ; then export GITHUB_TOKEN=`cat /run/secrets/github-token` && ./post-install.sh; fi
