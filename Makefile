@@ -70,7 +70,6 @@ KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requiremen
 RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 ATC_ROUTER ?= `grep ATC_ROUTER $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 DOCKER_KONG_VERSION = '2.8.1'
@@ -218,7 +217,6 @@ else
 		--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 		--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 		--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
-		--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
 		--build-arg EDITION=$(EDITION) \
 		--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
 		--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
