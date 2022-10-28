@@ -11,6 +11,7 @@ The tools necessary to build, package and release Kong
 
 All examples assume that Kong is a sibling directory of kong-build-tools and run from the kong-build-tools directory
 unless otherwise specified. This behaviour can be adjusted by setting a `KONG_SOURCE_LOCATION` environment variable
+
 ```
 cd ~
 git clone git@github.com:Kong/kong.git
@@ -18,15 +19,20 @@ git clone git@github.com:Kong/kong-build-tools.git
 cd kong-build-tools
 ```
 
+```
+# example of KONG_SOURCE_LOCATION usage for kong-ee
+export KONG_SOURCE_LOCATION=/Users/kong/Documents/Kong-Repos/kong-ee
+```
+Packaging kong-ee additionally requires:
+
+- A `GITHUB_TOKEN` environment variable with access to Kong's private github repositories
+- `git checkout` to target kong-ee branch before starting.
+
 Packaging arm64 architectures additionally requires:
 
 - [Docker-machine](https://github.com/docker/machine)
 - [Buildx Docker plugin](https://github.com/docker/buildx)
 - AWS Credentials (or access via an instance profile)
-
-Packaging kong-ee additionally requires:
-
-- A `GITHUB_TOKEN` environment variable with access to Kong's private github repositories
 
 ## Building a Kong Package
 
