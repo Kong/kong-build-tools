@@ -230,8 +230,7 @@ else
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
-		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
-		-rm github-token \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . \
 	)
 endif
 
