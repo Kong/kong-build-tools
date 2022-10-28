@@ -204,7 +204,6 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
-		-rm github-token; \
 		echo $$GITHUB_TOKEN > github-token; \
 		eval "docker pull --quiet $$(sed -ne 's/FROM //p' dockerfiles/Dockerfile.openresty)"; \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
