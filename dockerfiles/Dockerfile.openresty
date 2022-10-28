@@ -2,9 +2,9 @@ ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:apk-1.6.1 as APK
-FROM kong/kong-build-tools:deb-1.6.1 as DEB
-FROM kong/kong-build-tools:rpm-1.6.1 as RPM
+FROM kong/kong-build-tools:apk-1.6.3 as APK
+FROM kong/kong-build-tools:deb-1.6.3 as DEB
+FROM kong/kong-build-tools:rpm-1.6.3 as RPM
 
 FROM $PACKAGE_TYPE
 
@@ -12,21 +12,6 @@ ARG EDITION="community"
 ENV EDITION $EDITION
 ARG ENABLE_KONG_LICENSING="true"
 ENV ENABLE_KONG_LICENSING $ENABLE_KONG_LICENSING
-
-ARG LIBYAML_VERSION=0.2.5
-ENV LIBYAML_VERSION $LIBYAML_VERSION
-RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf yaml-${LIBYAML_VERSION}.tar.gz \
-    && ln -s /tmp/yaml-${LIBYAML_VERSION} /tmp/yaml \
-    && cd /tmp/yaml \
-    && ./configure \
-      --libdir=/tmp/build/usr/local/kong/lib \
-      --includedir=/tmp/yaml-${LIBYAML_VERSION} \
-    && make install \
-    && ./configure --libdir=/usr/local/kong/lib \
-    && make install \
-    && rm -rf /tmp/yaml-${LIBYAML_VERSION}
 
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
