@@ -204,7 +204,7 @@ else
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
-		eval "docker pull --quiet $$(sed -ne 's/FROM //p' dockerfiles/Dockerfile.openresty)"; \
+		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 		--secret id=github-token,src=github-token \
 		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
