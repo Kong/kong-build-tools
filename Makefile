@@ -201,6 +201,7 @@ build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm github-token
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
@@ -228,7 +229,10 @@ else
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
-		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
+		( \
+			rm github-token || true \
+		) \
 	)
 endif
 
