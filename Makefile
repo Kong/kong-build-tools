@@ -102,7 +102,7 @@ DOCKER_BUILDKIT ?= 1
 DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64" $(DOCKER_LABELS)
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --platform="linux/amd64" $(DOCKER_LABELS)
 else
 	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
