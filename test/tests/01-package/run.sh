@@ -19,6 +19,9 @@ DOCKER_SYSTEM_ARCHITECTURE="${DOCKER_SYSTEM_ARCHITECTURE:-$(
   uname -m
 )}"
 
+# architecture in the kong package filename (amd64 or arm64) default: amd64
+KONG_ARCHITECTURE='amd64'
+
 case "_${DOCKER_SYSTEM_ARCHITECTURE}" in
   _aarch64|_arm64)
     BASE_DOCKER_PLATFORM='linux/arm64/v8'
@@ -42,7 +45,7 @@ docker run \
   "$IMAGE_BASE" \
   tail -f /dev/null
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
-  cp $PACKAGE_LOCATION/*amd64.rpm kong.rpm
+  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.rpm kong.rpm
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm procps"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 # Tests disabled until CSRE-467 is resolved
@@ -51,7 +54,7 @@ if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
 fi
 
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
-  cp $PACKAGE_LOCATION/*amd64.deb kong.deb
+  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.deb kong.deb
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get install -y perl-base zlib1g-dev"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
@@ -87,7 +90,6 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   # Check if 'useradd -U -m -s /bin/sh kong' worked
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent passwd kong"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent group kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "test -d /home/kong/"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
   if \
@@ -156,15 +158,19 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "grep 
 # kong shipped files
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong*.logrotate"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/kong/pluginsocket.proto"
-docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/wrpc/wrpc.proto"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
+
+if [ -e ${KONG_SOURCE_LOCATION}/kong/include/kong/pluginsocket.proto ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/kong/pluginsocket.proto"
+fi
+if [ -e ${KONG_SOURCE_LOCATION}/kong/include/wrpc/wrpc.proto ]; then
+  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/wrpc/wrpc.proto"
+fi
 
 if [[ "$EDITION" == "enterprise" ]]; then
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "passwdqc"'
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ffi").load "jq"'
   #docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} openapi2kong 2>&1 | head -1 | grep 'missing required parameter:'
-  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} ls -l /usr/local/kong/include/kong/pluginsocket.proto
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/bash -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
 fi
 
@@ -177,7 +183,7 @@ fi
 
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
-  cp $PACKAGE_LOCATION/*amd64.deb kong.deb
+  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.deb kong.deb
   docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get clean"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
@@ -188,7 +194,7 @@ if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "mkdir -p /etc/systemd/system/kong.service.d/"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD > /etc/systemd/system/kong.service.d/override.conf
 [Service]
-Environment=KONG_DATABASE=off
+Environment=KONG_DATABASE=off KONG_NGINX_MAIN_WORKER_PROCESSES=2
 EOD"
   if [ "$SSL_PROVIDER" = "boringssl" ]; then
     docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD >> /etc/systemd/system/kong.service.d/override.conf
@@ -199,7 +205,9 @@ EOD"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl daemon-reload"
   sleep 5
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
-  sleep 5
+
+  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c 'for i in {1..15}; do if test -s /usr/local/kong/pids/nginx.pid; then break; fi; echo waiting for pidfile...; sleep 1; done'
+
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
   docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
   sleep 5

@@ -80,6 +80,9 @@ function push_package() {
   if [ "$RESTY_IMAGE_TAG" == "20.04" ]; then
     dist_version="--dist-version focal"
   fi
+  if [ "$RESTY_IMAGE_TAG" == "22.04" ]; then
+    dist_version="--dist-version jammy"
+  fi
   if [ "$RESTY_IMAGE_BASE" == "alpine" ]; then
     dist_version=
   fi

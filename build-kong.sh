@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-set -x
 
 ROCKS_CONFIG=$(mktemp)
 echo "
@@ -43,6 +42,8 @@ pushd /kong
     OPENSSL_DIR=/usr/local/kong \
     YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
     YAML_INCDIR=/tmp/yaml \
+    EXPAT_DIR=/usr/local/kong \
+    LIBXML2_DIR=/usr/local/kong \
     CFLAGS="-L/tmp/build/usr/local/kong/lib -Wl,-rpath,/usr/local/kong/lib -O2 -std=gnu99 -fPIC"
 
   mkdir -p /tmp/build/etc/kong
@@ -51,12 +52,14 @@ pushd /kong
 
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
-  mkdir -p /tmp/build/usr/local/kong/include
-  cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  if [ -e "kong/include" ]; then
+    mkdir -p /tmp/build/usr/local/kong/include
+    cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  fi
 
   # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
   if [ -e "kong/pluginsocket.proto" ]; then
-        cp kong/pluginsocket.proto /tmp/build/usr/local/kong/include/kong
+    cp kong/pluginsocket.proto /tmp/build/usr/local/kong/include/kong
   fi
 
   curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
