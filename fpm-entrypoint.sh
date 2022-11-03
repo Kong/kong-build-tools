@@ -29,7 +29,7 @@ then
   PACKAGE_CONFLICTS=kong-enterprise-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
 
-  PACKAGE_REPLACES=kong-enterprise-edition
+  PACKAGE_REPLACES=kong-community-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition-fips
 
 elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition" ]
@@ -91,7 +91,6 @@ else
     --conflicts $PACKAGE_CONFLICTS_2 \
     --provides $PACKAGE_PROVIDES \
     --replaces $PACKAGE_REPLACES \
-    --replaces $PACKAGE_REPLACES_2 \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
