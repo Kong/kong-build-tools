@@ -41,12 +41,12 @@ readonly SSL_PROVIDER=${SSL_PROVIDER:-openssl}
 case "$PACKAGE_NAME/$SSL_PROVIDER" in
   kong/*)
     PACKAGE_CONFLICTS=( "$KONG_EE" "$KONG_EE_FIPS" )
-    PACKAGE_REPLACES=( "$KONG_EE" "$KONG_EE_FIPS" )
+    PACKAGE_REPLACES=( "$KONG_CE" )
     ;;
 
   kong-enterprise-edition/*)
     PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE_FIPS" )
-    PACKAGE_REPLACES=( "$KONG_CE" "$KONG_EE_FIPS" )
+    PACKAGE_REPLACES=( "$KONG_CE" )
     ;;
 
   kong-enterprise-edition-fips/* | */boringssl )
@@ -54,7 +54,7 @@ case "$PACKAGE_NAME/$SSL_PROVIDER" in
     PACKAGE_NAME=kong-enterprise-edition-fips
 
     PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE" )
-    PACKAGE_REPLACES=( "$KONG_CE" "$KONG_EE" )
+    PACKAGE_REPLACES=( "$KONG_CE" )
     ;;
 
   *)
