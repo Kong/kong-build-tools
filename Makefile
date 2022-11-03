@@ -235,7 +235,6 @@ else
 		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
 		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
-		-rm github-token
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)

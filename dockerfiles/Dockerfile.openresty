@@ -55,6 +55,7 @@ COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
 
+
 ARG OPENRESTY_PATCHES=1
 ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 

@@ -2,6 +2,8 @@
 
 set -e
 
+source /common.sh
+
 ROCKS_CONFIG=$(mktemp)
 echo "
 rocks_trees = {
@@ -37,7 +39,7 @@ pushd /kong
     sed -i 's/fips = off/fips = on/g' kong/templates/kong_defaults.lua
   fi
 
-  /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
+  with_backoff /usr/local/bin/luarocks make kong-${ROCKSPEC_VERSION}.rockspec \
     CRYPTO_DIR=/usr/local/kong \
     OPENSSL_DIR=/usr/local/kong \
     YAML_LIBDIR=/tmp/build/usr/local/kong/lib \
@@ -52,15 +54,17 @@ pushd /kong
 
   # /usr/local/kong/include is usually created by other C libraries, like openssl
   # call mkdir here to make sure it's created
-  mkdir -p /tmp/build/usr/local/kong/include
-  cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  if [ -d "kong/include/" ]; then
+    mkdir -p /tmp/build/usr/local/kong/include
+    cp -r kong/include/* /tmp/build/usr/local/kong/include/
+  fi
 
   # circular dependency of CI: remove after https://github.com/Kong/kong-distributions/pull/791 is merged
   if [ -e "kong/pluginsocket.proto" ]; then
         cp kong/pluginsocket.proto /tmp/build/usr/local/kong/include/kong
   fi
 
-  curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
+  with_backoff curl -fsSLo /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip
   unzip -o /tmp/protoc.zip -d /tmp/protoc 'include/*'
   cp -r /tmp/protoc/include/google /tmp/build/usr/local/kong/include/
 popd

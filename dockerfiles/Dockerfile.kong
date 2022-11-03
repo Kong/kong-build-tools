@@ -20,5 +20,6 @@ WORKDIR /distribution
 RUN if [ -f "/distribution/post-install.sh" ] ; then ./post-install.sh; fi
 
 WORKDIR /kong
+COPY openresty-build-tools/common.sh /common.sh
 COPY build-kong.sh /build-kong.sh
 RUN /build-kong.sh
