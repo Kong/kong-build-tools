@@ -3,6 +3,9 @@
 source test/util.sh
 set -e
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $SCRIPT_DIR/../openresty-build-tools/common.sh
+
 DOCKER_BUILD_ARGS=()
 
 KONG_TEST_IMAGE_NAME=$DOCKER_RELEASE_REPOSITORY:$ARCHITECTURE-$KONG_TEST_CONTAINER_TAG
@@ -56,7 +59,7 @@ pushd ./docker-kong
     DOCKER_BUILD_ARGS+=(--build-arg EE_PORTS="8002 8445 8003 8446 8004 8447")
   fi
   
-  docker build \
+  with_backoff docker build \
     --progress=${DOCKER_BUILD_PROGRESS:-auto} \
     -t $KONG_TEST_IMAGE_NAME \
     -f Dockerfile.$PACKAGE_TYPE \
