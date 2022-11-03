@@ -20,5 +20,6 @@ WORKDIR /distribution
 RUN --mount=type=secret,id=github-token if [ -f "/distribution/post-install.sh" ] ; then export GITHUB_TOKEN=`cat /run/secrets/github-token` && ./post-install.sh; fi
 
 WORKDIR /kong
+COPY openresty-build-tools/common.sh /common.sh
 COPY build-kong.sh /build-kong.sh
 RUN /build-kong.sh
