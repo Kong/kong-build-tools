@@ -51,7 +51,7 @@ case "$PACKAGE_NAME/$SSL_PROVIDER" in
 
   kong-enterprise-edition-fips/* | */boringssl )
     # normalize the package name if needed
-    PACKAGE_NAME=kong-enterprise-edition-fips
+    PACKAGE_NAME=$KONG_EE_FIPS
 
     PACKAGE_CONFLICTS=( "$KONG_CE" "$KONG_EE" )
     PACKAGE_REPLACES=( "$KONG_CE" )
