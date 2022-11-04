@@ -181,44 +181,38 @@ if [ "$SSL_PROVIDER" = "openssl" ]; then
 fi
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_BASE" == "ubuntu" ]] && [ -z "${DARWIN:-}" ]; then
-  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.deb kong.deb
-  docker run -d --rm --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get clean"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt-get update"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "apt install --yes /src/kong.deb"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "kong version"
+if [[ "$RESTY_IMAGE_BASE" == "rhel" ]] && [ -z "${DARWIN:-}" ]; then
+  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.rpm kong.rpm
+  #docker run ${USE_TTY} --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
+  docker run -d --rm --name=systemd --privileged --tmpfs /tmp --tmpfs /run --tmpfs /run/lock -v $PWD:/src redhat/ubi8-init
+  docker exec ${USE_TTY} systemd /bin/bash -c "yum install -y /src/kong.rpm"
+  docker exec ${USE_TTY} systemd /bin/bash -c "kong version"
 
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "test -f /etc/kong/kong*.logrotate"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "mkdir -p /etc/systemd/system/kong.service.d/"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD > /etc/systemd/system/kong.service.d/override.conf
+  docker exec ${USE_TTY} systemd /bin/bash -c "test -f /etc/kong/kong*.logrotate"
+  docker exec ${USE_TTY} systemd /bin/bash -c "mkdir -p /etc/systemd/system/kong.service.d/"
+  docker exec ${USE_TTY} systemd /bin/bash -c "cat <<\EOD > /etc/systemd/system/kong.service.d/override.conf
 [Service]
 Environment=KONG_DATABASE=off KONG_NGINX_MAIN_WORKER_PROCESSES=2
 EOD"
-  if [ "$SSL_PROVIDER" = "boringssl" ]; then
-    docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "cat <<\EOD >> /etc/systemd/system/kong.service.d/override.conf
-[Service]
-Environment=$KONG_OPTS
-EOD"
-  fi
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl daemon-reload"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl start kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl daemon-reload"
+  sleep 5
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl start kong"
 
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c 'for i in {1..15}; do if test -s /usr/local/kong/pids/nginx.pid; then break; fi; echo waiting for pidfile...; sleep 1; done'
+  docker exec ${USE_TTY} systemd /bin/bash -c 'for i in {1..15}; do if test -s /usr/local/kong/pids/nginx.pid; then break; fi; echo waiting for pidfile...; sleep 1; done'
 
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl reload kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl --no-pager status kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl reload kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl restart kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl --no-pager status kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl restart kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl stop kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl --no-pager status kong"
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl stop kong"
   sleep 5
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "systemctl --no-pager status kong || true" # systemctl will exit with 3 if unit is not active
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "dpkg --remove $KONG_PACKAGE_NAME"
-  docker exec ${USE_TTY} systemd-ubuntu /bin/bash -c "! test -f /lib/systemd/system/kong.service"
-  docker stop systemd-ubuntu
-  rm kong.deb
+  docker exec ${USE_TTY} systemd /bin/bash -c "systemctl --no-pager status kong || true" # systemctl will exit with 3 if unit is not active
+  docker exec ${USE_TTY} systemd /bin/bash -c "yum remove -y $KONG_PACKAGE_NAME"
+  docker exec ${USE_TTY} systemd /bin/bash -c "! test -f /lib/systemd/system/kong.service"
+  docker stop systemd
+  rm kong.rpm
 fi
