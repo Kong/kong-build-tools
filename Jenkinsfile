@@ -58,10 +58,11 @@ pipeline {
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'cp $PRIVATE_KEY_FILE kong.private.gpg-key.asc'
-                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2   package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7   package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7.9 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2022 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7    package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7.9  package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6  package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise src & Alpine'){
@@ -229,6 +230,7 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'cp $PRIVATE_KEY_FILE kong.private.gpg-key.asc'
                         sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2   package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=amazonlinux RESTY_IMAGE_TAG=2022 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=centos      RESTY_IMAGE_TAG=7   package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=7.9 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
