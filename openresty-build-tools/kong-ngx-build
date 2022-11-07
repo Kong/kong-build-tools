@@ -2,6 +2,9 @@
 
 set -e
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $SCRIPT_DIR/common.sh
+
 SCRIPT_PATH=
 PREFIX=
 DOWNLOAD_CACHE=work
@@ -247,9 +250,9 @@ main() {
       if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
         warn "OpenSSL source not found, downloading..."
         set +e
-        curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
+        with_backoff curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
         if [[ $? != 0 ]]; then
-          curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
+          with_backoff curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
           [[ $? != 0 ]] && err "Could not download OpenSSL"
         fi
         set -e
@@ -270,7 +273,7 @@ main() {
       if [[ ! -d "$BORINGSSL_DOWNLOAD" ]]; then
         warn "BoringSSL source not found, downloading..."
         set +e
-        curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
+        with_backoff curl --fail -sSL https://github.com/google/boringssl/archive/${BORINGSSL_VER}.zip -o boringssl-${BORINGSSL_VER}.zip
         [[ $? != 0 ]] && err "Could not download BoringSSL"
         set -e
 
@@ -298,7 +301,7 @@ main() {
 
       if [ ! -d $OPENRESTY_DOWNLOAD ]; then
         warn "OpenResty source not found, downloading..."
-        curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
+        with_backoff curl -sSLO https://openresty.org/download/openresty-$OPENRESTY_VER.tar.gz
         if [ ! -z ${OPENRESTY_SHA+x} ]; then
           echo "$OPENRESTY_SHA openresty-$OPENRESTY_VER.tar.gz" | sha256sum -c -
         else
@@ -311,7 +314,7 @@ main() {
         if version_eq $OPENRESTY_VER 1.19.3; then
           pushd openresty-$OPENRESTY_VER/bundle
             notice "Updating lua-resty-dns to unreleased version"
-            curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
+            with_backoff curl -sSL https://github.com/openresty/lua-resty-dns/tarball/ad4a51c8cae8c3fb8f712fa91fda660ab8a89669 -o lua-resty-dns-0.21.tar.gz
             tar -xzf lua-resty-dns-0.21.tar.gz --keep-newer-files -C lua-resty-dns-0.21 --strip-components 1
             rm -f lua-resty-dns-0.21.tar.gz
           popd
@@ -324,7 +327,7 @@ main() {
             fi
             mkdir "lua-resty-websocket-${RESTY_WEBSOCKET}"
             notice "Downloading Kong/lua-resty-websocket $RESTY_WEBSOCKET"
-            curl -sSL \
+            with_backoff curl -sSL \
               -o lua-resty-websocket.tar.gz \
               "https://github.com/Kong/lua-resty-websocket/archive/refs/tags/${RESTY_WEBSOCKET}.tar.gz"
             tar -xzf lua-resty-websocket.tar.gz \
@@ -342,7 +345,7 @@ main() {
       PCRE_DOWNLOAD=$DOWNLOAD_CACHE/pcre-$PCRE_VER
       if [ ! -d $PCRE_DOWNLOAD ]; then
         warn "PCRE source not found, downloading..."
-        curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
+        with_backoff curl -sSLO https://downloads.sourceforge.net/project/pcre/pcre/${PCRE_VER}/pcre-${PCRE_VER}.tar.gz
         if [ ! -z ${PCRE_SHA+x} ]; then
           echo "$PCRE_SHA pcre-${PCRE_VER}.tar.gz" | sha256sum -c -
         else
@@ -364,9 +367,9 @@ main() {
         if [ ! -d $LUAROCKS_DOWNLOAD ]; then
           warn "LuaRocks source not found, downloading..."
           set +e
-          curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
+          with_backoff curl --fail -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS_VER.tar.gz
           if [ $? != 0 ]; then
-            curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
+            with_backoff curl --fail -sSL https://github.com/luarocks/luarocks/archive/refs/tags/v$LUAROCKS_VER.tar.gz -o luarocks-$LUAROCKS_VER.tar.gz
             [ $? != 0 ] && err "Could not download luarocks source"
           fi
           set -e
@@ -655,7 +658,7 @@ main() {
           llvm_url="https://releases.llvm.org/$clang_version/clang+llvm-$clang_version-x86_64-linux-gnu-ubuntu-16.04.tar.xz"
           llvm_checksum="02ad925add5b2b934d64c3dd5cbd1b2002258059f7d962993ba7f16524c3089c"
           mkdir llvm
-          curl -sSL "$llvm_url" -o llvm.tar.xz
+          with_backoff curl -sSL "$llvm_url" -o llvm.tar.xz
           echo "$llvm_checksum llvm.tar.xz" | sha256sum -c
 
           tar -C llvm --strip-components 1 -Jxf llvm.tar.xz
@@ -667,7 +670,7 @@ main() {
         # golang
           golang_url="https://go.dev/dl/go${golang_version}.linux-amd64.tar.gz"
           golang_checksum="66d83bfb5a9ede000e33c6579a91a29e6b101829ad41fffb5c5bb6c900e109d9"
-          curl -sSL "$golang_url" -o golang.tar.gz
+          with_backoff curl -sSL "$golang_url" -o golang.tar.gz
           echo "$golang_checksum golang.tar.gz" | sha256sum -c
           tar -zxf golang.tar.gz
 
@@ -680,7 +683,7 @@ main() {
         # ninja
           ninja_url="https://github.com/ninja-build/ninja/archive/refs/tags/v$ninja_version.zip"
           ninja_checksum="8e2e654a418373f10c22e4cc9bdbe9baeca8527ace8d572e0b421e9d9b85b7ef"
-          curl -sSL "$ninja_url" -o ninja.zip
+          with_backoff curl -sSL "$ninja_url" -o ninja.zip
           echo "$ninja_checksum ninja.zip" | sha256sum -c
           unzip -o ninja.zip
           pushd ninja-$ninja_version
@@ -744,6 +747,7 @@ main() {
           "--prefix=$OPENRESTY_PREFIX"
           "--with-pcre-jit"
           "--with-http_ssl_module"
+          "--with-http_sub_module"
           "--with-http_realip_module"
           "--with-http_stub_status_module"
           "--with-http_v2_module"
