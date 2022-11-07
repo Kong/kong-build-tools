@@ -181,7 +181,7 @@ if [ "$SSL_PROVIDER" = "openssl" ]; then
 fi
 
 # TODO enable this test in other distros containing systemd
-if [[ "$RESTY_IMAGE_BASE" == "rhel" ]] && [ -z "${DARWIN:-}" ]; then
+if [[ "$RESTY_IMAGE_BASE" == "rhel" ]] && [[ "$RESTY_IMAGE_BASE" == "8" ]] && [ -z "${DARWIN:-}" ]; then
   cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.rpm kong.rpm
   docker run -d --rm --name=systemd --privileged --tmpfs /tmp --tmpfs /run --tmpfs /run/lock -v $PWD:/src redhat/ubi8-init
   docker exec ${USE_TTY} systemd /bin/bash -c "yum install -y /src/kong.rpm"
