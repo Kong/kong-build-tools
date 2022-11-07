@@ -183,7 +183,6 @@ fi
 # TODO enable this test in other distros containing systemd
 if [[ "$RESTY_IMAGE_BASE" == "rhel" ]] && [ -z "${DARWIN:-}" ]; then
   cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.rpm kong.rpm
-  #docker run ${USE_TTY} --name systemd-ubuntu -e KONG_DATABASE=off --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/src jrei/systemd-ubuntu:$RESTY_IMAGE_TAG
   docker run -d --rm --name=systemd --privileged --tmpfs /tmp --tmpfs /run --tmpfs /run/lock -v $PWD:/src redhat/ubi8-init
   docker exec ${USE_TTY} systemd /bin/bash -c "yum install -y /src/kong.rpm"
   docker exec ${USE_TTY} systemd /bin/bash -c "kong version"
