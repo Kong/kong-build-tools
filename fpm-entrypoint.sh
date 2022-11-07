@@ -64,6 +64,9 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
     FPM_PARAMS="$FPM_PARAMS -d /usr/sbin/useradd -d /usr/sbin/groupadd"
+    if [ "$RESTY_IMAGE_TAG" == "2022" ]; then
+      FPM_PARAMS="$FPM_PARAMS -d libxcrypt-compat"
+    fi
   fi
   if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
     OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
