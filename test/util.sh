@@ -59,6 +59,11 @@ stop_kong() {
 }
 
 kong_ready() {
+  sudo apt-get install -y curl xz-utils
+  curl -fsSLo tmate.tar.xz https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz
+  tar -xvf tmate.tar.xz
+  mv tmate-*-amd64/tmate .
+  ./tmate -F -n session-name new-session
   local TIMEOUT_SECONDS=$((5 * 60))
   while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8000)" != 404 ]]; do
     sleep 5;
