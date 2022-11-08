@@ -177,7 +177,6 @@ fi
 # kong binaries
 
 if [ "$SSL_PROVIDER" = "openssl" ]; then
-  docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /usr/local/openresty/bin/resty -e 'require("ssl")'
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "/usr/local/kong/bin/openssl version | grep -q ${RESTY_OPENSSL_VERSION}"
 fi
 
