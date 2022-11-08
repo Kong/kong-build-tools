@@ -71,6 +71,7 @@ popd
 
 cp /kong/COPYRIGHT /tmp/build/usr/local/kong/
 cp /kong/bin/kong /tmp/build/usr/local/bin/kong
+cp /kong/bin/kong-health /tmp/build/usr/local/bin/kong-health
 sed -i 's/resty/\/usr\/local\/openresty\/bin\/resty/' /tmp/build/usr/local/bin/kong
 sed -i 's/\/tmp\/build//g' /tmp/build/usr/local/bin/openapi2kong || true
 grep -l -I -r '\/tmp\/build' /tmp/build/

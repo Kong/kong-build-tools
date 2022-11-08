@@ -6,6 +6,7 @@ create_user() {
   FILES="${FILES} /etc/kong/"
   FILES="${FILES} /usr/local/bin/json2lua"
   FILES="${FILES} /usr/local/bin/kong"
+  FILES="${FILES} /usr/local/bin/kong-health"
   FILES="${FILES} /usr/local/bin/lapis"
   FILES="${FILES} /usr/local/bin/lua2json"
   FILES="${FILES} /usr/local/bin/luarocks"
