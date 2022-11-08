@@ -28,6 +28,7 @@ OS=
 DIST=
 DIST_VER=
 NGINX_EXTRA_MODULES=()
+KONG_DISTRIBUTION_PATH=${KONG_DISTRIBUTION_PATH:-/distribution}
 
 PARAMS=""
 
@@ -758,9 +759,9 @@ main() {
 
         if [ "$EDITION" == 'enterprise' ]; then
           if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
-            OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+            OPENRESTY_OPTS+=("--add-module=$KONG_DISTRIBUTION_PATH/kong-licensing/ngx_module")
           fi
-          OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
+          OPENRESTY_OPTS+=("--add-module=$KONG_DISTRIBUTION_PATH/lua-resty-openssl-aux-module")
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
@@ -858,7 +859,7 @@ main() {
 
           # the env script adds the cargo bin dir to PATH if missing
           which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env
-          
+
           # the atc-router makefile also tests for availability of cargo
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
 
