@@ -10,7 +10,7 @@ if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
   exit 0
 fi
 
-if [[ "$SKIP_TEST" == "true" ]]; then
+if [[ "$SKIP_TESTS" == "true" ]]; then
   exit 0
 fi
 
