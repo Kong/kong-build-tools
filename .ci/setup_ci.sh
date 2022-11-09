@@ -4,7 +4,7 @@
 
 set -x
 
-if [ "$RESTY_IMAGE_TAG" != "focal" ] && [ "$RESTY_IMAGE_TAG" != "20.04" ] && [ "$RESTY_IMAGE_BASE" != "alpine" ]; then
+if [ -z ${AWS_ACCESS_KEY+x} ]; then
     exit 0
 fi
 
