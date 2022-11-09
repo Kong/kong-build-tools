@@ -90,9 +90,9 @@ ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),bionic)
+else ifeq ($(RESTY_IMAGE_TAG),focal)
 	BUILDX=true
-else ifeq ($(RESTY_IMAGE_TAG),18.04)
+else ifeq ($(RESTY_IMAGE_TAG),20.04)
 	BUILDX=true
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
