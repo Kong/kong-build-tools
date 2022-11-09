@@ -1,11 +1,26 @@
 $(info starting make in kong-build-tools)
 
-VARS_OLD := $(.VARIABLES)
-
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
+# .SHELLFLAGS+=-x
+
+# collect the list of environment variables to care about for the debug target
+# from this Makefile itself
+#
+# -pn cause make to print it's "database" of variables without executing any
+# targets (respecitvely)
+ifeq ($(strip $(EARLY)),)
+VARS_OLD := $(filter-out \
+	$(shell \
+		$(MAKE) EARLY=true -pn Makefile \
+			| grep -A1 -E "^# (makefile|environment|default)" \
+			| grep -vE '^(#|\-\-)' \
+			| cut -d' ' -f1; \
+	), \
+	$(.VARIABLES))
+endif
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
@@ -155,8 +170,8 @@ debug:
 	@$(foreach v, \
 		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
 		( \
-			echo '$(v) = $($(v))' ; echo \
-			      $(v) = $($(v)) ;  \
+			echo '$(v) = $($(v))'  ; \
+			echo  $(v) = "$($(v))" ;  \
 		) | uniq ; \
 	)
 
