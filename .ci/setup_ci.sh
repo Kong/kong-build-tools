@@ -53,3 +53,6 @@ docker version
 docker buildx version
 
 export BUILDX=true
+
+command -v ssh-agent >/dev/null || ( sudo apt-get update -y && sudo apt-get install openssh-client -y )
+eval $(ssh-agent -s)

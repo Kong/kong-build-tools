@@ -45,8 +45,7 @@ PACKAGE_PROVIDES ?= `grep PACKAGE_PROVIDES $(KONG_SOURCE_LOCATION)/.requirements
 PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 DOCKER_RELEASE_REPOSITORY?="kong/kong"
 
-# This logic should mirror the kong-build-tools equivalent
-KONG_VERSION?=`$(KONG_SOURCE_LOCATION)/distribution/grep-kong-version.sh`
+KONG_VERSION?=`./grep-kong-version.sh $(KONG_SOURCE_LOCATION)`
 # If Kong is tagged, we want to use that as the release label, regardless of what the meta.lua file shows as the version
 ifneq ($(KONG_TAG),)
 KONG_RELEASE_LABEL=$(KONG_TAG)
@@ -71,7 +70,6 @@ KONG_NGINX_MODULE ?= `grep KONG_NGINX_MODULE $(KONG_SOURCE_LOCATION)/.requiremen
 RESTY_EVENTS ?= `grep RESTY_EVENTS $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LMDB ?= `grep RESTY_LMDB $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 ATC_ROUTER ?= `grep ATC_ROUTER $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
-LIBYAML_VERSION ?= `grep ^LIBYAML_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_WEBSOCKET ?= `grep RESTY_WEBSOCKET $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 OPENRESTY_PATCHES ?= 1
 DOCKER_KONG_VERSION = '2.8.1'
@@ -101,13 +99,10 @@ else ifeq ($(RESTY_IMAGE_BASE),alpine)
 endif
 
 DOCKER_BUILDKIT ?= 1
-
-BUILDX_INFO ?= $(shell docker buildx 2>&1 >/dev/null; echo $?)
-
 DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
 
 ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker build --build-arg TARGETPLATFORM=linux/amd64 --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) $(DOCKER_LABELS)
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --platform="linux/amd64" $(DOCKER_LABELS)
 else
 	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
@@ -181,7 +176,7 @@ else ifeq ($(BUILDX),true)
 	--amazonec2-ami $(AWS_AMI) \
 	--amazonec2-vpc-id $(AWS_VPC) \
 	--amazonec2-monitoring \
-	--amazonec2-tags created-by,${USER} ${DOCKER_MACHINE_ARM64_NAME}
+	--amazonec2-tags created-by,${USER},created-via,kong-build-tools ${DOCKER_MACHINE_ARM64_NAME}
 	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
 	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
 	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
@@ -206,32 +201,39 @@ build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
+	-rm github-token
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
-	( $(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
-	--build-arg RESTY_VERSION=$(RESTY_VERSION) \
-	--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
-	--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
-	--build-arg RESTY_BORINGSSL_VERSION=$(RESTY_BORINGSSL_VERSION) \
-	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
-	--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
-	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
-	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
-	--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
-	--build-arg LIBYAML_VERSION=$(LIBYAML_VERSION) \
-	--build-arg EDITION=$(EDITION) \
-	--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
-	--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
-	--build-arg RESTY_LMDB=$(RESTY_LMDB) \
-	--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
-	--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
-	--build-arg ATC_ROUTER=$(ATC_ROUTER) \
-	--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
-	--build-arg DEBUG=$(DEBUG) \
-	--build-arg BUILDKIT_INLINE_CACHE=1 \
-	--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
-	--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
-	-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . )
+	( \
+		echo $$GITHUB_TOKEN > github-token; \
+		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
+		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
+		--secret id=github-token,src=github-token \
+		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
+		--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
+		--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \
+		--build-arg RESTY_BORINGSSL_VERSION=$(RESTY_BORINGSSL_VERSION) \
+		--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
+		--build-arg RESTY_PCRE_VERSION=$(RESTY_PCRE_VERSION) \
+		--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
+		--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+		--build-arg DOCKER_BASE_SUFFIX=$(DOCKER_BASE_SUFFIX) \
+		--build-arg EDITION=$(EDITION) \
+		--build-arg ENABLE_KONG_LICENSING=$(ENABLE_KONG_LICENSING) \
+		--build-arg KONG_NGINX_MODULE=$(KONG_NGINX_MODULE) \
+		--build-arg RESTY_LMDB=$(RESTY_LMDB) \
+		--build-arg RESTY_WEBSOCKET=$(RESTY_WEBSOCKET) \
+		--build-arg RESTY_EVENTS=$(RESTY_EVENTS) \
+		--build-arg ATC_ROUTER=$(ATC_ROUTER) \
+		--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
+		--build-arg DEBUG=$(DEBUG) \
+		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
+		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
+		( \
+			rm github-token || true \
+		) \
+	)
 endif
 
 ifeq ($(RESTY_IMAGE_BASE),src)
@@ -296,15 +298,18 @@ actual-build-kong: setup-kong-source
 	touch id_rsa.private
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
+	-rm github-token; \
+	echo $$GITHUB_TOKEN > github-token; \
 	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
+	--secret id=github-token,src=github-token \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN) \
 	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
 	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
+	-rm github-token
 
 kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
@@ -418,6 +423,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	KONG_PROXY_PORT=8000 \
 	KONG_PROXY_URI="http://$(TEST_HOST):$(TEST_PROXY_PORT)" \
+	KONG_SOURCE_LOCATION=$(KONG_SOURCE_LOCATION) \
 	KONG_TEST_CONTAINER_NAME=$(KONG_TEST_CONTAINER_NAME) \
 	KONG_TEST_CONTAINER_TAG=$(KONG_TEST_CONTAINER_TAG) \
 	KONG_TEST_IMAGE_NAME=$(KONG_TEST_IMAGE_NAME) \
@@ -510,6 +516,7 @@ cleanup: cleanup-tests cleanup-build
 	-rm -rf kong
 	-rm -rf docker-kong
 	-rm -rf output/*
+	-rm -f github-token
 	-git submodule deinit -f .
 	-docker rmi $(KONG_TEST_IMAGE_NAME)
 	-docker rmi amd64-$(KONG_TEST_CONTAINER_TAG)

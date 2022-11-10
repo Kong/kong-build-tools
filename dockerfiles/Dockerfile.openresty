@@ -1,31 +1,23 @@
+# syntax = docker/dockerfile:1.2
+
 ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:$PACKAGE_TYPE
+FROM kong/kong-build-tools:apk-1.6.4 as APK
+FROM kong/kong-build-tools:deb-1.6.4 as DEB
+FROM kong/kong-build-tools:rpm-1.6.4 as RPM
+
+FROM $PACKAGE_TYPE
 
 ARG EDITION="community"
 ENV EDITION $EDITION
 ARG ENABLE_KONG_LICENSING="true"
 ENV ENABLE_KONG_LICENSING $ENABLE_KONG_LICENSING
 
-ARG LIBYAML_VERSION=0.2.5
-ENV LIBYAML_VERSION $LIBYAML_VERSION
-RUN curl -fsSLo /tmp/yaml-${LIBYAML_VERSION}.tar.gz https://pyyaml.org/download/libyaml/yaml-${LIBYAML_VERSION}.tar.gz \
-    && cd /tmp \
-    && tar xzf yaml-${LIBYAML_VERSION}.tar.gz \
-    && ln -s /tmp/yaml-${LIBYAML_VERSION} /tmp/yaml \
-    && cd /tmp/yaml \
-    && ./configure \
-      --libdir=/tmp/build/usr/local/kong/lib \
-      --includedir=/tmp/yaml-${LIBYAML_VERSION} \
-    && make install \
-    && ./configure --libdir=/usr/local/kong/lib \
-    && make install \
-    && rm -rf /tmp/yaml-${LIBYAML_VERSION}
-
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
+
 RUN if [ -f "/distribution/pre-install.sh" ] ; then ./pre-install.sh; fi
 
 ARG KONG_NGINX_MODULE=master
@@ -64,23 +56,24 @@ COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
 
+
 ARG OPENRESTY_PATCHES=1
 ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
 
 COPY lua-kong-nginx-module /distribution/lua-kong-nginx-module
 COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
-ARG DEBUG=1
-RUN DEBUG="${DEBUG}" /tmp/build-openresty.sh
+ARG DEBUG=0
+ENV DEBUG $DEBUG
+RUN /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true
 
 COPY kong /kong
 RUN rm -rf /distribution/*
 
-
-
 # Initial part of Dockerfile.kong for cache purposes
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
-RUN if [ -f "/distribution/post-install.sh" ] ; then ./post-install.sh; fi
+
+RUN --mount=type=secret,id=github-token if [ -f "/distribution/post-install.sh" ] ; then export GITHUB_TOKEN=`cat /run/secrets/github-token` && ./post-install.sh; fi

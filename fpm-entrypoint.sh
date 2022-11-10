@@ -29,7 +29,7 @@ then
   PACKAGE_CONFLICTS=kong-enterprise-edition
   PACKAGE_CONFLICTS_2=kong-enterprise-edition-fips
 
-  PACKAGE_REPLACES=kong-enterprise-edition
+  PACKAGE_REPLACES=kong-community-edition
   PACKAGE_REPLACES_2=kong-enterprise-edition-fips
 
 elif [ "$KONG_PACKAGE_NAME" = "kong-enterprise-edition" ]
@@ -64,6 +64,9 @@ elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   if [ "$RESTY_IMAGE_BASE" == "amazonlinux" ]; then
     OUTPUT_FILE_SUFFIX=".aws"
     FPM_PARAMS="$FPM_PARAMS -d /usr/sbin/useradd -d /usr/sbin/groupadd"
+    if [ "$RESTY_IMAGE_TAG" == "2022" ]; then
+      FPM_PARAMS="$FPM_PARAMS -d libxcrypt-compat"
+    fi
   fi
   if [ "$RESTY_IMAGE_BASE" == "centos" ]; then
     OUTPUT_FILE_SUFFIX=".el${RESTY_IMAGE_TAG}"
@@ -91,7 +94,6 @@ else
     --conflicts $PACKAGE_CONFLICTS_2 \
     --provides $PACKAGE_PROVIDES \
     --replaces $PACKAGE_REPLACES \
-    --replaces $PACKAGE_REPLACES_2 \
     --after-install '/after-install.sh' \
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
