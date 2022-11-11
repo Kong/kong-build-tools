@@ -655,8 +655,15 @@ main() {
         notice "BoringSSL: setting up local toolchain..."
 
         # clang
-          llvm_url="https://releases.llvm.org/$clang_version/clang+llvm-$clang_version-x86_64-linux-gnu-ubuntu-16.04.tar.xz"
-          llvm_checksum="02ad925add5b2b934d64c3dd5cbd1b2002258059f7d962993ba7f16524c3089c"
+          if [[ $DIST == "CentOS Linux" ]]; then
+            llvm_url="https://releases.llvm.org/$clang_version/clang+llvm-$clang_version-x86_64-linux-gnu-ubuntu-14.04.tar.xz"
+            llvm_checksum="e1544abbbe4a4e306061f5076dcef504c15c1ca342730895ce2c194ed78e647a"
+            boringssl_cmake=cmake3
+          else # we only support ubuntu 20.04 other than rhel now
+            llvm_url="https://releases.llvm.org/$clang_version/clang+llvm-$clang_version-x86_64-linux-gnu-ubuntu-16.04.tar.xz"
+            llvm_checksum="02ad925add5b2b934d64c3dd5cbd1b2002258059f7d962993ba7f16524c3089c"
+            boringssl_cmake=cmake
+          fi
           mkdir llvm
           with_backoff curl -sSL "$llvm_url" -o llvm.tar.xz
           echo "$llvm_checksum llvm.tar.xz" | sha256sum -c
@@ -699,11 +706,12 @@ main() {
 
         mkdir -p build
         pushd build
-          cmake -GNinja \
+          $boringssl_cmake -GNinja \
                 -DCMAKE_TOOLCHAIN_FILE=${HOME}/toolchain \
                 -DFIPS=1 \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DBUILD_SHARED_LIBS=1 ..
+          unset $boringssl_cmake
           ninja
         popd #build
 
