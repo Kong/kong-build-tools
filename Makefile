@@ -146,6 +146,7 @@ AWS_VPC ?= vpc-0316062370efe1cff
 
 # us-east-1 bionic 18.04 amd64 hvm-ssd 20220308
 AWS_AMI ?= ami-0d73480446600f555
+SKIP_DOCKER_MACHINE ?= false
 
 # this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
@@ -167,7 +168,9 @@ setup-build:
 	.ci/setup_ci.sh
 	$(info 'running build: RESTY_IMAGE_BASE: $(RESTY_IMAGE_BASE)')
 	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
-ifeq ($(RESTY_IMAGE_BASE),src)
+ifeq ($(SKIP_DOCKER_MACHINE),true)
+	@echo "nothing to be done"
+else ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
 	docker buildx create --name multibuilder
