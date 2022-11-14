@@ -346,6 +346,7 @@ setup-kong-source:
 	-git -C kong submodule update --init --recursive
 	-git -C kong submodule status
 	cp kong/.requirements kong/distribution/.requirements
+	cd kong/distribution/ngx_wasm_module && git checkout $(NGX_WASM_MODULE)
 
 test-kong: kong-test-container
 	docker-compose up -d

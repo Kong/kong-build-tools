@@ -972,7 +972,6 @@ main() {
       if [ "$EDITION" == 'enterprise' -a $NGX_WASM_MODULE != 0 ]; then
         mkdir -p $OPENRESTY_INSTALL/lualib/resty/http
         cp /distribution/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
-        cp /distribution/ngx_wasm_module/lib/resty/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/
         cp /distribution/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
       fi
 
