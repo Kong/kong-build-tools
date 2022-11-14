@@ -262,7 +262,7 @@ actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
-	make build-kong
+	$(MAKE) build-kong
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -359,7 +359,7 @@ setup-kong-source:
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
+	docker exec kong /kong/.ci/run_tests.sh && $(MAKE) update-cache-images
 
 release-kong-docker-images: test
 ifeq ($(BUILDX),false)
@@ -424,7 +424,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 ifeq ($(RELEASE_DOCKER),true)
-	make release-kong-docker-images
+	$(MAKE) release-kong-docker-images
 endif
 
 test: build-test-container
@@ -458,7 +458,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	TEST_SHA=$(TEST_SHA) \
 	UPDATE_CACHE_COMMAND="$(UPDATE_CACHE_COMMAND)" \
 	VERBOSE=$(VERBOSE) \
-	./test/run_tests.sh && make update-cache-images
+	./test/run_tests.sh && $(MAKE) update-cache-images
 endif
 
 develop-tests:
