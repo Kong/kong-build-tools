@@ -169,7 +169,8 @@ setup-build:
 	$(info 'running build: RESTY_IMAGE_BASE: $(RESTY_IMAGE_BASE)')
 	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
 ifeq ($(SKIP_DOCKER_MACHINE),true)
-	@echo "nothing to be done"
+	docker buildx create --name multibuilder
+	docker buildx use multibuilder
 else ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else ifeq ($(BUILDX),true)
