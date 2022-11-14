@@ -12,15 +12,15 @@ export SHELL:=/bin/bash
 # -pn cause make to print it's "database" of variables without executing any
 # targets (respecitvely)
 ifeq ($(strip $(EARLY)),)
-VARS_OLD := $(filter-out \
-	$(shell \
-		$(MAKE) EARLY=true -pn Makefile \
-			| grep -A1 -E "^# (makefile|environment|default)" \
-			| grep -vE '^(#|\-\-)' \
-			| cut -d' ' -f1; \
-	), \
-	$(.VARIABLES))
+MAKEFILE_VARS := $(shell $(MAKE) EARLY=true -pn Makefile \
+	| grep -vE 'starting make|VARS_OLD|.VARIABLES' \
+	| grep -A1 -E '\x23 makefile|\x23 environment|\x23 default' \
+	| grep -vE '^\x23|^\-\-' \
+	| cut -d ' ' -f1 \
+	; )
 endif
+
+VARS_OLD = $(filter-out $(MAKEFILE_VARS),$(.VARIABLES))
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
