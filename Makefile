@@ -174,6 +174,7 @@ debug:
 			echo  $(v) = "$($(v))" ;  \
 		) | uniq ; \
 	)
+	$(MAKE) -v
 
 setup-ci: setup-build
 
