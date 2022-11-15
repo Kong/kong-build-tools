@@ -102,23 +102,22 @@ else
 	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
 endif
 
-
-EXPLICIT_ARCHITECTURE ?= false
-CACHE_COMMAND_SUFFIX=" "
-ifneq ($(EXPLICIT_ARCHITECTURE),false)
-	DOCKER_COMMAND=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/$(EXPLICIT_ARCHITECTURE)" $(DOCKER_LABELS) --build-arg EXPLICIT_ARCHITECTURE=$(EXPLICIT_ARCHITECTURE)
-	CACHE_COMMAND=docker manifest inspect
-	CACHE_COMMAND_SUFFIX=| grep $(EXPLICIT_ARCHITECTURE)
-endif
-
 # Set this to unique value to bust the cache
 CACHE_BUSTER?=0
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TEST_SHA=$$(git log -1 --pretty=format:"%h" -- ${ROOT_DIR}/test/)${CACHE_BUSTER}
 
 REQUIREMENTS_SHA=$$(find kong/distribution -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum  | cut -d' ' -f 1)
-BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
 KONG_SHA=$$(git --git-dir=$(KONG_SOURCE_LOCATION)/.git rev-parse --short HEAD)
+
+EXPLICIT_ARCHITECTURE ?= false
+ifneq ($(EXPLICIT_ARCHITECTURE),false)
+	DOCKER_COMMAND=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/$(EXPLICIT_ARCHITECTURE)" $(DOCKER_LABELS) --build-arg EXPLICIT_ARCHITECTURE=$(EXPLICIT_ARCHITECTURE)
+	CACHE_COMMAND=docker manifest inspect
+	BUILD_TOOLS_SHA=${EXPLICIT_ARCHITECTURE}-$$(git rev-parse --short HEAD)
+else
+	BUILD_TOOLS_SHA=$$(git rev-parse --short HEAD)
+endif
 
 DOCKER_BASE_SUFFIX=${BUILD_TOOLS_SHA}${CACHE_BUSTER}
 DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${CACHE_BUSTER}-${SSL_PROVIDER}
@@ -208,13 +207,14 @@ endif
 temp:
 	@echo $(DOCKER_COMMAND)
 	@echo $(CACHE_COMMAND)
+	@echo $(DOCKER_TEST_SUFFIX)
 
 build-openresty: setup-kong-source
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
 	-rm github-token
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) $(CACHE_COMMAND_SUFFIX) || \
+	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
 		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
@@ -308,7 +308,7 @@ kong-ci-cache-key:
 
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) $(CACHE_COMMAND_SUFFIX) || \
+	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	-rm github-token; \
 	echo $$GITHUB_TOKEN > github-token; \
@@ -325,7 +325,7 @@ actual-build-kong: setup-kong-source
 
 kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(CACHE_COMMAND_SUFFIX) || \
+	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) || \
 	( $(MAKE) build-openresty && \
 	docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
 	$(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) && \
