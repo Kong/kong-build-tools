@@ -858,6 +858,7 @@ main() {
           # the env script adds the cargo bin dir to PATH if missing
           which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env
           
+          export ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
           # the atc-router makefile also tests for availability of cargo
           make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
 
