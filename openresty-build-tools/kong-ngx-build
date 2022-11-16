@@ -845,7 +845,7 @@ main() {
           package_name=unknown-linux-musl
         fi
 
-        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.16/$package_architecture-$package_name.tar.gz
+        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.17/$package_architecture-$package_name.tar.gz
         tar -C /tmp/build -xzvf atc-router.tar.gz
       fi
     popd
