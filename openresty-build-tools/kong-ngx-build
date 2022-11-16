@@ -834,12 +834,18 @@ main() {
 
       if [ $ATC_ROUTER != 0 ]; then
         arch=$(uname -m)
-        if [ "$(arch)" == "x86_64" ]; then
-          curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.8/linux-amd64.tar.gz
-        fi
+        
+        package_architecture=x86_64
         if [ "$(arch)" == "aarch64" ]; then
-          curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.8/linux-arm64.tar.gz
+          package_architecture=aarch64
         fi
+
+        package_name=unknown-linux-gnu
+        if [ $(grep -q -s alpine /etc/os-release) ]; then
+          package_name=unknown-linux-musl
+        fi
+
+        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.16/$package_architecture-$package_name.tar.gz
         tar -C /tmp/build -xzvf atc-router.tar.gz
       fi
     popd
