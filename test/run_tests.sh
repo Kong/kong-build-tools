@@ -10,6 +10,10 @@ if [[ "$RESTY_IMAGE_BASE" == "src" ]]; then
   exit 0
 fi
 
+if [[ "$SKIP_TESTS" == "true" ]]; then
+  exit 0
+fi
+
 # used to skip systemd-based tests that require a /sys/fs/cgroup mount in
 # 01-package/run.sh which doesn't exists on Mac OS
 if uname -a | grep -qs -i darwin; then

@@ -38,6 +38,7 @@ TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
+SKIP_TESTS?=false
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`

@@ -76,4 +76,5 @@ RUN rm -rf /distribution/*
 COPY kong/.requirements kong/distribution/ /distribution/
 WORKDIR /distribution
 
+ENV ENABLE_KONG_LICENSING=false
 RUN --mount=type=secret,id=github-token if [ -f "/distribution/post-install.sh" ] ; then export GITHUB_TOKEN=`cat /run/secrets/github-token` && ./post-install.sh; fi
