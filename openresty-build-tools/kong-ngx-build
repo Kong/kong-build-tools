@@ -848,17 +848,10 @@ main() {
         if [ "$(arch)" == "aarch64" ]; then
           package_architecture=aarch64
         fi
-
-        package_name=unknown-linux-gnu
-        if [ $(grep -q -s alpine /etc/os-release) ]; then
-          package_name=unknown-linux-musl
-        fi
-
-        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.17/$package_architecture-$package_name.tar.gz
+        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.17/$package_architecture-unknown-$OSTYPE.tar.gz
         tar -C /tmp/build -xzvf atc-router.tar.gz
       fi
     popd
-
     succ "OpenResty $OPENRESTY_VER has been built successfully!"
 
   else
