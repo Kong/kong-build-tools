@@ -848,8 +848,10 @@ main() {
         if [ "$(arch)" == "aarch64" ]; then
           package_architecture=aarch64
         fi
-        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.32/$package_architecture-unknown-$OSTYPE.tar.gz
-        tar -C /tmp/build -xzvf atc-router.tar.gz
+        set -x
+        curl -fsSLo atc-router.tar.gz https://github.com/Kong/atc-router-cirun/releases/download/2.0.12/$package_architecture-$OSTYPE.tar.gz
+        tar -C /tmp/build -xvf atc-router.tar.gz
+        set +x
       fi
     popd
     succ "OpenResty $OPENRESTY_VER has been built successfully!"
