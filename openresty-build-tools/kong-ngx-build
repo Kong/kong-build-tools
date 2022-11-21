@@ -244,30 +244,6 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
-
-    if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
-      # OpenSSL
-
-      if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
-        warn "OpenSSL source not found, downloading..."
-        set +e
-        with_backoff curl --fail -sSLO https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz
-        if [[ $? != 0 ]]; then
-          with_backoff curl --fail -sSLO https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz
-          [[ $? != 0 ]] && err "Could not download OpenSSL"
-        fi
-        set -e
-
-        if [ ! -z ${OPENSSL_SHA+x} ]; then
-          echo "$OPENSSL_SHA openssl-$OPENSSL_VER.tar.gz" | sha256sum -c -
-        else
-          notice "Downloaded: $(sha256sum "openssl-$OPENSSL_VER.tar.gz")"
-        fi
-        tar -xzf openssl-$OPENSSL_VER.tar.gz
-        ln -s openssl-${OPENSSL_VER} openssl
-      fi
-    fi
-
     if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
       # Boring SSL
 
@@ -572,53 +548,14 @@ main() {
 
   if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
     if [ ! -f $OPENSSL_INSTALL/bin/openssl ]; then
-      notice "Building OpenSSL..."
-
-      pushd $OPENSSL_DOWNLOAD
-        if (version_lte $OPENSSL_VER 1.0 && [[ ! -d include/openssl ]]) || [[ ! -f Makefile ]]; then
-            OPENSSL_OPTS=(
-              "-g"
-              "shared"
-              "-DPURIFY"
-              "no-threads"
-              "--prefix=$OPENSSL_PREFIX"
-              "--openssldir=$OPENSSL_PREFIX"
-            )
-
-            if version_gte $OPENSSL_VER 1.1.0; then
-              OPENSSL_OPTS+=('no-unit-test')
-
-            else
-              OPENSSL_OPTS+=('no-tests')
-            fi
-
-            if ([[ $CC == "clang" ]] && version_gte $OPENSSL_VER 1.1) || [[ $CC != "clang" ]]; then
-              local ld_opts="-Wl,-rpath,'\$(LIBRPATH)'"
-              if [[ $OS != "Darwin" ]]; then
-                ld_opts="$ld_opts,--enable-new-dtags"
-              fi
-
-              OPENSSL_OPTS+=("$ld_opts")
-            fi
-
-            if [ $DEBUG == 1 ]; then
-              OPENSSL_OPTS+=('-d')
-            fi
-
-          eval ./config ${OPENSSL_OPTS[*]}
-        fi
-
-        if version_gte $OPENSSL_VER 1.1.0; then
-          make -j$NPROC
-        else
-          make
-        fi
-
-        make install_sw DESTDIR=${OPENSSL_DESTDIR}
-      popd
-
-      succ "OpenSSL $OPENSSL_VER has been built successfully!"
-
+      arch=$(uname -m)
+      
+      package_architecture=x86_64
+      if [ "$(arch)" == "aarch64" ]; then
+        package_architecture=aarch64
+      fi
+      curl -fsSLo openssl.tar.gz https://github.com/hutchic/kong-openssl/releases/download/1.1.0/$package_architecture-$OSTYPE.tar.gz
+      tar -C /tmp/build -xvf openssl.tar.gz
     else
       succ "OpenSSL $OPENSSL_VER has been built successfully (cached)!"
     fi
@@ -863,33 +800,14 @@ main() {
       fi
 
       if [ $ATC_ROUTER != 0 ]; then
-        if [ echo $ATC_ROUTER | sed -e 's/\.//g' < 102 ]; then
-          local atc_router_install_succeed=0
-          pushd $DOWNLOAD_CACHE/atc-router
-            warn "installing dynamic library and Lua files for atc-router..."
-
-            # the env script adds the cargo bin dir to PATH if missing
-            which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env
-
-            # the atc-router makefile also tests for availability of cargo
-            make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
-
-            if [ $atc_router_install_succeed -eq 1 ]; then
-              warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
-              export RUSTFLAGS="-C target-feature=-crt-static"
-              make clean install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
-            fi
-          popd
-        else
-          arch=$(uname -m)
-          
-          package_architecture=x86_64
-          if [ "$(arch)" == "aarch64" ]; then
-            package_architecture=aarch64
-          fi
-          curl -fsSLo atc-router.tar.gz https://github.com/Kong/atc-router-cirun/releases/download/2.0.18/$package_architecture-$OSTYPE.tar.gz
-          tar -C /tmp/build -xvf atc-router.tar.gz
+        arch=$(uname -m)
+        
+        package_architecture=x86_64
+        if [ "$(arch)" == "aarch64" ]; then
+          package_architecture=aarch64
         fi
+        curl -fsSLo atc-router.tar.gz https://github.com/Kong/atc-router-cirun/releases/download/2.0.18/$package_architecture-$OSTYPE.tar.gz
+        tar -C /tmp/build -xvf atc-router.tar.gz
       fi
     popd
     succ "OpenResty $OPENRESTY_VER has been built successfully!"
