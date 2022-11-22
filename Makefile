@@ -59,6 +59,7 @@ KONG_TEST_CONTAINER_TAG?=$(KONG_RELEASE_LABEL)-$(RESTY_IMAGE_BASE)
 ADDITIONAL_TAG_LIST?=
 KONG_TEST_IMAGE_NAME?=$(DOCKER_RELEASE_REPOSITORY):$(KONG_TEST_CONTAINER_TAG)
 
+PRE_BUILT ?= `grep PRE_BUILT $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_VERSION ?= `grep RESTY_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 KONG_GO_PLUGINSERVER_VERSION ?= `grep KONG_GO_PLUGINSERVER_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 RESTY_LUAROCKS_VERSION ?= `grep RESTY_LUAROCKS_VERSION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -209,6 +210,7 @@ else
 		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 		--secret id=github-token,src=github-token \
+		--build-arg PRE_BUILT=$(PRE_BUILT) \
 		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 		--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
 		--build-arg RESTY_OPENSSL_VERSION=$(RESTY_OPENSSL_VERSION) \

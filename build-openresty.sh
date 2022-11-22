@@ -21,6 +21,11 @@ trap 'error_handler' ERR
 bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
 PING_LOOP_PID=$!
 
+if [ "$PRE_BUILT" == 0 ]
+then
+  rm -rf /tmp/build/*
+fi
+
 mkdir -p /tmp/build/usr/local/openresty
 mkdir -p /tmp/build/usr/local/kong/lib
 mkdir -p /tmp/build/usr/local/kong

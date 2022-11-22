@@ -52,6 +52,9 @@ LABEL resty_events="${RESTY_EVENTS}"
 ARG ATC_ROUTER=0
 LABEL atc_router="${ATC_ROUTER}"
 
+ARG PRE_BUILT=0
+ENV PRE_BUILT $PRE_BUILT
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
