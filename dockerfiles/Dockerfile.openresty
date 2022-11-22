@@ -4,9 +4,9 @@ ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
 
-FROM kong/kong-build-tools:apk-1.6.4 as APK
-FROM kong/kong-build-tools:deb-1.6.4 as DEB
-FROM kong/kong-build-tools:rpm-1.6.4 as RPM
+FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as DEB
+FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as RPM
+FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-musl as APK
 
 FROM $PACKAGE_TYPE
 
