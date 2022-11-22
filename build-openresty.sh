@@ -21,6 +21,11 @@ trap 'error_handler' ERR
 bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
 PING_LOOP_PID=$!
 
+if [ -z "$PRE_BUILT" ]
+then
+  PRE_BUILT=0
+fi
+
 if [ "$PRE_BUILT" == 0 ]
 then
   rm -rf /tmp/build/*
