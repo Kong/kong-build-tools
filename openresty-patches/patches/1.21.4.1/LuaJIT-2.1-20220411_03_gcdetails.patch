@@ -1,0 +1,37 @@
+From 3a692f94d782c4daeb69b7d8b2d43cce41f9ed3d Mon Sep 17 00:00:00 2001
+From: Qi <add_sp@outlook.com>
+Date: Wed, 23 Nov 2022 12:58:02 +0000
+Subject: [PATCH] feat: new built-in function `gcdetails`
+
+Function Prototype: total, estimate = gcdetails()
+
+Returns two values,
+the first is the total memory used by Lua (KiB),
+the second is the total memory occupied by alive objects and unswept objects (KiB).
+
+The second value is an estimated value and is not accurate.
+---
+ src/lib_base.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/LuaJIT-2.1-20220411/src/lib_base.c b/LuaJIT-2.1-20220411/src/lib_base.c
+index 56addbba..82fe50b4 100644
+--- a/LuaJIT-2.1-20220411/src/lib_base.c
++++ b/LuaJIT-2.1-20220411/src/lib_base.c
+@@ -459,6 +459,13 @@ LJLIB_CF(gcinfo)
+   return 1;
+ }
+ 
++LJLIB_CF(gcdetails)
++{
++  setnumV(L->top++, (lua_Number)G(L)->gc.total/1024.0);
++  setnumV(L->top++, (lua_Number)G(L)->gc.estimate/1024.0);
++  return 2;
++}
++
+ LJLIB_CF(collectgarbage)
+ {
+   int opt = lj_lib_checkopt(L, 1, LUA_GCCOLLECT,  /* ORDER LUA_GC* */
+-- 
+2.34.1
+
