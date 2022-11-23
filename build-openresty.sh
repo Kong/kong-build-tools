@@ -28,7 +28,12 @@ fi
 
 if [ "$PRE_BUILT" == 0 ]
 then
-  rm -rf /tmp/build/*
+  rm -rf /usr/local/kong/bin
+  rm -rf /tmp/build/usr/local/kong/bin
+  rm -rf /usr/local/openresty/nginx
+  rm -rf /tmp/build/usr/local/openresty/nginx
+  rm -rf /usr/local/bin/luarocks
+  rm -rf /tmp/build/usr/local/bin/luarocks
 fi
 
 mkdir -p /tmp/build/usr/local/openresty
