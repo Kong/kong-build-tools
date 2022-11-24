@@ -10,7 +10,7 @@ FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as RPM-amd64
 FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-musl as APK-amd64
 FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as DEB-arm64
 FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as RPM-arm64
-FROM kong/kong-build-tools:apk-1.8.1 as APK-arm64
+FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-musl as APK-arm64
 
 FROM $PACKAGE_TYPE-$TARGETARCH
 
