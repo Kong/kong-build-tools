@@ -1,16 +1,13 @@
 # syntax = docker/dockerfile:1.2
 
-ARG DOCKER_BASE_SUFFIX
-ARG DOCKER_REPOSITORY
-ARG PACKAGE_TYPE
-ARG TARGETARCH=amd64
+ARG PACKAGE_TYPE=deb
 
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as DEB-amd64
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as RPM-amd64
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-musl as APK-amd64
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as DEB-arm64
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as RPM-arm64
-FROM ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-musl as APK-arm64
+FROM --platform=linux/amd64 ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as DEB-amd64
+FROM --platform=linux/amd64 ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-gnu as RPM-amd64
+FROM --platform=linux/amd64 ghcr.io/hutchic/kong-openresty:1.0.3-x86_64-linux-musl as APK-amd64
+FROM --platform=linux/arm64 ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as DEB-arm64
+FROM --platform=linux/arm64 ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-gnu as RPM-arm64
+FROM --platform=linux/arm64 ghcr.io/hutchic/kong-openresty:1.0.3-aarch64-linux-musl as APK-arm64
 
 FROM $PACKAGE_TYPE-$TARGETARCH
 
