@@ -1,11 +1,26 @@
 $(info starting make in kong-build-tools)
 
-VARS_OLD := $(.VARIABLES)
-
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
+# .SHELLFLAGS+=-x
+
+# collect the list of environment variables to care about for the debug target
+# from this Makefile itself
+#
+# -pn cause make to print it's "database" of variables without executing any
+# targets (respecitvely)
+ifeq ($(strip $(EARLY)),)
+MAKEFILE_VARS := $(shell $(MAKE) EARLY=true -pn Makefile \
+	| grep -vE 'starting make|VARS_OLD|.VARIABLES' \
+	| grep -A1 -E '\x23 makefile|\x23 environment|\x23 default' \
+	| grep -vE '^\x23|^\-\-' \
+	| cut -d ' ' -f1 \
+	; )
+endif
+
+VARS_OLD = $(filter-out $(MAKEFILE_VARS),$(.VARIABLES))
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
@@ -23,6 +38,7 @@ TEST_PROXY_PROTOCOL?=http://
 TEST_PROXY_PORT?=8000
 TEST_PROXY_URI?=$(TEST_PROXY_PROTOCOL)$(TEST_HOST):$(TEST_PROXY_PORT)
 TEST_COMPOSE_PATH="$(PWD)/test/kong-tests-compose.yaml"
+SKIP_TESTS?=false
 
 KONG_SOURCE_LOCATION?="$$PWD/../kong/"
 EDITION?=`grep EDITION $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
@@ -155,10 +171,11 @@ debug:
 	@$(foreach v, \
 		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
 		( \
-			echo '$(v) = $($(v))' ; echo \
-			      $(v) = $($(v)) ;  \
+			echo '$(v) = $($(v))'  ; \
+			echo  $(v) = "$($(v))" ;  \
 		) | uniq ; \
 	)
+	$(MAKE) -v
 
 setup-ci: setup-build
 
@@ -247,7 +264,7 @@ actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
-	make build-kong
+	$(MAKE) build-kong
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -344,7 +361,7 @@ setup-kong-source:
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
+	docker exec kong /kong/.ci/run_tests.sh && $(MAKE) update-cache-images
 
 release-kong-docker-images: test
 ifeq ($(BUILDX),false)
@@ -409,7 +426,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 ifeq ($(RELEASE_DOCKER),true)
-	make release-kong-docker-images
+	$(MAKE) release-kong-docker-images
 endif
 
 test: build-test-container
@@ -443,7 +460,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	TEST_SHA=$(TEST_SHA) \
 	UPDATE_CACHE_COMMAND="$(UPDATE_CACHE_COMMAND)" \
 	VERBOSE=$(VERBOSE) \
-	./test/run_tests.sh && make update-cache-images
+	./test/run_tests.sh && $(MAKE) update-cache-images
 endif
 
 develop-tests:
