@@ -12,7 +12,7 @@ diff --git a/LuaJIT-2.1-20220411/src/lj_record.c b/LuaJIT-2.1-20220411/src/lj_re
 index 5d02d24a1..bfd412365 100644
 --- a/LuaJIT-2.1-20220411/src/lj_record.c
 +++ b/LuaJIT-2.1-20220411/src/lj_record.c
-@@ -2572,7 +2572,8 @@ void lj_record_ins(jit_State *J)
+@@ -2566,7 +2566,8 @@ void lj_record_ins(jit_State *J)
      break;
    case BC_JLOOP:
      rec_loop_jit(J, rc, rec_loop(J, ra,
