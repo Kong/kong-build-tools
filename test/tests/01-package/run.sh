@@ -159,6 +159,7 @@ docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "grep 
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong.conf.default"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /etc/kong/kong*.logrotate"
 docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/google/protobuf/*.proto"
+docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/openssl/*.h"
 
 if [ -e ${KONG_SOURCE_LOCATION}/kong/include/kong/pluginsocket.proto ]; then
   docker run ${USE_TTY} --user=root --rm ${KONG_TEST_IMAGE_NAME} /bin/sh -c "ls -l /usr/local/kong/include/kong/pluginsocket.proto"
