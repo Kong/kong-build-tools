@@ -727,7 +727,7 @@ main() {
         popd #.openssl
 
         cp -vp build/crypto/libcrypto.* build/ssl/libssl.* $OPENSSL_DESTDIR$OPENSSL_PREFIX/lib
-
+        cp -rvp include/openssl $OPENSSL_DESTDIR$OPENSSL_PREFIX/include/
       popd # $OPENRESTY_DOWNLOAD
       succ "BoringSSL $BORINGSSL_VER has been built successfully!"
 
