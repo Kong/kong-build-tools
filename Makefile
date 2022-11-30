@@ -1,11 +1,26 @@
 $(info starting make in kong-build-tools)
 
-VARS_OLD := $(.VARIABLES)
-
 .PHONY: test build-kong
 .DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
+# .SHELLFLAGS+=-x
+
+# collect the list of environment variables to care about for the debug target
+# from this Makefile itself
+#
+# -pn cause make to print it's "database" of variables without executing any
+# targets (respecitvely)
+ifeq ($(strip $(EARLY)),)
+MAKEFILE_VARS := $(shell $(MAKE) EARLY=true -pn Makefile \
+	| grep -vE 'starting make|VARS_OLD|.VARIABLES' \
+	| grep -A1 -E '\x23 makefile|\x23 environment|\x23 default' \
+	| grep -vE '^\x23|^\-\-' \
+	| cut -d ' ' -f1 \
+	; )
+endif
+
+VARS_OLD = $(filter-out $(MAKEFILE_VARS),$(.VARIABLES))
 
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
@@ -156,10 +171,11 @@ debug:
 	@$(foreach v, \
 		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
 		( \
-			echo '$(v) = $($(v))' ; echo \
-			      $(v) = $($(v)) ;  \
+			echo '$(v) = $($(v))'  ; \
+			echo  $(v) = "$($(v))" ;  \
 		) | uniq ; \
 	)
+	$(MAKE) -v
 
 setup-ci: setup-build
 
@@ -228,8 +244,6 @@ else
 		--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 		--build-arg DEBUG=$(DEBUG) \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		--cache-from $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE) \
-		--cache-from kong/kong-build-tools:openresty-$(PACKAGE_TYPE) \
 		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
 		( \
 			rm github-token || true \
@@ -248,7 +262,7 @@ actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
 endif
-	make build-kong
+	$(MAKE) build-kong
 	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
@@ -323,8 +337,6 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
 	--build-arg BUILDKIT_INLINE_CACHE=1 \
-	--cache-from $(DOCKER_REPOSITORY):test \
-	--cache-from kong/kong-build-tools:test \
 	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
 
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
@@ -345,7 +357,7 @@ setup-kong-source:
 test-kong: kong-test-container
 	docker-compose up -d
 	bash -c 'healthy=$$(docker-compose ps | grep healthy | wc -l); while [[ "$$(( $$healthy ))" != "3" ]]; do docker-compose ps && sleep 5; done'
-	docker exec kong /kong/.ci/run_tests.sh && make update-cache-images
+	docker exec kong /kong/.ci/run_tests.sh && $(MAKE) update-cache-images
 
 release-kong-docker-images: test
 ifeq ($(BUILDX),false)
@@ -410,7 +422,7 @@ ifeq ($(BUILDX),true)
 	./release-kong.sh
 endif
 ifeq ($(RELEASE_DOCKER),true)
-	make release-kong-docker-images
+	$(MAKE) release-kong-docker-images
 endif
 
 test: build-test-container
@@ -444,8 +456,7 @@ ifneq ($(RESTY_IMAGE_BASE),src)
 	TEST_SHA=$(TEST_SHA) \
 	UPDATE_CACHE_COMMAND="$(UPDATE_CACHE_COMMAND)" \
 	VERBOSE=$(VERBOSE) \
-	SKIP_TESTS=$(SKIP_TESTS) \
-	./test/run_tests.sh && make update-cache-images
+	./test/run_tests.sh && $(MAKE) update-cache-images
 endif
 
 develop-tests:
