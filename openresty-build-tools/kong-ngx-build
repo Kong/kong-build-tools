@@ -31,7 +31,7 @@ DIST_VER=
 NGINX_EXTRA_MODULES=()
 KONG_DISTRIBUTION_PATH=${KONG_DISTRIBUTION_PATH:-/distribution}
 CROSS_COMPILE_TARGET=${CROSS_COMPILE_TARGET:-}
-CROSS_COMPILE_PREFIX=${CROSS_COMPILE_PREFIX:-arch64-linux-gnu-}
+CROSS_COMPILE_PREFIX=${CROSS_COMPILE_PREFIX:-aarch64-linux-gnu-}
 
 PARAMS=""
 
@@ -628,11 +628,19 @@ main() {
               OPENSSL_OPTS+=('-d')
             fi
 
-          eval ./config ${OPENSSL_OPTS[*]}
+          if [ -n "${CROSS_COMPILE_TARGET}" ]; then
+            OPENSSL_OPTS+=("--cross-compile-prefix=${CROSS_COMPILE_PREFIX}")
+            OPENSSL_OPTS+=("linux-${CROSS_COMPILE_TARGET}")
+            eval ./Configure "${OPENSSL_OPTS[@]}"
+
+          else
+            eval ./config ${OPENSSL_OPTS[*]}
+          fi
         fi
 
         if version_gte $OPENSSL_VER 1.1.0; then
           make -j$NPROC
+
         else
           make
         fi
