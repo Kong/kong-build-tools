@@ -108,8 +108,12 @@ ifndef AWS_ACCESS_KEY
 	BUILDX=false
 else ifeq ($(RESTY_IMAGE_TAG),bionic)
 	BUILDX=true
+	CACHE=false
+	CACHE_COMMAND=false
 else ifeq ($(RESTY_IMAGE_TAG),18.04)
 	BUILDX=true
+	CACHE=false
+	CACHE_COMMAND=false
 else ifeq ($(RESTY_IMAGE_BASE),alpine)
 	BUILDX=true
 endif
