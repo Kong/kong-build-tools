@@ -30,6 +30,8 @@ DIST=
 DIST_VER=
 NGINX_EXTRA_MODULES=()
 KONG_DISTRIBUTION_PATH=${KONG_DISTRIBUTION_PATH:-/distribution}
+CROSS_COMPILE_TARGET=${CROSS_COMPILE_TARGET:-}
+CROSS_COMPILE_PREFIX=${CROSS_COMPILE_PREFIX:-arch64-linux-gnu-}
 
 PARAMS=""
 
@@ -144,6 +146,14 @@ main() {
       --donwload-extract-only)
         DOWNLOAD_ONLY=1
         shift 1
+        ;;
+      --cross-compile-target)
+        CROSS_COMPILE_TARGET=$2
+        shift 2
+        ;;
+      --cross-compile-prefix)
+        CROSS_COMPILE_PREFIX=$2
+        shift 2
         ;;
       -h|--help)
         show_usage
@@ -1060,48 +1070,54 @@ show_usage() {
   echo "                                     (Can be set to \"openssl\" or \"boringssl\")"
   echo ""
   echo "Optional arguments:"
-  echo "      --no-openresty-patches         Do not apply openresty-patches while compiling OpenResty."
-  echo "                                     (Patching is enabled by default)"
+  echo "      --no-openresty-patches          Do not apply openresty-patches while compiling OpenResty."
+  echo "                                      (Patching is enabled by default)"
   echo ""
-  echo "      --no-kong-nginx-module         Do not include lua-kong-nginx-module while patching and compiling OpenResty."
-  echo "                                     (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
+  echo "      --no-kong-nginx-module          Do not include lua-kong-nginx-module while patching and compiling OpenResty."
+  echo "                                      (Patching and compiling is enabled by default for OpenResty > 1.13.6.1)"
   echo ""
-  echo "      --kong-nginx-module <branch>   Specify a lua-kong-nginx-module branch to use when patching and compiling."
-  echo "                                     (Defaults to \"master\")"
-  echo "      --no-resty-lmdb                Do not include lua-resty-lmdb while patching and compiling OpenResty."
+  echo "      --kong-nginx-module <branch>    Specify a lua-kong-nginx-module branch to use when patching and compiling."
+  echo "                                      (Defaults to \"master\")"
+  echo "      --no-resty-lmdb                 Do not include lua-resty-lmdb while patching and compiling OpenResty."
   echo ""
-  echo "      --resty-lmdb <branch>          Specify a lua-resty-lmdb branch to use when patching and compiling."
-  echo "                                     (Defaults to \"master\")"
+  echo "      --resty-lmdb <branch>           Specify a lua-resty-lmdb branch to use when patching and compiling."
+  echo "                                      (Defaults to \"master\")"
   echo ""
-  echo "      --resty-websocket <tag>        Specify a Kong/lua-resty-websocket tag to install. If absent, lua-resty-websocket"
-  echo "                                     will not be built."
+  echo "      --resty-websocket <tag>         Specify a Kong/lua-resty-websocket tag to install. If absent, lua-resty-websocket"
+  echo "                                      will not be built."
   echo ""
-  echo "      --atc-router <tag>             Specify a Kong/atc-router tag to install. If absent, atc-router"
-  echo "                                     will not be built."
+  echo "      --atc-router <tag>              Specify a Kong/atc-router tag to install. If absent, atc-router"
+  echo "                                      will not be built."
   echo ""
-  echo "      --luarocks <luarocks_ver>      Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"
-  echo "                                     will not be built."
+  echo "      --luarocks <luarocks_ver>       Version of LuaRocks to build, such as 3.1.2. If absent, LuaRocks"
+  echo "                                      will not be built."
   echo ""
-  echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
-  echo "                                     not be build."
+  echo "      --pcre <pcre_ver>               Version of PCRE to build, such as 8.43. If absent, PCRE will"
+  echo "                                      not be build."
   echo ""
-  echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
-  echo "                                     repeated and will be passed to NGINX's configure in the order"
-  echo "                                     they were specified."
+  echo "      --add-module <module_path>      Path to additional NGINX module to be built. This option can be"
+  echo "                                      repeated and will be passed to NGINX's configure in the order"
+  echo "                                      they were specified."
   echo ""
-  echo "      --debug                        Disable compile-time optimizations and memory pooling for NGINX,"
-  echo "                                     LuaJIT and OpenSSL to help debugging."
+  echo "      --cross-compile-target <target> Specify a cross compile target. This option will be passed to"
+  echo "                                      OpenResty's configure."
   echo ""
-  echo "  -j, --jobs                         Concurrency level to use when building."
-  echo "                                     (Defaults to number of CPU cores available: $NPROC)"
+  echo "      --cross-compile-prefix <prefix> Specify a cross compile prefix. This option will be passed to"
+  echo "                                      OpenResty's configure."
   echo ""
-  echo "      --work <work>                  The working directory to use while compiling."
-  echo "                                     (Defaults to \"work\")"
+  echo "      --debug                         Disable compile-time optimizations and memory pooling for NGINX,"
+  echo "                                      LuaJIT and OpenSSL to help debugging."
   echo ""
-  echo "  -f, --force                        Build from scratch."
-  echo -e "                                     \033[1;31mWARNING:\033[0m This permanently removes everything inside the <work> and <prefix> directories."
+  echo "  -j, --jobs                          Concurrency level to use when building."
+  echo "                                      (Defaults to number of CPU cores available: $NPROC)"
   echo ""
-  echo "  -h, --help                         Show this message."
+  echo "      --work <work>                   The working directory to use while compiling."
+  echo "                                      (Defaults to \"work\")"
+  echo ""
+  echo "  -f, --force                         Build from scratch."
+  echo -e "                                      \033[1;31mWARNING:\033[0m This permanently removes everything inside the <work> and <prefix> directories."
+  echo ""
+  echo "  -h, --help                          Show this message."
 }
 
 notice() {
