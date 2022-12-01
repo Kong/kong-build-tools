@@ -849,7 +849,7 @@ main() {
           package_architecture=aarch64
         fi
         set -x
-        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.17/$package_architecture-unknown-$OSTYPE.tar.gz
+        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/1.0.38/$package_architecture-unknown-$OSTYPE.tar.gz
         tar -C /tmp/build -xvf atc-router.tar.gz
         set +x
       fi
