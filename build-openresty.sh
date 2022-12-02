@@ -67,6 +67,11 @@ then
   RESTY_OPENSSL_VERSION=0
 fi
 
+if [ -z "$KONG_OPENSSL_VERSION"]
+then
+  KONG_OPENSSL_VERSION=0
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
@@ -80,6 +85,7 @@ ENABLE_KONG_LICENSING=$ENABLE_KONG_LICENSING \
 /tmp/openresty-build-tools/kong-ngx-build -p /tmp/build/usr/local \
 --openresty $RESTY_VERSION \
 --openssl $RESTY_OPENSSL_VERSION \
+--kong-openssl $KONG_OPENSSL_VERSION \
 --boringssl $RESTY_BORINGSSL_VERSION \
 --ssl-provider $SSL_PROVIDER \
 --resty-lmdb $RESTY_LMDB \
