@@ -57,7 +57,7 @@ if [ "$PACKAGE_TYPE" == "deb" ]; then
   OUTPUT_FILE_SUFFIX=".${RESTY_IMAGE_TAG}"
 elif [ "$PACKAGE_TYPE" == "rpm" ]; then
   FPM_PARAMS="-d pcre -d perl -d perl-Time-HiRes -d zlib -d zlib-devel"
-  OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG}"
+  OUTPUT_FILE_SUFFIX=".rhel${RESTY_IMAGE_TAG%%.*}"
   if [ "$RESTY_IMAGE_TAG" == "7" ]; then
     FPM_PARAMS="$FPM_PARAMS -d hostname"
   fi
