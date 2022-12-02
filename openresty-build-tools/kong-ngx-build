@@ -68,6 +68,11 @@ main() {
         OPENSSL_VER=$2
         shift 2
         ;;
+      --kong-openssl)
+        KONG_OPENSSL_VER=$2
+        OPENSSL_VER=$KONG_OPENSSL_VER
+        shift 2
+        ;;
       --openssl_sha)
         OPENSSL_SHA=$2
         shift 2
@@ -184,8 +189,10 @@ main() {
   fi
 
   if [ "$OPENSSL_VER" = 0 -a "$SSL_PROVIDER" = "openssl" ]; then
-    show_usage
-    fatal "OpenSSL version not specified"
+    if [ "$KONG_OPENSSL_VER" != 0 ]; then
+      show_usage
+      fatal "OpenSSL version not specified"
+    fi
   fi
 
   if [ "$BORINGSSL_VER" = 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
@@ -244,8 +251,16 @@ main() {
   notice "Downloading the components now..."
 
   pushd $DOWNLOAD_CACHE
+    if [ "$KONG_OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
+      arch=$(uname -m)
 
-    if [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
+      package_architecture=x86_64
+      if [ "$(arch)" == "aarch64" ]; then
+        package_architecture=aarch64
+      fi
+      with_backoff curl --fail -sSLo openssl.tar.gz https://github.com/Kong/kong-openssl/releases/download/$KONG_OPENSSL_VER/$package_architecture-$OSTYPE.tar.gz
+      tar -C /tmp/build -xvf openssl.tar.gz
+    elif [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
       # OpenSSL
 
       if [[ ! -f $OPENSSL_INSTALL/bin/openssl && ! -d $OPENSSL_DOWNLOAD ]]; then
