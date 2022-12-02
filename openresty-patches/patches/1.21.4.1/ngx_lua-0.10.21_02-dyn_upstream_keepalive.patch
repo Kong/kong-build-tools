@@ -1,6 +1,6 @@
 diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c
 --- a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c	2022-12-02 10:58:50.054203731 +0800
-+++ b/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c	2022-12-02 12:02:15.121733885 +0800
++++ b/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c	2022-12-02 14:09:20.504976137 +0800
 @@ -16,46 +16,107 @@
  #include "ngx_http_lua_directive.h"
  
@@ -44,7 +44,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
 -    ngx_uint_t                          more_tries;
 -    ngx_uint_t                          total_tries;
 +    //uint32_t                                cpool_crc32;
-+    ngx_str_t                              *cpool_name;
++    ngx_str_t                               cpool_name;
  
 -    struct sockaddr                    *sockaddr;
 -    socklen_t                           socklen;
@@ -423,12 +423,12 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
  
 -        dd("tries: %d", (int) r->upstream->peer.tries);
 +        if (ngx_http_lua_balancer_keepalive_is_enabled(bp)) {
-+            ngx_http_lua_balancer_get_keepalive_pool(L, bp->cpool_name,
++            ngx_http_lua_balancer_get_keepalive_pool(L, &bp->cpool_name,
 +                                                     &bp->cpool);
 +
 +            if (bp->cpool == NULL
 +                && ngx_http_lua_balancer_create_keepalive_pool(L, pc->log,
-+                                                               bp->cpool_name,
++                                                               &bp->cpool_name,
 +                                                               bp->cpool_size,
 +                                                               &bp->cpool)
 +                   != NGX_OK)
@@ -984,23 +984,24 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
      if (url.addrs && url.addrs[0].sockaddr) {
          bp->sockaddr = url.addrs[0].sockaddr;
          bp->socklen = url.addrs[0].socklen;
-@@ -536,6 +1030,78 @@
+@@ -536,6 +1030,79 @@
          return NGX_ERROR;
      }
  
 +    //bp->cpool_crc32 = (uint32_t) cpool_crc32;
 +
 +    if (cpool_name_len == 0) {
-+        bp->cpool_name = bp->host;
++        bp->cpool_name = *bp->host;
 +
 +    } else {
-+        bp->cpool_name = ngx_palloc(r->pool, cpool_name_len);
-+        if (bp->cpool_name == NULL) {
++        bp->cpool_name.data = ngx_palloc(r->pool, cpool_name_len);
++        if (bp->cpool_name.data == NULL) {
 +            *err = "no memory";
 +            return NGX_ERROR;
 +        }
 +
-+        ngx_memcpy(bp->cpool_name, cpool_name, cpool_name_len);
++        ngx_memcpy(bp->cpool_name.data, cpool_name, cpool_name_len);
++        bp->cpool_name.len = cpool_name_len;
 +    }
 +
 +
@@ -1052,8 +1053,8 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
 +    //    bp->cpool_crc32 = ngx_crc32_long(bp->host->data, bp->host->len);
 +    //}
 +
-+    if (!bp->cpool_name) {
-+        bp->cpool_name = bp->host;
++    if (!bp->cpool_name.data) {
++        bp->cpool_name = *bp->host;
 +    }
 +
 +    bp->keepalive_timeout = (ngx_msec_t) timeout;
@@ -1063,7 +1064,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
      return NGX_OK;
  }
  
-@@ -545,14 +1111,13 @@
+@@ -545,14 +1112,13 @@
      long connect_timeout, long send_timeout, long read_timeout,
      char **err)
  {
@@ -1081,7 +1082,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
  
      if (r == NULL) {
          *err = "no request found";
-@@ -577,15 +1142,9 @@
+@@ -577,15 +1143,9 @@
          return NGX_ERROR;
      }
  
@@ -1099,7 +1100,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
      if (!bp->cloned_upstream_conf) {
          /* we clone the upstream conf for the current request so that
           * we do not affect other requests at all. */
-@@ -640,12 +1199,10 @@
+@@ -640,12 +1200,10 @@
      int count, char **err)
  {
  #if (nginx_version >= 1007005)
@@ -1115,7 +1116,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
      ngx_http_lua_balancer_peer_data_t  *bp;
  
      if (r == NULL) {
-@@ -671,13 +1228,7 @@
+@@ -671,13 +1229,7 @@
          return NGX_ERROR;
      }
  
@@ -1130,7 +1131,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
  
  #if (nginx_version >= 1007005)
      max_tries = r->upstream->conf->next_upstream_tries;
-@@ -703,12 +1254,10 @@
+@@ -703,12 +1255,10 @@
  ngx_http_lua_ffi_balancer_get_last_failure(ngx_http_request_t *r,
      int *status, char **err)
  {
@@ -1146,7 +1147,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_balancer.c b/ngx_lua-0.10.21/src/ng
  
      if (r == NULL) {
          *err = "no request found";
-@@ -733,13 +1282,7 @@
+@@ -733,13 +1283,7 @@
          return NGX_ERROR;
      }
  
@@ -1191,7 +1192,7 @@ diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_common.h b/ngx_lua-0.10.21/src/ngx_
          u_char                              *src_key;
 diff -ruN a/ngx_lua-0.10.21/src/ngx_http_lua_module.c b/ngx_lua-0.10.21/src/ngx_http_lua_module.c
 --- a/ngx_lua-0.10.21/src/ngx_http_lua_module.c	2022-12-02 10:58:50.050203715 +0800
-+++ b/ngx_lua-0.10.21/src/ngx_http_lua_module.c	2022-12-02 12:02:15.121733885 +0800
++++ b/ngx_lua-0.10.21/src/ngx_http_lua_module.c	2022-12-02 14:09:20.504976137 +0800
 @@ -1117,6 +1117,9 @@
       *      lscf->srv.ssl_session_fetch_src = { 0, NULL };
       *      lscf->srv.ssl_session_fetch_src_key = NULL;
