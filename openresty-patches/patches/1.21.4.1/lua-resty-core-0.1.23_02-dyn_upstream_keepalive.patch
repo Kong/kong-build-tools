@@ -1,6 +1,6 @@
 diff -ruN a/lua-resty-core-0.1.23/lib/ngx/balancer.lua b/lua-resty-core-0.1.23/lib/ngx/balancer.lua
 --- a/lua-resty-core-0.1.23/lib/ngx/balancer.lua	2022-12-02 10:58:50.078203826 +0800
-+++ b/lua-resty-core-0.1.23/lib/ngx/balancer.lua	2022-12-02 11:14:13.936414523 +0800
++++ b/lua-resty-core-0.1.23/lib/ngx/balancer.lua	2022-12-03 11:50:57.271540206 +0800
 @@ -19,6 +19,7 @@
  local max = math.max
  local subsystem = ngx.config.subsystem
@@ -45,7 +45,7 @@ diff -ruN a/lua-resty-core-0.1.23/lib/ngx/balancer.lua b/lua-resty-core-0.1.23/l
  local peer_state_names = {
      [1] = "keepalive",
      [2] = "next",
-@@ -106,25 +120,144 @@
+@@ -106,25 +120,145 @@
  local _M = { version = base.version }
  
  
@@ -72,10 +72,7 @@ diff -ruN a/lua-resty-core-0.1.23/lib/ngx/balancer.lua b/lua-resty-core-0.1.23/l
 +            pool = opts.pool
 +            pool_size = opts.pool_size
 +
-+            if not pool then
-+                pool = ""
-+
-+            else
++            if pool then
 +                if type(pool) ~= "string" then
 +                    error("bad option 'pool' to 'set_current_peer' " ..
 +                          "(string expected, got " .. type(pool) .. ")", 2)
@@ -99,6 +96,10 @@ diff -ruN a/lua-resty-core-0.1.23/lib/ngx/balancer.lua b/lua-resty-core-0.1.23/l
 +
 +        elseif type(port) ~= "number" then
 +            port = tonumber(port)
++        end
++
++        if not pool then
++            pool = ""
 +        end
 +
 +        if not pool_size then
