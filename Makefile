@@ -103,30 +103,8 @@ DOCKER_BUILD_PROGRESS ?= auto
 # whether to enable bytecompilation of kong lua files or not
 ENABLE_LJBC ?= `grep ENABLE_LJBC $(KONG_SOURCE_LOCATION)/.requirements | awk -F"=" '{print $$2}'`
 
-# We build ARM64 for alpine and bionic only at this time
-BUILDX?=false
-ifndef AWS_ACCESS_KEY
-	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),bionic)
-	BUILDX=true
-	CACHE=false
-	CACHE_COMMAND=false
-else ifeq ($(RESTY_IMAGE_TAG),18.04)
-	BUILDX=true
-	CACHE=false
-	CACHE_COMMAND=false
-else ifeq ($(RESTY_IMAGE_BASE),alpine)
-	BUILDX=true
-endif
-
 DOCKER_BUILDKIT ?= 1
 DOCKER_LABELS?=--label org.opencontainers.image.version=$(KONG_VERSION) --label org.opencontainers.image.created=`date -u +'%Y-%m-%dT%H:%M:%SZ'` --label org.opencontainers.image.revision=$(KONG_SHA)
-
-ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --platform="linux/amd64" $(DOCKER_LABELS)
-else
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
-endif
 
 # Set this to unique value to bust the cache
 CACHE_BUSTER?=0
@@ -142,7 +120,30 @@ DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHE
 DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}-${SSL_PROVIDER}
 DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${DEBUG}-${KONG_SHA}-${CACHE_BUSTER}
 
-CACHE?=true
+# We build ARM64 for alpine and bionic only at this time
+BUILDX?=false
+ifndef AWS_ACCESS_KEY
+	CACHE?=true
+	BUILDX=false
+else ifeq ($(RESTY_IMAGE_TAG),bionic)
+	BUILDX=true
+	CACHE=false
+	CACHE_COMMAND=false
+else ifeq ($(RESTY_IMAGE_TAG),18.04)
+	BUILDX=true
+	CACHE=false
+	CACHE_COMMAND=false
+else ifeq ($(RESTY_IMAGE_BASE),alpine)
+	CACHE=false
+	CACHE_COMMAND=false
+	BUILDX=true
+endif
+
+ifeq ($(BUILDX),false)
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --platform="linux/amd64" $(DOCKER_LABELS)
+else
+	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
+endif
 
 ifeq ($(CACHE),true)
 	CACHE_COMMAND?=docker pull
