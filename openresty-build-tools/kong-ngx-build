@@ -70,7 +70,6 @@ main() {
         ;;
       --kong-openssl)
         KONG_OPENSSL_VER=$2
-        OPENSSL_VER=$KONG_OPENSSL_VER
         shift 2
         ;;
       --openssl_sha)
@@ -189,7 +188,7 @@ main() {
   fi
 
   if [ "$OPENSSL_VER" = 0 -a "$SSL_PROVIDER" = "openssl" ]; then
-    if [ "$KONG_OPENSSL_VER" != 0 ]; then
+    if [ "$KONG_OPENSSL_VER" == 0 ]; then
       show_usage
       fatal "OpenSSL version not specified"
     fi
