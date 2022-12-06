@@ -62,12 +62,7 @@ PACKAGE_REPLACES ?= `grep PACKAGE_REPLACES $(KONG_SOURCE_LOCATION)/.requirements
 DOCKER_RELEASE_REPOSITORY?="kong/kong"
 
 KONG_VERSION?=`./grep-kong-version.sh $(KONG_SOURCE_LOCATION)`
-# If Kong is tagged, we want to use that as the release label, regardless of what the meta.lua file shows as the version
-ifneq ($(KONG_TAG),)
-KONG_RELEASE_LABEL=$(KONG_TAG)
-else
 KONG_RELEASE_LABEL=$(KONG_VERSION)
-endif
 
 KONG_TEST_CONTAINER_NAME=kong-tests
 KONG_TEST_CONTAINER_TAG?=$(KONG_RELEASE_LABEL)-$(RESTY_IMAGE_BASE)
