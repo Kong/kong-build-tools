@@ -1,5 +1,6 @@
 create_user() {
   groupadd -f kong
+  groupadd -f nobody
   useradd -g kong -s /bin/sh -c "Kong default user" kong
 
   FILES=""
