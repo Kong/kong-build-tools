@@ -120,16 +120,16 @@ DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHE
 DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}-${SSL_PROVIDER}
 DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${DEBUG}-${KONG_SHA}-${CACHE_BUSTER}
 
-# We build ARM64 for alpine and bionic only at this time
+# We build ARM64 for alpine and focal only at this time
 BUILDX?=false
 ifndef AWS_ACCESS_KEY
 	CACHE?=true
 	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),bionic)
+else ifeq ($(RESTY_IMAGE_TAG),focal)
 	BUILDX=true
 	CACHE=false
 	CACHE_COMMAND=false
-else ifeq ($(RESTY_IMAGE_TAG),18.04)
+else ifeq ($(RESTY_IMAGE_TAG),20.04)
 	BUILDX=true
 	CACHE=false
 	CACHE_COMMAND=false

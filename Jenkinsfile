@@ -284,7 +284,7 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=11    package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 AWS_ACCESS_KEY=instance-profile package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 package-kong test cleanup'
                     }
                 }
