@@ -3,12 +3,16 @@
 ARG DOCKER_BASE_SUFFIX
 ARG DOCKER_REPOSITORY
 ARG PACKAGE_TYPE
+ARG EDITION
 
 FROM --platform=$TARGETPLATFORM ghcr.io/kong/kong-runtime:1.1.1-linux-gnu as DEB
 FROM --platform=$TARGETPLATFORM ghcr.io/kong/kong-runtime:1.1.1-linux-gnu as RPM
 FROM --platform=$TARGETPLATFORM ghcr.io/kong/kong-runtime:1.1.1-linux-musl as APK
+FROM --platform=$TARGETPLATFORM kong/kong-build-tools:apk-1.8.1 as APKenterprise
+FROM --platform=$TARGETPLATFORM kong/kong-build-tools:deb-1.8.1 as DEBenterprise
+FROM --platform=$TARGETPLATFORM kong/kong-build-tools:rpm-1.8.1 as RPMenterprise
 
-FROM $PACKAGE_TYPE
+FROM $PACKAGE_TYPE$EDITION
 
 ARG EDITION="community"
 ENV EDITION $EDITION
