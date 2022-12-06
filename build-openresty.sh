@@ -72,6 +72,11 @@ then
   KONG_OPENSSL_VERSION=0
 fi
 
+# Force an openresty rebuild for older Kong version compatibility
+if [[ $(echo $RESTY_VERSION | sed -e 's/\.//g') -lt "11993" ]]; then
+  rm -rf /tmp/build/usr/local/openresty/nginx/
+fi
+
 LUAROCKS_PREFIX=/usr/local \
 LUAROCKS_DESTDIR=/tmp/build \
 OPENRESTY_PREFIX=/usr/local/openresty \
