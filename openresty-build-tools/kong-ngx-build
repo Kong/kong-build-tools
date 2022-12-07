@@ -117,7 +117,7 @@ main() {
         shift 2
         ;;
       --atc-router)
-        ATC_ROUTER=$2
+        ATC_ROUTER=1.4.1
         shift 2
         ;;
       -f|--force)
@@ -438,25 +438,6 @@ main() {
           git fetch
           # Accept both tags, branches and SHAs
           git reset --hard $RESTY_EVENTS || git reset --hard origin/$RESTY_EVENTS
-        popd
-      popd
-    fi
-
-    # atc-router
-    if [ $ATC_ROUTER != 0 ]; then
-      if [[ $ATC_ROUTER == "main" ]]; then
-        ATC_ROUTER="origin/main"
-      fi
-      pushd $DOWNLOAD_CACHE
-        if [ ! -d atc-router ]; then
-          warn "atc-router source not found, cloning..."
-          git clone https://github.com/Kong/atc-router --recursive
-        fi
-
-        pushd atc-router
-          git fetch
-          # Accept both tags, branches and SHAs
-          git reset --hard $ATC_ROUTER || git reset --hard origin/$ATC_ROUTER
         popd
       popd
     fi
@@ -861,38 +842,16 @@ main() {
       fi
 
       if [ $ATC_ROUTER != 0 ]; then
-        ATC_VERSION=$(echo "$ATC_ROUTER" | sed -e 's/\.//g')
+        arch=$(uname -m)
 
-        if [ $ATC_VERSION -lt 102 ]; then
-
-          local atc_router_install_succeed=0
-          pushd $DOWNLOAD_CACHE/atc-router
-            warn "installing dynamic library and Lua files for atc-router..."
-
-            # the env script adds the cargo bin dir to PATH if missing
-            which cargo > /dev/null || source "${CARGO_HOME:-$HOME/.cargo}"/env
-
-            # the atc-router makefile also tests for availability of cargo
-            make install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib || atc_router_install_succeed=1
-
-            if [ $atc_router_install_succeed -eq 1 ]; then
-              warn "error while installing atc-router... retrying with RUSTFLAGS='-C target-feature=-crt-static'..."
-              export RUSTFLAGS="-C target-feature=-crt-static"
-              make clean install LUA_LIB_DIR=$OPENRESTY_INSTALL/lualib
-            fi
-          popd
-        else
-          arch=$(uname -m)
-
-          package_architecture=x86_64
-          if [ "$(arch)" == "aarch64" ]; then
-            package_architecture=aarch64
-          fi
-          set -x
-          curl -fsSLo atc-router.tar.gz https://github.com/Kong/atc-router/releases/download/$ATC_ROUTER/$package_architecture-unknown-$OSTYPE.tar.gz
-          tar -C /tmp/build -xvf atc-router.tar.gz
-          set +x
+        package_architecture=x86_64
+        if [ "$(arch)" == "aarch64" ]; then
+          package_architecture=aarch64
         fi
+        set -x
+        curl -fsSLo atc-router.tar.gz https://github.com/hutchic/atc-router/releases/download/$ATC_ROUTER/$package_architecture-unknown-$OSTYPE.tar.gz
+        tar -C /tmp/build -xvf atc-router.tar.gz
+        set +x
       fi
     popd
 
