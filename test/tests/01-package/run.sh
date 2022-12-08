@@ -11,35 +11,11 @@ else
   IMAGE_BASE="${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}"
 fi
 
-# docker system call amd64 "x86_64" and arm64 "aarch64"
-DOCKER_SYSTEM_ARCHITECTURE="$(docker system info --format '{{.Architecture}}')"
-
-# fall back on uname -m
-DOCKER_SYSTEM_ARCHITECTURE="${DOCKER_SYSTEM_ARCHITECTURE:-$(
-  uname -m
-)}"
-
-# architecture in the kong package filename (amd64 or arm64) default: amd64
-KONG_ARCHITECTURE='amd64'
-
-case "_${DOCKER_SYSTEM_ARCHITECTURE}" in
-  _aarch64|_arm64)
-    BASE_DOCKER_PLATFORM='linux/arm64/v8'
-    ;;
-  _x86_64|_amd64)
-    BASE_DOCKER_PLATFORM='linux/amd64'
-    ;;
-  _|_*)
-    # docker run allows this to be an empty string (aka default platform)
-    BASE_DOCKER_PLATFORM=''
-    ;;
-esac
-
 docker run \
   -d \
   --name user-validation-tests \
   --rm \
-  --platform "$BASE_DOCKER_PLATFORM" \
+  --platform "${KONG_ARCHITECTURE}" \
   -e KONG_DATABASE=off \
   -v "${PWD}:/src" \
   "$IMAGE_BASE" \
