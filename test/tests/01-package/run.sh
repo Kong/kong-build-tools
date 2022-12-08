@@ -20,7 +20,7 @@ DOCKER_SYSTEM_ARCHITECTURE="${DOCKER_SYSTEM_ARCHITECTURE:-$(
 )}"
 
 # architecture in the kong package filename (amd64 or arm64) default: amd64
-KONG_ARCHITECTURE='amd64'
+KONG_ARCHITECTURE="${ARCHITECTURE:-amd64}"
 
 case "_${DOCKER_SYSTEM_ARCHITECTURE}" in
   _aarch64|_arm64)
