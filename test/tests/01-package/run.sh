@@ -15,7 +15,6 @@ docker run \
   -d \
   --name user-validation-tests \
   --rm \
-  --platform "${KONG_ARCHITECTURE}" \
   -e KONG_DATABASE=off \
   -v "${PWD}:/src" \
   "$IMAGE_BASE" \
