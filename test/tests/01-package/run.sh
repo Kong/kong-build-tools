@@ -98,10 +98,10 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   # We're capable of running as the kong user
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong start'"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v grep | awk '{print $1}' | grep -q kong"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong restart'"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
+  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v grep | awk '{print $1}' | grep -q kong"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong stop'"
 
   # Default kong runs as root user
