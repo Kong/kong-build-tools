@@ -11,6 +11,9 @@ else
   IMAGE_BASE="${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}"
 fi
 
+# architecture in the kong package filename (amd64 or arm64) default: amd64
+KONG_ARCHITECTURE="${ARCHITECTURE:-amd64}"
+
 docker run \
   -d \
   --name user-validation-tests \
