@@ -1,69 +1,40 @@
 #!/bin/bash
 
-export PING_SLEEP=50s
-export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export BUILD_OUTPUT=$WORKDIR/build.out
-
-touch $BUILD_OUTPUT
-
-dump_output() {
-   echo Tailing the last 500 lines of output:
-   cat $BUILD_OUTPUT
-}
-error_handler() {
-  echo ERROR: An error was encountered with the build.
-  dump_output
-  exit 1
-}
-# If an error occurs, run our error handler to output a tail of the build
-trap 'error_handler' ERR
-
-bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
-PING_LOOP_PID=$!
-
 mkdir -p /tmp/build/usr/local/openresty
 mkdir -p /tmp/build/usr/local/kong/lib
 mkdir -p /tmp/build/usr/local/kong
 mkdir -p /tmp/build/
 mkdir -p /work
 
-if [ "$DEBUG" == 1 ]
-then
+if [ "$DEBUG" == 1 ]; then
   KONG_NGX_BUILD_ARGS="--debug"
 fi
 
-if [ -z "$KONG_NGINX_MODULE" ]
-then
+if [ -z "$KONG_NGINX_MODULE" ]; then
   KONG_NGINX_MODULE="master"
 fi
 
-if [ -z "$RESTY_LMDB" ]
-then
+if [ -z "$RESTY_LMDB" ]; then
   RESTY_LMDB=0
 fi
 
-if [ -z "$RESTY_WEBSOCKET" ]
-then
+if [ -z "$RESTY_WEBSOCKET" ]; then
   RESTY_WEBSOCKET=0
 fi
 
-if [ -z "$RESTY_EVENTS" ]
-then
+if [ -z "$RESTY_EVENTS" ]; then
   RESTY_EVENTS=0
 fi
 
-if [ -z "$ATC_ROUTER" ]
-then
+if [ -z "$ATC_ROUTER" ]; then
   ATC_ROUTER=0
 fi
 
-if [ -z "$RESTY_BORINGSSL_VERSION" ]
-then
+if [ -z "$RESTY_BORINGSSL_VERSION" ]; then
   RESTY_BORINGSSL_VERSION=0
 fi
 
-if [ -z "$RESTY_OPENSSL_VERSION" ]
-then
+if [ -z "$RESTY_OPENSSL_VERSION" ]; then
   RESTY_OPENSSL_VERSION=0
 fi
 
@@ -89,11 +60,4 @@ ENABLE_KONG_LICENSING=$ENABLE_KONG_LICENSING \
 --luarocks $RESTY_LUAROCKS_VERSION \
 --kong-nginx-module $KONG_NGINX_MODULE \
 --pcre $RESTY_PCRE_VERSION \
---work /work $KONG_NGX_BUILD_ARGS >> $BUILD_OUTPUT 2>&1
-
-
-# The build finished without returning an error so dump a tail of the output
-dump_output
-
-# nicely terminate the ping output loop
-kill $PING_LOOP_PID
+--work /work $KONG_NGX_BUILD_ARGS
