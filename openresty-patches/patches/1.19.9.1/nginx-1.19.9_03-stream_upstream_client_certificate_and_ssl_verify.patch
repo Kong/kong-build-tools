@@ -1,7 +1,7 @@
-diff --git a/bundle/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c b/bundle/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
+diff --git a/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c b/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
 index b3d8a43..b427a9e 100644
---- a/bundle/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
-+++ b/bundle/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
+--- a/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
++++ b/nginx-1.19.9/src/stream/ngx_stream_proxy_module.c
 @@ -8,6 +8,9 @@
  #include <ngx_config.h>
  #include <ngx_core.h>
