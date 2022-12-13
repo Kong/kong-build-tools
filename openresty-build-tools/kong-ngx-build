@@ -841,7 +841,11 @@ main() {
         if [ $DEBUG == 1 ]; then
           OPENRESTY_OPTS+=('--with-debug')
           OPENRESTY_OPTS+=('--with-no-pool-patch')
-          OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
+          OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK"')
+          arch=$(uname -m)
+          if [ "$arch" != "aarch64" ]; then
+            OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_SYSMALLOC"')
+          fi
         fi
 
         eval ./configure ${OPENRESTY_OPTS[*]}
