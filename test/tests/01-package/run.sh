@@ -61,6 +61,8 @@ if [[ "$PACKAGE_TYPE" == "deb" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
 fi
 
+docker exec ${USE_TTY} user-validation-tests /bin/sh -c "kong version | sed 's/[a-zA-Z\ ]//g' | grep -E '^${KONG_VERSION}$'"
+
 if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   # These files should have 'kong:kong' ownership
   files=(
