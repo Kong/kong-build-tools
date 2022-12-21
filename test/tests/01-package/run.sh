@@ -1,9 +1,9 @@
 set -x
 
-if \
-  [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
-  [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
-  [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]]
+if
+  [ "$RESTY_IMAGE_BASE" == 'rhel' ] ||
+    [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] ||
+    [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]]
 then
   major="${RESTY_IMAGE_TAG%%.*}"
   IMAGE_BASE="registry.access.redhat.com/ubi${major}/ubi"
@@ -23,16 +23,16 @@ DOCKER_SYSTEM_ARCHITECTURE="${DOCKER_SYSTEM_ARCHITECTURE:-$(
 KONG_ARCHITECTURE='amd64'
 
 case "_${DOCKER_SYSTEM_ARCHITECTURE}" in
-  _aarch64|_arm64)
-    BASE_DOCKER_PLATFORM='linux/arm64/v8'
-    ;;
-  _x86_64|_amd64)
-    BASE_DOCKER_PLATFORM='linux/amd64'
-    ;;
-  _|_*)
-    # docker run allows this to be an empty string (aka default platform)
-    BASE_DOCKER_PLATFORM=''
-    ;;
+_aarch64 | _arm64)
+  BASE_DOCKER_PLATFORM='linux/arm64/v8'
+  ;;
+_x86_64 | _amd64)
+  BASE_DOCKER_PLATFORM='linux/amd64'
+  ;;
+_ | _*)
+  # docker run allows this to be an empty string (aka default platform)
+  BASE_DOCKER_PLATFORM=''
+  ;;
 esac
 
 docker run \
@@ -92,12 +92,13 @@ if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent group kong"
   docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
 
-  if \
-    [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]] || \
-    [ "$RESTY_IMAGE_BASE" == 'rhel' ] || \
-    [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] || \
-    [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
-  ; then
+  if
+    [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]] ||
+      [ "$RESTY_IMAGE_BASE" == 'rhel' ] ||
+      [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] ||
+      [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
+      ;
+  then
     # Needed to run `su`
     docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
 
