@@ -90,6 +90,10 @@ if [[ "$PACKAGE_TYPE" == "apk" ]]; then
   docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "ln -s /usr/local/openresty/nginx/sbin/nginx  /usr/local/bin/nginx"
 fi
 
+# ensure kong version workers and reports expected version
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "kong version"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "kong version | sed 's/[a-zA-Z\ ]//g' | grep -E \"^${KONG_VERSION}\$\""
+
 # These files should have 'kong:kong' ownership
 files=(
   "/etc/kong/"
