@@ -44,100 +44,128 @@ docker run \
   -v "${PWD}:/src" \
   "$IMAGE_BASE" \
   tail -f /dev/null
+
+case "_${PACKAGE_TYPE}" in
+_apk)
+  _SHELL=/bin/sh
+  ;;
+_ | _*)
+  _SHELL=/bin/bash
+  ;;
+esac
+
 if [[ "$PACKAGE_TYPE" == "rpm" ]]; then
   cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.rpm kong.rpm
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y /src/kong.rpm procps"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "yum install -y /src/kong.rpm procps"
 # Tests disabled until CSRE-467 is resolved
-#  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --import https://download.konghq.com/gateway-2.x-rhel-8/repodata/repomd.xml.key"
-#  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "rpm --checksig /src/kong.rpm"
+#  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "rpm --import https://download.konghq.com/gateway-2.x-rhel-8/repodata/repomd.xml.key"
+#  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "rpm --checksig /src/kong.rpm"
 fi
 
 if [[ "$PACKAGE_TYPE" == "deb" ]]; then
   cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}.deb kong.deb
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get update"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get install -y perl-base zlib1g-dev"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "kong version"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "apt-get update"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "apt-get install -y perl-base zlib1g-dev"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "dpkg -i /src/kong.deb || apt install --fix-broken -y"
 fi
 
-if [[ "$RESTY_IMAGE_BASE" != "alpine" ]]; then
-  # These files should have 'kong:kong' ownership
-  files=(
-    "/etc/kong/"
-    "/usr/local/bin/json2lua"
-    "/usr/local/bin/lapis"
-    "/usr/local/bin/lua2json"
-    "/usr/local/bin/luarocks"
-    "/usr/local/bin/luarocks-admin"
-    "/usr/local/etc/luarocks/"
-    "/usr/local/kong/"
-    "/usr/local/bin/kong"
-    "/usr/local/lib/lua/"
-    "/usr/local/lib/luarocks/"
-    "/usr/local/openresty/"
-    "/usr/local/share/lua/"
-  )
+if [[ "$PACKAGE_TYPE" == "apk" ]]; then
+  cp $PACKAGE_LOCATION/*${KONG_ARCHITECTURE}*.apk.tar.gz kong.apk.tar.gz
 
-  for file in "${files[@]}"; do
-    # Check if the 'chown -R kong:kong' ownership changes worked
-    docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%U:%G" {} \; | grep -vc "kong:kong") == "0" ]'
-
-    # Check if the 'chmod g=u -R' permission changes worked
-    docker exec ${USE_TTY} -e file=$file user-validation-tests /bin/bash -c '[ $(find $file -exec stat -c "%a" {} \; | grep -Evc "^(.)\1") == "0" ]'
-  done
-
-  # Check if 'useradd -U -m -s /bin/sh kong' worked
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent passwd kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "getent group kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
-
-  if
-    [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]] ||
-      [ "$RESTY_IMAGE_BASE" == 'rhel' ] ||
-      [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] ||
-      [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
-      ;
-  then
-    # Needed to run `su`
-    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y util-linux"
-
-    # Needed to run `find`
-    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y findutils"
-
-    # Needed to run `ps`
-    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "yum install -y procps"
-  fi
-
-  if [[ "$PACKAGE_TYPE" == "deb" ]]; then
-    # Needed to run `ps`
-    docker exec ${USE_TTY} user-validation-tests /bin/bash -c "apt-get -y install procps"
-  fi
-
-  KONG_OPTS=
-  if [ "$SSL_PROVIDER" = "boringssl" ]; then
-    KONG_OPTS="KONG_FIPS=on"
-    KONG_PACKAGE_NAME="kong-enterprise-edition-fips"
-  fi
-
-  # We're capable of running as the kong user
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong start'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong restart'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong stop'"
-
-  # Default kong runs as root user
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong start"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong health"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong restart"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong health"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
-  docker exec ${USE_TTY} user-validation-tests /bin/bash -c "$KONG_OPTS kong stop"
+  # roughly equivalent to Dockerfile.apk from docker-kong
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "apk update"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "apk add --no-cache \
+    curl tar gzip ca-certificates libstdc++ libgcc pcre perl tzdata libcap zlib zlib-dev bash"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "tar -C / -xzf /src/kong.apk.tar.gz"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "adduser -S kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "addgroup -S kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "mkdir -p /usr/local/kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "chown -c -R kong:0 /usr/local/kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "chown -c    kong:0 /usr/local/bin/kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "chmod -c -R g=u    /usr/local/kong"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "rm -rf /tmp/kong.apk.tar.gz"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "ln -s /usr/local/openresty/bin/resty         /usr/local/bin/resty"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "ln -s /usr/local/openresty/luajit/bin/luajit /usr/local/bin/luajit"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "ln -s /usr/local/openresty/luajit/bin/luajit /usr/local/bin/lua"
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -xc "ln -s /usr/local/openresty/nginx/sbin/nginx  /usr/local/bin/nginx"
 fi
+
+# These files should have 'kong:kong' ownership
+files=(
+  "/etc/kong/"
+  "/usr/local/bin/json2lua"
+  "/usr/local/bin/lapis"
+  "/usr/local/bin/lua2json"
+  "/usr/local/bin/luarocks"
+  "/usr/local/bin/luarocks-admin"
+  "/usr/local/etc/luarocks/"
+  "/usr/local/kong/"
+  "/usr/local/bin/kong"
+  "/usr/local/lib/lua/"
+  "/usr/local/lib/luarocks/"
+  "/usr/local/openresty/"
+  "/usr/local/share/lua/"
+)
+
+for file in "${files[@]}"; do
+  # Check if the 'chown -R kong:kong' ownership changes worked
+  docker exec ${USE_TTY} -e file=$file user-validation-tests "$_SHELL" -c '[ $(find $file -exec stat -c "%U:%G" {} \; | grep -vc "kong:kong") == "0" ]'
+
+  # Check if the 'chmod g=u -R' permission changes worked
+  docker exec ${USE_TTY} -e file=$file user-validation-tests "$_SHELL" -c '[ $(find $file -exec stat -c "%a" {} \; | grep -Evc "^(.)\1") == "0" ]'
+done
+
+# Check if 'useradd -U -m -s /bin/sh kong' worked
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "getent passwd kong"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "getent group kong"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "cat /etc/passwd | grep kong | grep -q /bin/sh"
+
+if
+  [[ "$RESTY_IMAGE_BASE" == "amazonlinux" ]] ||
+    [ "$RESTY_IMAGE_BASE" == 'rhel' ] ||
+    [[ "$RESTY_IMAGE_BASE" == *'/ubi'* ]] ||
+    [[ "$RESTY_IMAGE_BASE" == *'redhat'* ]] \
+    ;
+then
+  # Needed to run `su`
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "yum install -y util-linux"
+
+  # Needed to run `find`
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "yum install -y findutils"
+
+  # Needed to run `ps`
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "yum install -y procps"
+fi
+
+if [[ "$PACKAGE_TYPE" == "deb" ]]; then
+  # Needed to run `ps`
+  docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "apt-get -y install procps"
+fi
+
+KONG_OPTS=
+if [ "$SSL_PROVIDER" = "boringssl" ]; then
+  KONG_OPTS="KONG_FIPS=on"
+  KONG_PACKAGE_NAME="kong-enterprise-edition-fips"
+fi
+
+# We're capable of running as the kong user
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong start'"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong restart'"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong health'"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "ps aux | grep master | grep -v grep | awk '{print $1}' | grep -q kong"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "su - kong -c 'KONG_DATABASE=off $KONG_OPTS kong stop'"
+
+# Default kong runs as root user
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "$KONG_OPTS kong start"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "$KONG_OPTS kong health"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "$KONG_OPTS kong restart"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "$KONG_OPTS kong health"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "ps aux | grep nginx | grep -v worker | grep -v grep | grep -q root"
+docker exec ${USE_TTY} user-validation-tests "$_SHELL" -c "$KONG_OPTS kong stop"
+
 docker stop user-validation-tests
 
 # openresty
