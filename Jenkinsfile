@@ -67,6 +67,11 @@ pipeline {
                     }
                 }
                 stage('Kong Enterprise Alpine') {
+                    agent {
+                        node {
+                            label 'worker-amd64'
+                        }
+                    }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
@@ -91,11 +96,6 @@ pipeline {
                             }
                         }
                         stage('Kong Enterprise Alpine - amd64') {
-                            agent {
-                                node {
-                                    label 'worker-amd64'
-                                }
-                            }
                             steps {
                                 sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                                 sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
