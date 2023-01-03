@@ -80,8 +80,8 @@ pipeline {
                         retry(2)
                         timeout(time: 2, unit: 'HOURS')
                     }
-                    stages {
-                        stage('Kong Enterprise Alpine - arm64') {
+                    parallel {
+                        stage('arm64') {
                             agent {
                                 node {
                                     label 'worker-arm64'
@@ -95,7 +95,7 @@ pipeline {
                                 sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
                             }
                         }
-                        stage('Kong Enterprise Alpine - amd64') {
+                        stage('amd64') {
                             steps {
                                 sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
                                 sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
