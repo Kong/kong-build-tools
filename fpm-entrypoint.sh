@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -o errexit
+set -x
 
 cd /tmp/build
 
@@ -98,10 +99,10 @@ else
     --url 'https://getkong.org/' usr etc lib \
   && mkdir /output/ \
   && mv kong*.* /output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.${PACKAGE_TYPE}
-  set -x
+  set -x || true
   if [ "$PACKAGE_TYPE" == "rpm" ] && [ ! -z "$PRIVATE_KEY_PASSPHRASE" ]; then
     apt-get update
-    apt-get install -y expect
+    apt-get install -y expect rpm
     mkdir -p ~/.gnupg/
     touch ~/.gnupg/gpg.conf
     echo use-agent >> ~/.gnupg/gpg.conf
