@@ -38,7 +38,9 @@ pipeline {
             parallel {
                 stage('Kong Enterprise RPM') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
@@ -76,7 +78,9 @@ pipeline {
                     stages {
                         stage('Kong Enterprise Alpine - arm64') {
                             agent {
-                                label "worker && arm64"
+                                node {
+                                    label "worker && arm64"
+                                }
                             }
                             steps {
                                 sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -88,7 +92,9 @@ pipeline {
                         }
                         stage('Kong Enterprise Alpine - amd64') {
                             agent {
-                                label "worker && amd64"
+                                node {
+                                    label "worker && amd64"
+                                }
                             }
                             steps {
                                 sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
@@ -102,7 +108,9 @@ pipeline {
                 }
                 stage('Kong Enterprise src') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -122,7 +130,9 @@ pipeline {
                 }
                 stage('Kong Enterprise DEB') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         PACKAGE_TYPE = 'deb'
@@ -147,7 +157,9 @@ pipeline {
                 }
                 stage('Kong Enterprise BoringSSL') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -171,7 +183,9 @@ pipeline {
                 }
                 stage('Kong EE 3.0.0.0') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
@@ -207,7 +221,9 @@ pipeline {
             parallel {
                 stage('Kong OSS 2.8.0') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
@@ -231,7 +247,9 @@ pipeline {
                 }
                 stage('Kong OSS RPM') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
@@ -259,7 +277,9 @@ pipeline {
                 }
                 stage('Kong OSS src & Alpine') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         AWS_ACCESS_KEY = 'instance-profile'
@@ -280,7 +300,9 @@ pipeline {
                 }
                 stage('Kong OSS DEB') {
                     agent {
-                        label 'worker && amd64'
+                        node {
+                            label 'worker && amd64'
+                        }
                     }
                     environment {
                         PACKAGE_TYPE = 'deb'
