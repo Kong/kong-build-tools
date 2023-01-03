@@ -54,8 +54,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'cp $PRIVATE_KEY_FILE kong.private.gpg-key.asc'
@@ -81,8 +79,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
@@ -103,8 +99,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
@@ -125,8 +119,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src package-kong test cleanup'
@@ -148,8 +140,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
@@ -175,8 +165,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
@@ -199,8 +187,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 SSL_PROVIDER=boringssl package-kong test cleanup'
@@ -225,8 +211,6 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
@@ -263,8 +247,6 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
@@ -290,8 +272,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'cp $PRIVATE_KEY_FILE kong.private.gpg-key.asc'
@@ -317,8 +297,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
@@ -339,8 +317,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
@@ -361,8 +337,6 @@ pipeline {
                         timeout(time: 2, unit: 'HOURS')
                     }
                     steps {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
@@ -386,8 +360,6 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
@@ -410,8 +382,6 @@ pipeline {
                     }
                     steps {
                         sh 'mkdir -p /home/ubuntu/bin/'
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10    package-kong test cleanup'
