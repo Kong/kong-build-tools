@@ -204,7 +204,7 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
 	-rm github-token
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(ARCHITECTURE)-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
+	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
 		$(CACHE_COMMAND) $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
