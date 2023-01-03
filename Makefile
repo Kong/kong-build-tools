@@ -204,7 +204,7 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
 else
 	-rm github-token
-	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
+	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(ARCHITECTURE)-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
 		$(CACHE_COMMAND) $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
@@ -280,7 +280,7 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --output output $(DOCKER_PLATFORM_FLAG) -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --progress=plain --output output $(DOCKER_PLATFORM_FLAG) -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
