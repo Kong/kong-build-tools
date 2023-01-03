@@ -132,7 +132,7 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src package-kong test cleanup'
                     }
                 }
-                stage('Kong Enterprise DEB') {
+                stage('Kong Enterprise DEB - amd64') {
                     agent {
                         node {
                             label 'worker-amd64'
@@ -157,6 +157,29 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 package-kong test cleanup'
+                    }
+                }
+                stage('Kong Enterprise DEB - arm64') {
+                    agent {
+                        node {
+                            label 'worker-arm64'
+                        }
+                    }
+                    environment {
+                        PACKAGE_TYPE = 'deb'
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise BoringSSL') {
@@ -279,7 +302,51 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
-                stage('Kong OSS src & Alpine') {
+                stage('Kong OSS Alpine - arm64') {
+                    agent {
+                        node {
+                            label 'worker-arm64'
+                        }
+                    }
+                    environment {
+                        AWS_ACCESS_KEY = 'instance-profile'
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                    }
+                }
+                stage('Kong OSS Alpine - amd64') {
+                    agent {
+                        node {
+                            label 'worker-amd64'
+                        }
+                    }
+                    environment {
+                        AWS_ACCESS_KEY = 'instance-profile'
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=amd64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                    }
+                }
+                stage('Kong OSS src') {
                     agent {
                         node {
                             label 'worker-amd64'
