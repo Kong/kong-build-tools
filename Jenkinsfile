@@ -11,6 +11,8 @@ pipeline {
         DOCKERHUB = credentials('dockerhub')
         DOCKER_CLI_EXPERIMENTAL = 'enabled'
         DEBUG = 0
+
+        KONG_OPENSSL_VERSION = '1.1.9'
     }
     options {
         timeout(time: 5, unit: 'HOURS')
