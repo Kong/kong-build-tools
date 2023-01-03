@@ -208,7 +208,8 @@ else
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
 		$(CACHE_COMMAND) $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
-		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
+		$(DOCKER_COMMAND) \
+		-f dockerfiles/Dockerfile.openresty \
 		--secret id=github-token,src=github-token \
 		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
 		--build-arg RESTY_LUAROCKS_VERSION=$(RESTY_LUAROCKS_VERSION) \
@@ -230,10 +231,12 @@ else
 		--build-arg OPENRESTY_PATCHES=$(OPENRESTY_PATCHES) \
 		--build-arg DEBUG=$(DEBUG) \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) . && \
-		( \
-			rm github-token || true \
-		) \
+		-t $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
+		. \
+		&& \
+			( \
+				rm github-token || true \
+			) \
 	)
 endif
 
@@ -249,7 +252,9 @@ ifeq ($(DEBUG),1)
 	exit 1
 endif
 	$(MAKE) build-kong
-	@$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.package \
+	@$(DOCKER_COMMAND) \
+	-f dockerfiles/Dockerfile.package \
+	--progress=plain \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
@@ -266,7 +271,8 @@ endif
 	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
 	--build-arg PRIVATE_KEY_FILE=kong.private.gpg-key.asc \
 	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
-	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) .
+	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) \
+	.
 ifeq ($(BUILDX),false)
 	docker run \
 		-d \
@@ -280,7 +286,11 @@ ifeq ($(BUILDX),false)
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --progress=plain --output output $(DOCKER_PLATFORM_FLAG) -f dockerfiles/Dockerfile.scratch \
+	docker buildx build \
+	-f dockerfiles/Dockerfile.scratch \
+	--progress=plain \
+	$(DOCKER_PLATFORM_FLAG) \
+	--output output \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -304,32 +314,41 @@ kong-ci-cache-key:
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
-	( $(MAKE) build-openresty && \
-	-rm github-token; \
-	echo $$GITHUB_TOKEN > github-token; \
-	$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.kong \
-	--secret id=github-token,src=github-token \
-	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
-	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
-	--build-arg BUILDKIT_INLINE_CACHE=1 \
-	--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
-	-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) . )
+	( \
+		$(MAKE) build-openresty && \
+			-rm github-token; \
+			echo $$GITHUB_TOKEN > github-token; \
+			$(DOCKER_COMMAND) \
+			-f dockerfiles/Dockerfile.kong \
+			--progress=plain \
+			--secret id=github-token,src=github-token \
+			--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
+			--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+			--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+			--build-arg ENABLE_LJBC=$(ENABLE_LJBC) \
+			--build-arg BUILDKIT_INLINE_CACHE=1 \
+			--build-arg SSL_PROVIDER=$(SSL_PROVIDER) \
+			-t $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) \
+			. \
+	)
 	-rm github-token
 
 kong-test-container: setup-kong-source
 ifneq ($(RESTY_IMAGE_BASE),src)
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) || \
-	( $(MAKE) build-openresty && \
-	docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
-	$(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) && \
-	$(DOCKER_COMMAND) -f test/Dockerfile.test \
-	--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
-	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
-	--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
-	--build-arg BUILDKIT_INLINE_CACHE=1 \
-	-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) . )
+	( \
+		$(MAKE) build-openresty && \
+			docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) \
+			$(DOCKER_REPOSITORY):test-$(DOCKER_OPENRESTY_SUFFIX) && \
+			$(DOCKER_COMMAND) \
+			-f test/Dockerfile.test \
+			--build-arg KONG_GO_PLUGINSERVER_VERSION=$(KONG_GO_PLUGINSERVER_VERSION) \
+			--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
+			--build-arg DOCKER_OPENRESTY_SUFFIX=$(DOCKER_OPENRESTY_SUFFIX) \
+			--build-arg BUILDKIT_INLINE_CACHE=1 \
+			-t $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) \
+			. \
+	)
 
 	docker tag $(DOCKER_REPOSITORY):test-$(DOCKER_TEST_SUFFIX) $(DOCKER_REPOSITORY):test
 

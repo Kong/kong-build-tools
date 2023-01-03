@@ -5,6 +5,6 @@ ARG DOCKER_REPOSITORY
 
 FROM --platform=$TARGETPLATFORM ${DOCKER_REPOSITORY}:kong-packaged-${PACKAGE_TYPE}-${DOCKER_KONG_SUFFIX} as FPM
 
-FROM  --platform=$TARGETPLATFORM scratch
+FROM --platform=$TARGETPLATFORM scratch
 
 COPY --from=FPM /output /output
