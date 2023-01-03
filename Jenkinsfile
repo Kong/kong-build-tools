@@ -13,7 +13,6 @@ pipeline {
         DEBUG = 0
     }
     options {
-        retry(2)
         timeout(time: 5, unit: 'HOURS')
         parallelsAlwaysFailFast()
     }
@@ -189,7 +188,7 @@ pipeline {
                     steps {
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 SSL_PROVIDER=boringssl package-kong test cleanup'
+                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel   RESTY_IMAGE_TAG=8.6 SSL_PROVIDER=boringssl package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 SSL_PROVIDER=boringssl package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 SSL_PROVIDER=boringssl package-kong test cleanup'
                     }
@@ -215,7 +214,7 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 package-kong test cleanup'
-                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
+                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel   RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
             }
@@ -251,7 +250,7 @@ pipeline {
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 package-kong test cleanup'
-                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
+                        sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel   RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
                 stage('RPM') {
@@ -339,8 +338,7 @@ pipeline {
                     steps {
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src package-kong test cleanup'
                     }
                 }
                 stage('DEB - arm64') {

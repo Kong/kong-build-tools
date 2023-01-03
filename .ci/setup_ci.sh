@@ -12,6 +12,15 @@ if uname -a | grep -qs -i darwin; then
     exit 0
 fi
 
+case "_$(uname -m)" in
+_aarch64 | _arm64)
+  friendly_arch='arm64'
+  ;;
+_amd64 | _x86_64 | _* | _)
+  friendly_arch='amd64'
+  ;;
+esac
+
 sudo apt-get install -y \
     qemu \
     binfmt-support \
@@ -21,7 +30,7 @@ docker version
 RESULT=$?
 if [ "$RESULT" != "0" ]; then
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
+    sudo add-apt-repository "deb [arch=amd64,arm64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
     sudo apt-get update
     sudo apt-get -y -o Dpkg::Options::="--force-confnew" install containerd.io docker-ce
 fi
@@ -33,16 +42,15 @@ fi
 docker buildx version
 RESULT=$?
 if [ "$RESULT" != "0" ]; then
-    curl -fsSLo buildx https://github.com/docker/buildx/releases/download/v0.8.2/buildx-v0.8.2.linux-amd64
+    latest="$(
+        curl -fsSL https://github.com/docker/buildx/releases/latest \
+            | grep -Eo 'href="/docker/buildx/releases/tag/([^"]+)' | uniq | tail -n1 | cut -d'/' -f6
+    )"
+    curl -fsSLo buildx "https://github.com/docker/buildx/releases/download/${latest}/buildx-${latest}.linux-${friendly_arch}"
     mkdir -p ~/.docker/cli-plugins/
     chmod +x buildx
     mv buildx ~/.docker/cli-plugins/docker-buildx
     sudo service docker restart
-fi
-
-if ! [ -x "$(command -v docker-machine)" ]; then
-    curl -L https://github.com/docker/machine/releases/download/v0.16.2/docker-machine-$(uname -s)-$(uname -m) >docker-machine
-    sudo install docker-machine /usr/local/bin/docker-machine
 fi
 
 set -e
