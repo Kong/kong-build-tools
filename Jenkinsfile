@@ -79,7 +79,7 @@ pipeline {
                         stage('Kong Enterprise Alpine - arm64') {
                             agent {
                                 node {
-                                    label "worker && arm64"
+                                    label 'worker && arm64'
                                 }
                             }
                             steps {
@@ -93,7 +93,7 @@ pipeline {
                         stage('Kong Enterprise Alpine - amd64') {
                             agent {
                                 node {
-                                    label "worker && amd64"
+                                    label 'worker && amd64'
                                 }
                             }
                             steps {
