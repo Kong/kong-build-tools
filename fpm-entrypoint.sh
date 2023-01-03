@@ -114,3 +114,5 @@ else
   fi
 fi
 
+find /output
+
