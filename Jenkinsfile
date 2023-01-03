@@ -66,7 +66,29 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6  package-kong test cleanup'
                     }
                 }
-                stage('Kong Enterprise Alpine') {
+                stage('Kong Enterprise Alpine - arm64') {
+                    agent {
+                        node {
+                            label 'worker-arm64'
+                        }
+                    }
+                    environment {
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                    }
+                }
+                stage('Kong Enterprise Alpine - amd64') {
                     agent {
                         node {
                             label 'worker-amd64'
@@ -80,30 +102,12 @@ pipeline {
                         retry(2)
                         timeout(time: 2, unit: 'HOURS')
                     }
-                    parallel {
-                        stage('arm64') {
-                            agent {
-                                node {
-                                    label 'worker-arm64'
-                                }
-                            }
-                            steps {
-                                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                                sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
-                                sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
-                                sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                                sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
-                            }
-                        }
-                        stage('amd64') {
-                            steps {
-                                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
-                                sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
-                                sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
-                                sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                                sh 'make ARCHITECTURE=amd64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
-                            }
-                        }
+                    steps {
+                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                        sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=amd64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise src') {
