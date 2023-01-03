@@ -197,7 +197,7 @@ pipeline {
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 SSL_PROVIDER=boringssl package-kong test cleanup'
                     }
                 }
-                stage('3.0.0.0') {
+                stage('master') {
                     agent {
                         node {
                             label 'worker-amd64'
@@ -206,7 +206,7 @@ pipeline {
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        KONG_SOURCE = '3.0.0.0'
+                        KONG_SOURCE = 'master'
                     }
                     options {
                         retry(2)
