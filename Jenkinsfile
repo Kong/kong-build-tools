@@ -18,7 +18,7 @@ pipeline {
     }
     options {
         timeout(time: 5, unit: 'HOURS')
-        parallelsAlwaysFailFast()
+        // parallelsAlwaysFailFast()
     }
     stages {
         stage('Enteprise Test Builds') {
