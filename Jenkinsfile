@@ -127,6 +127,27 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src package-kong test cleanup'
                     }
                 }
+                stage('DEB - arm64') {
+                    agent {
+                        node {
+                            label 'worker-arm64'
+                        }
+                    }
+                    environment {
+                        PACKAGE_TYPE = 'deb'
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    steps {
+                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                        sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
+                    }
+                }
                 stage('DEB - amd64') {
                     agent {
                         node {
@@ -150,27 +171,6 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=20.04 package-kong test cleanup'
                         sh 'make RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 package-kong test cleanup'
-                    }
-                }
-                stage('DEB - arm64') {
-                    agent {
-                        node {
-                            label 'worker-arm64'
-                        }
-                    }
-                    environment {
-                        PACKAGE_TYPE = 'deb'
-                        PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                    }
-                    options {
-                        retry(2)
-                        timeout(time: 2, unit: 'HOURS')
-                    }
-                    steps {
-                        sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
-                        sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=18.04 package-kong test cleanup'
                     }
                 }
                 stage('BoringSSL') {
