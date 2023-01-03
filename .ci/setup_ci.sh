@@ -30,7 +30,7 @@ docker version
 RESULT=$?
 if [ "$RESULT" != "0" ]; then
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    sudo add-apt-repository "deb [arch=amd64,arm64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
+    sudo add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) test"
     sudo apt-get update
     sudo apt-get -y -o Dpkg::Options::="--force-confnew" install containerd.io docker-ce
 fi
