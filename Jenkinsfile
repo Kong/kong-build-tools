@@ -4,12 +4,12 @@ pipeline {
         cron(env.BRANCH_NAME == 'master' ? '@weekly' : '')
     }
     environment {
-        KONG_SOURCE = "master"
-        KONG_SOURCE_LOCATION = "/tmp/kong"
+        KONG_SOURCE = 'master'
+        KONG_SOURCE_LOCATION = '/tmp/kong'
         DOCKER_USERNAME = "${env.DOCKERHUB_USR}"
         DOCKER_PASSWORD = "${env.DOCKERHUB_PSW}"
         DOCKERHUB = credentials('dockerhub')
-        DOCKER_CLI_EXPERIMENTAL = "enabled"
+        DOCKER_CLI_EXPERIMENTAL = 'enabled'
         DEBUG = 0
     }
     options {
@@ -19,9 +19,9 @@ pipeline {
     stages {
         stage('Enteprise Test Builds') {
             environment {
-                DOCKER_REPOSITORY = "kong/kong-build-tools-private"
+                DOCKER_REPOSITORY = 'kong/kong-build-tools-private'
                 GITHUB_TOKEN = credentials('github_bot_access_token')
-                KONG_SOURCE = "master"
+                KONG_SOURCE = 'master'
                 PULP = credentials('PULP')
                 PULP_PASSWORD = "${env.PULP_PSW}"
                 PULP_USERNAME = "${env.PULP_USR}"
@@ -35,16 +35,16 @@ pipeline {
                 }
             }
             parallel {
-                stage('Kong Enterprise RPM'){
+                stage('Kong Enterprise RPM') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        PACKAGE_TYPE = "rpm"
+                        PACKAGE_TYPE = 'rpm'
                         PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
                         PRIVATE_KEY_PASSPHRASE = credentials('kong.private.gpg-key.asc.password')
                     }
@@ -65,10 +65,46 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6  package-kong test cleanup'
                     }
                 }
-                stage('Kong Enterprise src & Alpine'){
+                stage('Kong Enterprise Alpine') {
+                    environment {
+                        PATH = "/home/ubuntu/bin/:${env.PATH}"
+                        GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
+                    }
+                    options {
+                        retry(2)
+                        timeout(time: 2, unit: 'HOURS')
+                    }
+                    stages {
+                        stage('Kong Enterprise Alpine - arm64') {
+                            agent {
+                                label "worker && arm64"
+                            }
+                            steps {
+                                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                                sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                                sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                                sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                                sh 'make ARCHITECTURE=arm64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                            }
+                        }
+                        stage('Kong Enterprise Alpine - amd64') {
+                            agent {
+                                label "worker && amd64"
+                            }
+                            steps {
+                                sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin || true'
+                                sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
+                                sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
+                                sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
+                                sh 'make ARCHITECTURE=amd64 RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
+                            }
+                        }
+                    }
+                }
+                stage('Kong Enterprise src') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
@@ -84,18 +120,17 @@ pipeline {
                         sh 'while /bin/bash -c "ps aux | grep [a]pt-get"; do sleep 5; done'
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --recursive --single-branch --branch ${KONG_SOURCE} git@github.com:Kong/kong-ee.git ${KONG_SOURCE_LOCATION}'
-                        sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=src RESTY_IMAGE_TAG=src PACKAGE_TYPE=src package-kong test cleanup'
                     }
                 }
                 stage('Kong Enterprise DEB') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
-                        PACKAGE_TYPE = "deb"
+                        PACKAGE_TYPE = 'deb'
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
@@ -118,14 +153,14 @@ pipeline {
                 stage('Kong Enterprise BoringSSL') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
-                        DOCKER_REPOSITORY = "kong/kong-build-tools-private"
-                        KONG_PACKAGE_NAME = "kong-enterprise-edition-fips"
+                        DOCKER_REPOSITORY = 'kong/kong-build-tools-private'
+                        KONG_PACKAGE_NAME = 'kong-enterprise-edition-fips'
                     }
                     options {
                         retry(2)
@@ -141,16 +176,16 @@ pipeline {
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=ubuntu RESTY_IMAGE_TAG=22.04 SSL_PROVIDER=boringssl package-kong test cleanup'
                     }
                 }
-                stage('Kong EE master'){
+                stage('Kong EE 3.0.0.0') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        KONG_SOURCE = "master"
+                        KONG_SOURCE = '3.0.0.0'
                     }
                     options {
                         retry(2)
@@ -165,7 +200,6 @@ pipeline {
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
-
                     }
                 }
             }
@@ -180,16 +214,16 @@ pipeline {
                 }
             }
             parallel {
-                stage('Kong OSS 2.8.0'){
+                stage('Kong OSS 2.8.0') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        KONG_SOURCE = "2.8.0"
+                        KONG_SOURCE = '2.8.0'
                     }
                     options {
                         retry(2)
@@ -204,18 +238,17 @@ pipeline {
                         sh 'make PACKAGE_TYPE=deb RESTY_IMAGE_BASE=debian RESTY_IMAGE_TAG=10 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=apk RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 package-kong test cleanup'
                         sh 'make PACKAGE_TYPE=rpm RESTY_IMAGE_BASE=rhel RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
-
                     }
                 }
-                stage('Kong OSS RPM'){
+                stage('Kong OSS RPM') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
-                        PACKAGE_TYPE = "rpm"
+                        PACKAGE_TYPE = 'rpm'
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PRIVATE_KEY_FILE = credentials('kong.private.gpg-key.asc')
                         PRIVATE_KEY_PASSPHRASE = credentials('kong.private.gpg-key.asc.password')
@@ -237,14 +270,14 @@ pipeline {
                         sh 'make RESTY_IMAGE_BASE=rhel        RESTY_IMAGE_TAG=8.6 package-kong test cleanup'
                     }
                 }
-                stage('Kong OSS src & Alpine'){
+                stage('Kong OSS src & Alpine') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
-                        AWS_ACCESS_KEY = "instance-profile"
+                        AWS_ACCESS_KEY = 'instance-profile'
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                     }
                     options {
@@ -257,17 +290,17 @@ pipeline {
                         sh 'curl https://raw.githubusercontent.com/Kong/kong/master/scripts/setup-ci.sh | bash'
                         sh 'git clone --single-branch --branch ${KONG_SOURCE} https://github.com/Kong/kong.git ${KONG_SOURCE_LOCATION}'
                         sh 'make RESTY_IMAGE_BASE=src    RESTY_IMAGE_TAG=src  PACKAGE_TYPE=src package-kong test cleanup'
-                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk DOCKER_MACHINE_ARM64_NAME="jenkins-kong-"`cat /proc/sys/kernel/random/uuid` package-kong test cleanup'
+                        sh 'make RESTY_IMAGE_BASE=alpine RESTY_IMAGE_TAG=3 PACKAGE_TYPE=apk package-kong test cleanup'
                     }
                 }
                 stage('Kong OSS DEB') {
                     agent {
                         node {
-                            label 'bionic'
+                            label 'worker && amd64'
                         }
                     }
                     environment {
-                        PACKAGE_TYPE = "deb"
+                        PACKAGE_TYPE = 'deb'
                         GITHUB_SSH_KEY = credentials('github_bot_ssh_key')
                         PATH = "/home/ubuntu/bin/:${env.PATH}"
                     }

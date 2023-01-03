@@ -4,7 +4,10 @@ $(info starting make in kong-build-tools)
 .DEFAULT_GOAL := package-kong
 
 export SHELL:=/bin/bash
-# .SHELLFLAGS+=-x
+
+ifneq ($(strip $(VERBOSE)),)
+.SHELLFLAGS += -x
+endif
 
 # collect the list of environment variables to care about for the debug target
 # from this Makefile itself
@@ -25,8 +28,11 @@ VARS_OLD = $(filter-out $(MAKEFILE_VARS),$(.VARIABLES))
 VERBOSE?=false
 RESTY_IMAGE_BASE?=ubuntu
 RESTY_IMAGE_TAG?=20.04
+
 PACKAGE_TYPE?=deb
 PACKAGE_TYPE?=debian
+
+ARCHITECTURE ?= amd64
 
 SSL_PROVIDER?=openssl
 
@@ -93,8 +99,6 @@ DOCKER_KONG_VERSION = '2.8.1'
 DEBUG ?= 0
 RELEASE_DOCKER_ONLY ?= false
 
-DOCKER_MACHINE_ARM64_NAME?=docker-machine-arm64-${USER}
-
 GITHUB_TOKEN ?=
 
 # set to 'plain' to get less dynamic, but linear output from docker build(x)
@@ -120,53 +124,49 @@ DOCKER_OPENRESTY_SUFFIX=${BUILD_TOOLS_SHA}-${REQUIREMENTS_SHA}${OPENRESTY_PATCHE
 DOCKER_KONG_SUFFIX=${BUILD_TOOLS_SHA}${OPENRESTY_PATCHES}${DEBUG}-${KONG_VERSION}-${KONG_SHA}-${CACHE_BUSTER}-${SSL_PROVIDER}
 DOCKER_TEST_SUFFIX=${BUILD_TOOLS_SHA}-${DEBUG}-${KONG_SHA}-${CACHE_BUSTER}
 
-# We build ARM64 for alpine and bionic only at this time
-BUILDX?=false
-ifndef AWS_ACCESS_KEY
-	CACHE?=true
-	BUILDX=false
-else ifeq ($(RESTY_IMAGE_TAG),bionic)
-	BUILDX=true
-	CACHE=false
-	CACHE_COMMAND=false
-else ifeq ($(RESTY_IMAGE_TAG),18.04)
-	BUILDX=true
-	CACHE=false
-	CACHE_COMMAND=false
-else ifeq ($(RESTY_IMAGE_BASE),alpine)
-	CACHE=false
-	CACHE_COMMAND=false
-	BUILDX=true
+DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
+
+_DOCKER_ARCHITECTURE := $(strip $(shell docker system info --format '{{.Architecture}}'))
+$(info host architecture: $(_DOCKER_ARCHITECTURE))
+
+ifeq ($(_DOCKER_ARCHITECTURE),x86_64)
+DOCKER_ARCHITECTURE := amd64
 endif
 
-ifeq ($(BUILDX),false)
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --platform="linux/amd64" $(DOCKER_LABELS)
-else
-	DOCKER_COMMAND?=docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) $(KONG_EE_PORTS_FLAG) --push --platform="linux/amd64,linux/arm64" $(DOCKER_LABELS)
+ifeq ($(_DOCKER_ARCHITECTURE),aarch64)
+DOCKER_ARCHITECTURE := arm64
 endif
 
-ifeq ($(CACHE),true)
-	CACHE_COMMAND?=docker pull
+ifeq ($(DOCKER_ARCHITECTURE),$(ARCHITECTURE))
+$(info requested platform is the same as the host's, unsetting --platform flag)
+DOCKER_PLATFORM_FLAG ?=
 else
-    CACHE_COMMAND?=false
+$(info requested platform differs from host)
+$(info setting --platform flag to: $(DOCKER_PLATFORM))
+DOCKER_PLATFORM_FLAG ?= --platform=$(DOCKER_PLATFORM)
+endif
+
+DOCKER_COMMAND ?= docker buildx build \
+	$(DOCKER_PLATFORM_FLAG) \
+	--progress=$(DOCKER_BUILD_PROGRESS) \
+	$(DOCKER_LABELS) \
+	$(KONG_EE_PORTS_FLAG)
+
+ifeq ($(strip $(CACHE)),true)
+CACHE_COMMAND?=docker pull $(DOCKER_PLATFORM_FLAG) --quiet
+else
+CACHE_COMMAND?=false
 endif
 
 UPDATE_CACHE?=$(CACHE)
 
 ifeq ($(UPDATE_CACHE),true)
-	UPDATE_CACHE_COMMAND?=docker push
+UPDATE_CACHE_COMMAND?=docker push
 else
-	UPDATE_CACHE_COMMAND?=false
+UPDATE_CACHE_COMMAND?=false
 endif
 
 DOCKER_REPOSITORY?=kong/kong-build-tools
-
-AWS_INSTANCE_TYPE ?= c5a.4xlarge
-AWS_REGION ?= us-east-1
-AWS_VPC ?= vpc-0316062370efe1cff
-
-# us-east-1 bionic 18.04 amd64 hvm-ssd 20220308
-AWS_AMI ?= ami-0d73480446600f555
 
 # this prints out variables defined within this Makefile by filtering out
 # from pre-existing ones ($VARS_OLD), then echoing both the unexpanded variable
@@ -175,11 +175,11 @@ AWS_AMI ?= ami-0d73480446600f555
 # variables whose value does not expand are only printed once ("uniq"-ed )
 debug:
 	@$(foreach v, \
-		$(sort $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES))), \
+		$(sort $(filter-out $(VARS_OLD) MAKEFILE_VARS VARS_OLD,$(.VARIABLES))), \
 		( \
 			echo '$(v) = $($(v))'  ; \
 			echo  $(v) = "$($(v))" ;  \
-		) | uniq ; \
+		) | sort -u ; \
 	)
 	$(MAKE) -v
 
@@ -191,23 +191,6 @@ setup-build:
 	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
-else ifeq ($(BUILDX),true)
-	docker buildx create --name multibuilder
-	docker-machine create --driver amazonec2 \
-	--amazonec2-instance-type $(AWS_INSTANCE_TYPE) \
-	--amazonec2-region $(AWS_REGION) \
-	--amazonec2-ami $(AWS_AMI) \
-	--amazonec2-vpc-id $(AWS_VPC) \
-	--amazonec2-monitoring \
-	--amazonec2-tags created-by,${USER},created-via,kong-build-tools ${DOCKER_MACHINE_ARM64_NAME}
-	docker context create ${DOCKER_MACHINE_ARM64_NAME} --docker \
-	host=tcp://`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tcp | awk -F "//" '{print $$2}'`,\
-	ca=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscacert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	cert=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlscert | awk -F "=" '{print $$2}' | tr -d "\""`,\
-	key=`docker-machine config ${DOCKER_MACHINE_ARM64_NAME} | grep tlskey | awk -F "=" '{print $$2}' | tr -d "\""`
-	docker buildx create --name multibuilder --append ${DOCKER_MACHINE_ARM64_NAME}
-	docker buildx inspect multibuilder --bootstrap
-	docker buildx use multibuilder
 endif
 
 cleanup-build:
@@ -216,8 +199,6 @@ ifeq ($(RESTY_IMAGE_BASE),src)
 else ifeq ($(BUILDX),true)
 	-docker buildx use default
 	-docker buildx rm multibuilder
-	-docker context rm ${DOCKER_MACHINE_ARM64_NAME}
-	-docker-machine rm --force ${DOCKER_MACHINE_ARM64_NAME}
 endif
 
 build-openresty: setup-kong-source
@@ -228,7 +209,7 @@ else
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) || \
 	( \
 		echo $$GITHUB_TOKEN > github-token; \
-		docker pull --quiet $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
+		$(CACHE_COMMAND) $$(sed -ne 's;FROM \(.*$(PACKAGE_TYPE).*\) as.*;\1;p' dockerfiles/Dockerfile.openresty); \
 		$(DOCKER_COMMAND) -f dockerfiles/Dockerfile.openresty \
 		--secret id=github-token,src=github-token \
 		--build-arg RESTY_VERSION=$(RESTY_VERSION) \
@@ -289,13 +270,19 @@ endif
 	--build-arg PRIVATE_KEY_PASSPHRASE="$(PRIVATE_KEY_PASSPHRASE)" \
 	-t $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) .
 ifeq ($(BUILDX),false)
-	docker run -d --rm --name output $(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) tail -f /dev/null
+	docker run \
+		-d \
+		--rm \
+		$(DOCKER_PLATFORM_FLAG) \
+		--name output \
+		$(DOCKER_REPOSITORY):kong-packaged-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) \
+		tail -f /dev/null
 	docker cp output:/output/ output
 	docker stop output
 	mv output/output/*.$(PACKAGE_TYPE)* output/
 	rm -rf output/*/
 else
-	docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --output output --platform linux/amd64,linux/arm64 -f dockerfiles/Dockerfile.scratch \
+	docker buildx build --progress=$(DOCKER_BUILD_PROGRESS) --output output $(DOCKER_PLATFORM_FLAG) -f dockerfiles/Dockerfile.scratch \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
 	--build-arg DOCKER_KONG_SUFFIX=$(DOCKER_KONG_SUFFIX) \
@@ -405,29 +392,6 @@ release-kong: test
 	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	./release-kong.sh
-ifeq ($(BUILDX),true)
-	@DOCKER_MACHINE_NAME=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_MACHINE_NAME=".*"' | cut -d\" -f2) \
-	DOCKER_TLS_VERIFY=1 \
-	DOCKER_HOST=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_HOST=".*"' | cut -d\" -f2) \
-	DOCKER_CERT_PATH=$(shell docker-machine env $(DOCKER_MACHINE_ARM64_NAME) | grep 'DOCKER_CERT_PATH=".*"' | cut -d\" -f2) \
-	ARCHITECTURE=arm64 \
-	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
-	RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
-	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
-	KONG_VERSION=$(KONG_VERSION) \
-	KONG_RELEASE_LABEL=$(KONG_RELEASE_LABEL) \
-	PULP_PROD_USR=$(PULP_PROD_USR) \
-	PULP_PROD_PSW=$(PULP_PROD_PSW) \
-	PULP_HOST_PROD=$(PULP_HOST_PROD) \
-	PULP_DEV_USR=$(PULP_DEV_USR) \
-	PULP_DEV_PSW=$(PULP_DEV_PSW) \
-	PULP_HOST_DEV=$(PULP_HOST_DEV) \
-	RELEASE_DOCKER_ONLY=$(RELEASE_DOCKER_ONLY) \
-	DOCKER_LABELS="$(DOCKER_LABELS)" \
-	OFFICIAL_RELEASE=$(OFFICIAL_RELEASE) \
-	PACKAGE_TYPE=$(PACKAGE_TYPE) \
-	./release-kong.sh
-endif
 ifeq ($(RELEASE_DOCKER),true)
 	$(MAKE) release-kong-docker-images
 endif
@@ -479,7 +443,7 @@ endif
 build-test-container:
 ifneq ($(RESTY_IMAGE_BASE),src)
 	touch test/kong_license.private
-	ARCHITECTURE=amd64 \
+	ARCHITECTURE=$(ARCHITECTURE) \
 	KONG_PACKAGE_NAME=$(KONG_PACKAGE_NAME) \
 	PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \

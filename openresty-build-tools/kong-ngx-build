@@ -31,6 +31,15 @@ DIST_VER=
 NGINX_EXTRA_MODULES=()
 KONG_DISTRIBUTION_PATH=${KONG_DISTRIBUTION_PATH:-/distribution}
 
+case "_$(uname -m)" in
+_aarch64 | _arm64)
+  friendly_arch='arm64'
+  ;;
+_amd64 | _x86_64 | _* | _)
+  friendly_arch='amd64'
+  ;;
+esac
+
 PARAMS=""
 
 main() {
@@ -252,14 +261,19 @@ main() {
 
   pushd $DOWNLOAD_CACHE
     if [ "$KONG_OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
-      arch=$(uname -m)
 
-      package_architecture=x86_64
-      if [ "$(arch)" == "aarch64" ]; then
-        package_architecture=aarch64
+      package_architecture='x86_64'
+      if [ "$friendly_arch" == "arm64" ]; then
+        package_architecture='aarch64'
       fi
-      with_backoff curl --fail -sSLo openssl.tar.gz https://github.com/Kong/kong-openssl/releases/download/$KONG_OPENSSL_VER/$package_architecture-$OSTYPE.tar.gz
+
+      _filename="${package_architecture}-${OSTYPE}.tar.gz"
+
+      warn "Downloading kong-openssl version ${KONG_OPENSSL_VER}: ${_filename}"
+
+      with_backoff curl --fail -sSLo openssl.tar.gz "https://github.com/Kong/kong-openssl/releases/download/${KONG_OPENSSL_VER}/${_filename}"
       tar -C /tmp/build -xvf openssl.tar.gz
+
     elif [ "$OPENSSL_VER" != 0 -a "$SSL_PROVIDER" = "openssl" ]; then
       # OpenSSL
 
@@ -641,9 +655,8 @@ main() {
     if [ ! -d "$BORINGSSL_DOWNLOAD/.openssl/lib" ]; then
       notice "Building BoringSSL..."
 
-      arch=$(uname -m)
-      if [ "$(arch)" != "x86_64" ]; then
-        echo "Error: BoringSSL builds only supported in x86_64; got $arch" >&2
+      if [ "$friendly_arch" != "amd64" ]; then
+        echo "Error: BoringSSL builds only supported in x86_64; got ${friendly_arch}" >&2
         exit 1
       fi
 
@@ -691,7 +704,7 @@ main() {
         #
 
         # golang
-          golang_url="https://go.dev/dl/go${golang_version}.linux-amd64.tar.gz"
+          golang_url="https://go.dev/dl/go${golang_version}.linux-${friendly_arch}.tar.gz"
           golang_checksum="66d83bfb5a9ede000e33c6579a91a29e6b101829ad41fffb5c5bb6c900e109d9"
           with_backoff curl -sSL "$golang_url" -o golang.tar.gz
           echo "$golang_checksum golang.tar.gz" | sha256sum -c
