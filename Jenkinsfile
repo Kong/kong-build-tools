@@ -13,6 +13,7 @@ pipeline {
         DEBUG = 0
 
         KONG_OPENSSL_VERSION = '1.1.9'
+        DOCKER_BUILD_PROGRESS = 'quiet'
     }
     options {
         timeout(time: 5, unit: 'HOURS')

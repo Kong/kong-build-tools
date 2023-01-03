@@ -197,9 +197,6 @@ endif
 cleanup-build:
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
-else ifeq ($(BUILDX),true)
-	-docker buildx use default
-	-docker buildx rm multibuilder
 endif
 
 build-openresty: setup-kong-source
@@ -510,7 +507,6 @@ cleanup: cleanup-tests cleanup-build
 
 
 update-cache-images:
-ifeq ($(BUILDX),false)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX)
 	-docker tag $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)-$(DOCKER_OPENRESTY_SUFFIX) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):openresty-$(PACKAGE_TYPE)
@@ -518,4 +514,3 @@ ifeq ($(BUILDX),false)
 	-docker tag $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)
 	-$(UPDATE_CACHE_COMMAND) $(DOCKER_REPOSITORY):test
-endif
