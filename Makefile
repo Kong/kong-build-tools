@@ -192,6 +192,8 @@ setup-build:
 	$(info '               RESTY_IMAGE_TAG:  $(RESTY_IMAGE_TAG)')
 ifeq ($(RESTY_IMAGE_BASE),src)
 	@echo "nothing to be done"
+else
+	docker buildx create --use --name mechazilla
 endif
 
 cleanup-build:
