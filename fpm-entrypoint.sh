@@ -80,7 +80,9 @@ if [[ "$PACKAGE_TYPE" == 'apk' ]]; then
   tar -zcf /output/${KONG_PACKAGE_NAME}-${KONG_RELEASE_LABEL}${OUTPUT_FILE_SUFFIX}.apk.tar.gz usr etc
   popd
 else
-  fpm -f -s dir \
+  fpm -f \
+    -s dir \
+    --debug \
     -t $PACKAGE_TYPE \
     -m 'support@konghq.com' \
     -n $KONG_PACKAGE_NAME \

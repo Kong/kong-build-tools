@@ -247,6 +247,7 @@ else
 package-kong: actual-package-kong
 endif
 
+actual-package-kong: DOCKER_BUILD_PROGRESS=plain
 actual-package-kong: cleanup setup-build
 ifeq ($(DEBUG),1)
 	exit 1
@@ -254,7 +255,6 @@ endif
 	$(MAKE) build-kong
 	@$(DOCKER_COMMAND) \
 	-f dockerfiles/Dockerfile.package \
-	--progress=plain \
 	--build-arg RESTY_IMAGE_BASE=$(RESTY_IMAGE_BASE) \
 	--build-arg RESTY_IMAGE_TAG=$(RESTY_IMAGE_TAG) \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
@@ -289,8 +289,8 @@ ifeq ($(BUILDX),false)
 else
 	docker buildx build \
 	-f dockerfiles/Dockerfile.scratch \
-	--progress=plain \
-	$(DOCKER_PLATFORM_FLAG) \
+	--progress=$(DOCKER_BUILD_PROGRESS) \
+	--platform linux/amd64,linux/arm64 \
 	--output output \
 	--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 	--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
@@ -312,6 +312,7 @@ endif
 kong-ci-cache-key:
 	@echo "CACHE_KEY=$(DOCKER_OPENRESTY_SUFFIX)"
 
+actual-build-kong: DOCKER_BUILD_PROGRESS=plain
 actual-build-kong: setup-kong-source
 	touch id_rsa.private
 	$(CACHE_COMMAND) $(DOCKER_REPOSITORY):kong-$(PACKAGE_TYPE)-$(DOCKER_KONG_SUFFIX) || \
@@ -321,7 +322,6 @@ actual-build-kong: setup-kong-source
 			echo $$GITHUB_TOKEN > github-token; \
 			$(DOCKER_COMMAND) \
 			-f dockerfiles/Dockerfile.kong \
-			--progress=plain \
 			--secret id=github-token,src=github-token \
 			--build-arg PACKAGE_TYPE=$(PACKAGE_TYPE) \
 			--build-arg DOCKER_REPOSITORY=$(DOCKER_REPOSITORY) \
