@@ -805,17 +805,20 @@ main() {
             find $WASM_RUNTIME_PREFIX
             warn "---------------------------------------------"
 
-            #NGX_WASM_RUNTIME_INC=$WASM_RUNTIME_PREFIX/include
-            #NGX_WASM_RUNTIME_LIB=$WASM_RUNTIME_PREFIX/lib
+            if [ "$WASM_RUNTIME" = "v8" ]; then
+              gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
+              if [ $gcc_major -lt 8 ];
+              then
+                export CC=gcc-8
+              fi
+
+              wasm_libs="-lcwabt -lv8bridge -lwee8 -ldl -lpthread -lm -lstdc++"
+            else
+              wasm_libs="-l$WASM_RUNTIME"
+            fi
 
             OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
-            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib'")
-
-            gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
-            if [ $gcc_major -lt 8 ];
-            then
-              export CC=gcc-8
-            fi
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib $wasm_libs -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
 
           fi
           OPENRESTY_OPTS+=('--add-module=$KONG_EE_DISTRIBUTION/lua-resty-openssl-aux-module')
