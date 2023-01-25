@@ -484,46 +484,6 @@ main() {
         popd
       popd
     fi
-
-    if [ $WASM_RUNTIME != 0 ]; then
-      wasm_arch=$(uname -m)
-      wasm_os=$(uname | tr '[:upper:]' '[:lower:]')
-      pushd $DOWNLOAD_CACHE
-        if [ $WASM_RUNTIME == "wasmer" ]; then
-          if [ "$wasm_arch" == "x86_64" ]; then
-            wasm_arch="amd64"
-            if [ "$wasm_os" == "linux" ]; then
-              distro=$(grep -E "^ID=(.+)$" /etc/os-release | awk -F"=" '{print $2}')
-              if [ "$distro" == "alpine" ]; then
-                wasm_os="linux-musl"
-              fi
-            fi
-          fi
-
-          WASMER_DOWNLOAD="wasmer-$wasm_os-$wasm_arch.tar.gz"
-          if [ ! -f $WASMER_DOWNLOAD ]; then
-            warn "Wasmer runtime not found, downloading..."
-            curl -sSLO https://github.com/wasmerio/wasmer/releases/download/$WASM_RUNTIME_VERSION/$WASMER_DOWNLOAD
-          fi
-
-        elif [ $WASM_RUNTIME == "wasmtime" ]; then
-          if [ "$wasm_os" == "darwin" ]; then
-            wasm_os = "macos"
-          fi
-
-          WASMTIME_DOWNLOAD="wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz"
-          if [ ! -f $WASMTIME_DOWNLOAD ]; then
-            warn "Wasmtime runtime not found, downloading..."
-            curl -sSLO https://github.com/bytecodealliance/wasmtime/releases/download/v$WASM_RUNTIME_VERSION/$WASMTIME_DOWNLOAD
-          fi
-
-        elif [ $WASM_RUNTIME == "v8" ]; then
-          fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
-        else
-          fatal "Unknown Wasm runtime"
-        fi
-      popd
-    fi
   popd
 
   if [ ! -z "$DOWNLOAD_ONLY" ]; then
@@ -822,43 +782,43 @@ main() {
         )
 
         if [ "$EDITION" == 'enterprise' ]; then
+          KONG_EE_DISTRIBUTION=${KONG_EE_DISTRIBUTION:-/distribution}
+
           if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
-            OPENRESTY_OPTS+=('--add-module=/distribution/kong-licensing/ngx_module')
+            OPENRESTY_OPTS+=('--add-module=$KONG_EE_DISTRIBUTION/kong-licensing/ngx_module')
           fi
           if [ $NGX_WASM_MODULE != 0 ]; then
-            OPENRESTY_OPTS+=("--add-module=/distribution/ngx_wasm_module")
+            OPENRESTY_OPTS+=("--add-module=$KONG_EE_DISTRIBUTION/ngx_wasm_module")
             WASM_RUNTIME_PREFIX=${WASM_RUNTIME_PREFIX:-$PREFIX/wasm-runtime}
-            mkdir -p $WASM_RUNTIME_PREFIX
-            pushd $DOWNLOAD_CACHE
-            wasm_arch=$(uname -m)
-            wasm_os=$(uname | tr '[:upper:]' '[:lower:]')
-            if [ $WASM_RUNTIME == "wasmer" ]; then
-              warn "installing Wasmer..."
-              if [ "$wasm_arch" == "x86_64" ]; then
-                # TODO musl support
-                wasm_arch="amd64"
-              fi
-              tar -zx -f "wasmer-$wasm_os-$wasm_arch.tar.gz" -C $WASM_RUNTIME_PREFIX
-              export NGX_WASM_RUNTIME=wasmer
-            elif [ $WASM_RUNTIME == "wasmtime" ]; then
-              warn "installing Wasmtime..."
-              if [ "$wasm_os" == "darwin" ]; then
-                wasm_os = "macos"
-              fi
-              tar -x --strip-components 1 -f "wasmtime-v$WASM_RUNTIME_VERSION-$wasm_arch-$wasm_os-c-api.tar.xz" -C $WASM_RUNTIME_PREFIX
-              export NGX_WASM_RUNTIME=wasmtime
-            elif [ $WASM_RUNTIME == "v8" ]; then
-              warn "installing v8..."
-              fatal "v8 Wasm runtime is not supported by kong-build-tools yet"
-              export NGX_WASM_RUNTIME=v8
+            rm -rf $WASM_RUNTIME_PREFIX
+
+            if [ "$WASM_RUNTIME" = "v8" ]; then
+              WASM_RUNTIME_VERSION="$WASM_RUNTIME_VERSION-ubuntu-18.04"
             fi
-            popd
+
+            warn "Installing $WASM_RUNTIME..."
+            $KONG_EE_DISTRIBUTION/ngx_wasm_module/util/runtimes/$WASM_RUNTIME.sh $WASM_RUNTIME_PREFIX "$WASM_RUNTIME_VERSION" "$(uname -m)" download
+            export NGX_WASM_RUNTIME=$WASM_RUNTIME
+
+            warn "---------------------------------------------"
+            warn "$WASM_RUNTIME installed at:"
+            find $WASM_RUNTIME_PREFIX
+            warn "---------------------------------------------"
+
             #NGX_WASM_RUNTIME_INC=$WASM_RUNTIME_PREFIX/include
             #NGX_WASM_RUNTIME_LIB=$WASM_RUNTIME_PREFIX/lib
+
             OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
-            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib -l$WASM_RUNTIME -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib'")
+
+            gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
+            if [ $gcc_major -lt 8 ];
+            then
+              export CC=gcc-8
+            fi
+
           fi
-          OPENRESTY_OPTS+=('--add-module=/distribution/lua-resty-openssl-aux-module')
+          OPENRESTY_OPTS+=('--add-module=$KONG_EE_DISTRIBUTION/lua-resty-openssl-aux-module')
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
@@ -971,8 +931,8 @@ main() {
 
       if [ "$EDITION" == 'enterprise' -a $NGX_WASM_MODULE != 0 ]; then
         mkdir -p $OPENRESTY_INSTALL/lualib/resty/http
-        cp /distribution/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
-        cp /distribution/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
+        cp $KONG_EE_DISTRIBUTION/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
+        cp $KONG_EE_DISTRIBUTION/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
       fi
 
     popd
