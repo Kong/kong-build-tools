@@ -55,10 +55,13 @@ LABEL resty_events="${RESTY_EVENTS}"
 ARG ATC_ROUTER=0
 LABEL atc_router="${ATC_ROUTER}"
 
+ARG NGX_WASM_MODULE=0
+ARG WASM_RUNTIME=0
+ARG WASM_RUNTIME_VERSION=0
+
 COPY openresty-build-tools /tmp/openresty-build-tools
 COPY openresty-patches /tmp/openresty-patches
 COPY build-openresty.sh /tmp/build-openresty.sh
-
 
 ARG OPENRESTY_PATCHES=1
 ENV OPENRESTY_PATCHES="${OPENRESTY_PATCHES}"
@@ -68,6 +71,8 @@ COPY lua-resty-lmdb /distribution/lua-resty-lmdb
 
 ARG DEBUG=0
 ENV DEBUG $DEBUG
+RUN apt-get update && apt-get install -y gcc-8 libstdc++6 libstdc++-8-dev
+
 RUN /tmp/build-openresty.sh
 
 RUN sed -i 's/\/tmp\/build//' `grep -l -I -r '\/tmp\/build' /tmp/build/` || true

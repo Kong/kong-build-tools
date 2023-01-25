@@ -20,6 +20,13 @@ export LUAROCKS_CONFIG=$ROCKS_CONFIG
 export LUA_PATH="/usr/local/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/luajit-2.1.0-beta3/?.lua;;"
 export PATH=$PATH:/usr/local/openresty/luajit/bin
 
+if [ "$WASM_RUNTIME" != 0 ]; then
+  export NGX_WASM_RUNTIME=$WASM_RUNTIME
+  export NGX_WASM_RUNTIME_INC=/usr/local/wasm-runtime/include
+  export NGX_WASM_RUNTIME_LIB=/usr/local/wasm-runtime/lib
+  export PATH=$PATH:/usr/local/wasm-runtime/bin
+fi
+
 /usr/local/bin/luarocks --version
 /usr/local/kong/bin/openssl version || true
 ldd /usr/local/openresty/nginx/sbin/nginx || true

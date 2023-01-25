@@ -23,6 +23,9 @@ RESTY_LMDB=master
 RESTY_WEBSOCKET=${RESTY_WEBSOCKET:-0}
 RESTY_EVENTS=main
 ATC_ROUTER=${ATC_ROUTER:-0}
+NGX_WASM_MODULE=
+WASM_RUNTIME=
+WASM_RUNTIME_VERSION=
 DEBUG=0
 NPROC=
 OS=
@@ -125,6 +128,18 @@ main() {
         ATC_ROUTER=$2
         shift 2
         ;;
+      --ngx_wasm_module)
+        NGX_WASM_MODULE=$2
+        shift 2
+        ;;
+      --wasm-runtime)
+        WASM_RUNTIME=$2
+        shift 2
+        ;;
+      --wasm-runtime-version)
+        WASM_RUNTIME_VERSION=$2
+        shift 2
+        ;;
       -f|--force)
         FORCE=1
         shift 1
@@ -198,6 +213,16 @@ main() {
   if [ "$BORINGSSL_VER" = 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
     show_usage
     fatal "BoringSSL version not specified"
+  fi
+
+  if [ "$NGX_WASM_MODULE" != 0 -a -z "$WASM_RUNTIME" ]; then
+    show_usage
+    fatal "Wasm runtime is required for ngx_wasm_module"
+  fi
+
+  if [ "$WASM_RUNTIME" != 0 -a -z "$WASM_RUNTIME_VERSION" ]; then
+    show_usage
+    fatal "Wasm runtime version not specified"
   fi
 
   # retrieve DIST info of DIST-specific patches
@@ -784,7 +809,44 @@ main() {
           if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
             OPENRESTY_OPTS+=("--add-module=$KONG_DISTRIBUTION_PATH/kong-licensing/ngx_module")
           fi
+
           OPENRESTY_OPTS+=("--add-module=$KONG_DISTRIBUTION_PATH/lua-resty-openssl-aux-module")
+
+          if [ $NGX_WASM_MODULE != 0 ]; then
+            OPENRESTY_OPTS+=("--add-module=$KONG_DISTRIBUTION_PATH/ngx_wasm_module")
+            WASM_RUNTIME_PREFIX=${WASM_RUNTIME_PREFIX:-$PREFIX/wasm-runtime}
+            rm -rf $WASM_RUNTIME_PREFIX
+
+            if [ "$WASM_RUNTIME" = "v8" ]; then
+              WASM_RUNTIME_VERSION="$WASM_RUNTIME_VERSION-ubuntu-18.04"
+            fi
+
+            warn "Installing $WASM_RUNTIME..."
+            $KONG_DISTRIBUTION_PATH/ngx_wasm_module/util/runtimes/$WASM_RUNTIME.sh $WASM_RUNTIME_PREFIX "$WASM_RUNTIME_VERSION" "$(uname -m)" download
+            export NGX_WASM_RUNTIME=$WASM_RUNTIME
+
+            warn "---------------------------------------------"
+            warn "$WASM_RUNTIME installed at:"
+            find $WASM_RUNTIME_PREFIX
+            warn "---------------------------------------------"
+
+            if [ "$WASM_RUNTIME" = "v8" ]; then
+              gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
+              if [ $gcc_major -lt 8 ];
+              then
+                export CC=gcc-8
+              fi
+
+              wasm_libs="-lcwabt -lv8bridge -lwee8 -ldl -lpthread -lm -lstdc++"
+            else
+              wasm_libs="-l$WASM_RUNTIME"
+            fi
+
+            OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
+            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib $wasm_libs -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
+
+          fi
+          OPENRESTY_OPTS+=('--add-module=$KONG_DISTRIBUTION_PATH/lua-resty-openssl-aux-module')
         fi
 
         if [ $KONG_NGINX_MODULE != 0 ]; then
@@ -844,6 +906,7 @@ main() {
           OPENRESTY_OPTS+=('--with-luajit-xcflags="-DLUAJIT_USE_VALGRIND -DLUA_USE_ASSERT -DLUA_USE_APICHECK -DLUAJIT_USE_SYSMALLOC"')
         fi
 
+        set -x
         eval ./configure ${OPENRESTY_OPTS[*]}
 
         if [ "$BORINGSSL_VER" != 0 -a "$SSL_PROVIDER" = "boringssl" ]; then
@@ -893,6 +956,13 @@ main() {
           fi
         popd
       fi
+
+      if [ "$EDITION" == 'enterprise' -a $NGX_WASM_MODULE != 0 ]; then
+        mkdir -p $OPENRESTY_INSTALL/lualib/resty/http
+        cp $KONG_DISTRIBUTION_PATH/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
+        cp $KONG_DISTRIBUTION_PATH/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
+      fi
+
     popd
 
     succ "OpenResty $OPENRESTY_VER has been built successfully!"
@@ -1084,6 +1154,14 @@ show_usage() {
   echo ""
   echo "      --pcre <pcre_ver>              Version of PCRE to build, such as 8.43. If absent, PCRE will"
   echo "                                     not be build."
+  echo ""
+  echo "      --ngx_wasm_module <branch>     Specify a ngx_wasm_module branch to use when patching and compiling."
+  echo "                                     (Defaults to \"master\")"
+  echo ""
+  echo "      --wasm-runtime <name>          Specify a WebAssembly runtime to be used."
+  echo "                                     (Can be set to \"wasmer\", \"wasmtime\" or \"v8\")"
+  echo ""
+  echo "      --wasm-runtime-version <ver>   Specify the WebAssemby runtime version to be used."
   echo ""
   echo "      --add-module <module_path>     Path to additional NGINX module to be built. This option can be"
   echo "                                     repeated and will be passed to NGINX's configure in the order"
