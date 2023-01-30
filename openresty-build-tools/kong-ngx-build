@@ -822,6 +822,17 @@ main() {
             fi
 
             warn "Installing $WASM_RUNTIME..."
+
+            (
+              cd $KONG_DISTRIBUTION_PATH/ngx_wasm_module
+              git checkout "$NGX_WASM_MODULE" || (
+                git stash
+                git fetch
+                git checkout -B local-$NGX_WASM_MODULE
+                git reset --hard origin/$NGX_WASM_MODULE
+              )
+            )
+
             $KONG_DISTRIBUTION_PATH/ngx_wasm_module/util/runtimes/$WASM_RUNTIME.sh $WASM_RUNTIME_PREFIX "$WASM_RUNTIME_VERSION" "$(uname -m)" download
             export NGX_WASM_RUNTIME=$WASM_RUNTIME
 
