@@ -787,40 +787,6 @@ main() {
           if [ "$ENABLE_KONG_LICENSING" != "false" ]; then
             OPENRESTY_OPTS+=('--add-module=$KONG_EE_DISTRIBUTION/kong-licensing/ngx_module')
           fi
-          if [ $NGX_WASM_MODULE != 0 ]; then
-            OPENRESTY_OPTS+=("--add-module=$KONG_EE_DISTRIBUTION/ngx_wasm_module")
-            WASM_RUNTIME_PREFIX=${WASM_RUNTIME_PREFIX:-$PREFIX/wasm-runtime}
-            rm -rf $WASM_RUNTIME_PREFIX
-
-            if [ "$WASM_RUNTIME" = "v8" ]; then
-              WASM_RUNTIME_VERSION="$WASM_RUNTIME_VERSION-ubuntu-18.04"
-            fi
-
-            warn "Installing $WASM_RUNTIME..."
-            $KONG_EE_DISTRIBUTION/ngx_wasm_module/util/runtimes/$WASM_RUNTIME.sh $WASM_RUNTIME_PREFIX "$WASM_RUNTIME_VERSION" "$(uname -m)" download
-            export NGX_WASM_RUNTIME=$WASM_RUNTIME
-
-            warn "---------------------------------------------"
-            warn "$WASM_RUNTIME installed at:"
-            find $WASM_RUNTIME_PREFIX
-            warn "---------------------------------------------"
-
-            if [ "$WASM_RUNTIME" = "v8" ]; then
-              gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
-              if [ $gcc_major -lt 8 ];
-              then
-                export CC=gcc-8
-              fi
-
-              wasm_libs="-lcwabt -lv8bridge -lwee8 -ldl -lpthread -lm -lstdc++"
-            else
-              wasm_libs="-l$WASM_RUNTIME"
-            fi
-
-            OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
-            OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib $wasm_libs -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
-
-          fi
           OPENRESTY_OPTS+=('--add-module=$KONG_EE_DISTRIBUTION/lua-resty-openssl-aux-module')
         fi
 
@@ -852,6 +818,51 @@ main() {
 
         else
           OPENRESTY_OPTS+=('--with-pcre')
+        fi
+
+        if [ $NGX_WASM_MODULE != 0 ]; then
+          if [ ! -d "/distribution/ngx_wasm_module" ]; then
+            pushd "/distribution"
+              mkdir "ngx_wasm_module"
+	            pushd "ngx_wasm_module"
+                git clone https://github.com/Kong/ngx_wasm_module.git 
+                git checkout $NGX_WASM_MODULE
+              popd
+            popd
+          fi
+
+          OPENRESTY_OPTS+=("--add-module=/distribution/ngx_wasm_module")
+          WASM_RUNTIME_PREFIX=${WASM_RUNTIME_PREFIX:-$PREFIX/wasm-runtime}
+          rm -rf $WASM_RUNTIME_PREFIX
+
+          if [ "$WASM_RUNTIME" = "v8" ]; then
+            WASM_RUNTIME_VERSION="$WASM_RUNTIME_VERSION-ubuntu-18.04"
+          fi
+
+          warn "Installing $WASM_RUNTIME..."
+          /distribution/ngx_wasm_module/util/runtimes/$WASM_RUNTIME.sh $WASM_RUNTIME_PREFIX "$WASM_RUNTIME_VERSION" "$(uname -m)" download
+          export NGX_WASM_RUNTIME=$WASM_RUNTIME
+
+          warn "---------------------------------------------"
+          warn "$WASM_RUNTIME installed at:"
+          find $WASM_RUNTIME_PREFIX
+          warn "---------------------------------------------"
+
+          if [ "$WASM_RUNTIME" = "v8" ]; then
+            gcc_major=$(gcc --version | head -n1 | awk '{print $NF}' | cut -d. -f1)
+            if [ $gcc_major -lt 8 ];
+            then
+              export CC=gcc-8
+            fi
+
+            wasm_libs="-lcwabt -lv8bridge -lwee8 -ldl -lpthread -lm -lstdc++"
+          else
+            wasm_libs="-l$WASM_RUNTIME"
+          fi
+
+          OPENRESTY_OPTS+=("--with-cc-opt='-I$WASM_RUNTIME_PREFIX/include'")
+          OPENRESTY_OPTS+=("--with-ld-opt='-L$WASM_RUNTIME_PREFIX/lib $wasm_libs -Wl,-rpath,$WASM_RUNTIME_PREFIX/lib'")
+
         fi
 
         OPENRESTY_OPTS+=(${NGINX_EXTRA_MODULES[@]})
@@ -932,10 +943,10 @@ main() {
         popd
       fi
 
-      if [ "$EDITION" == 'enterprise' -a $NGX_WASM_MODULE != 0 ]; then
+      if [ $NGX_WASM_MODULE != 0 ]; then
         mkdir -p $OPENRESTY_INSTALL/lualib/resty/http
-        cp $KONG_EE_DISTRIBUTION/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
-        cp $KONG_EE_DISTRIBUTION/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
+        cp /distribution/ngx_wasm_module/lib/resty/http/proxy_wasm.lua $OPENRESTY_INSTALL/lualib/resty/http
+        cp /distribution/ngx_wasm_module/lib/resty/wasm.lua $OPENRESTY_INSTALL/lualib/resty/
       fi
 
     popd
