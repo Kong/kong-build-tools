@@ -5,7 +5,7 @@ ARG DOCKER_REPOSITORY
 
 FROM ${DOCKER_REPOSITORY}:kong-${PACKAGE_TYPE}-${DOCKER_KONG_SUFFIX} as KONG
 
-FROM kong/fpm:0.5.1 as FPM
+FROM kong/fpm:0.8.1 as FPM
 
 COPY --from=KONG /tmp/build /tmp/build
 COPY fpm-entrypoint.sh sign-rpm.exp .rpmmacros /
