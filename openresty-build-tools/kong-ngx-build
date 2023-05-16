@@ -428,6 +428,8 @@ main() {
         if [ ! -d lua-resty-lmdb ]; then
           warn "lua-resty-lmdb source not found, cloning..."
           git clone https://github.com/Kong/lua-resty-lmdb --recursive
+          cd lua-resty-lmdb
+          git submodule update --remote
         fi
 
         pushd lua-resty-lmdb
