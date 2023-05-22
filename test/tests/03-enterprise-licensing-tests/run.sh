@@ -34,10 +34,10 @@ msg_test "GUI https"
 assert_response "https://$TEST_HOST:8445/ --insecure" "200"
 
 msg_test "Portal GUI"
-assert_response "http://$TEST_HOST:8003" "200"
+assert_response "http://$TEST_HOST:8003/default" "200"
 
 msg_test "Portal GUI https"
-assert_response "https://$TEST_HOST:8446/ --insecure" "200"
+assert_response "https://$TEST_HOST:8446/default --insecure" "200"
 
 msg_test "check portal"
 assert_response "http://$TEST_HOST:8004/files" "200"
