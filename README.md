@@ -1,3 +1,5 @@
+> :warning: This repository is no longer in use as of Kong Gateway 3.1 - Kong is now built by Bazel, see the [build/README.md](https://github.com/Kong/kong/blob/master/build/README.md) file.
+
 # Kong Build Tools
 
 The tools necessary to build, package and release Kong
