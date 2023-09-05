@@ -427,13 +427,14 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-lmdb ]; then
           warn "lua-resty-lmdb source not found, cloning..."
-          git clone https://github.com/Kong/lua-resty-lmdb --recursive
+          git clone https://github.com/Kong/lua-resty-lmdb
         fi
 
         pushd lua-resty-lmdb
           git fetch
           # Accept both tags, branches and SHAs
           git reset --hard $RESTY_LMDB || git reset --hard origin/$RESTY_LMDB
+          git submodule update --init --recursive
         popd
       popd
     fi
@@ -446,13 +447,14 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d lua-resty-events ]; then
           warn "lua-resty-events source not found, cloning..."
-          git clone https://github.com/Kong/lua-resty-events --recursive
+          git clone https://github.com/Kong/lua-resty-events
         fi
 
         pushd lua-resty-events
           git fetch
           # Accept both tags, branches and SHAs
           git reset --hard $RESTY_EVENTS || git reset --hard origin/$RESTY_EVENTS
+          git submodule update --init --recursive
         popd
       popd
     fi
@@ -465,13 +467,14 @@ main() {
       pushd $DOWNLOAD_CACHE
         if [ ! -d atc-router ]; then
           warn "atc-router source not found, cloning..."
-          git clone https://github.com/Kong/atc-router --recursive
+          git clone https://github.com/Kong/atc-router
         fi
 
         pushd atc-router
           git fetch
           # Accept both tags, branches and SHAs
           git reset --hard $ATC_ROUTER || git reset --hard origin/$ATC_ROUTER
+          git submodule update --init --recursive
         popd
       popd
     fi
