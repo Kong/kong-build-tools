@@ -9,6 +9,7 @@ on:  # yamllint disable-line rule:truthy
 
 jobs:
   release:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Create Release
     runs-on: ubuntu-latest
     steps:
